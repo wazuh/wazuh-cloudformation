@@ -706,8 +706,8 @@ Resources:
           files:
             /tmp/wazuh_cf_settings:
               content: !Sub |
-                SSHUsername: ${SshUsername}
-                SSHPassword: ${SshPassword}
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
               mode: '000600'
               owner: root
@@ -773,8 +773,8 @@ Resources:
           files:
             /tmp/wazuh_cf_settings:
               content: !Sub |
-                SSHUsername: ${SshUsername}
-                SSHPassword: ${SshPassword}
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
                 KibanaPort: ${KibanaPort}
                 KibanaUsername: ${KibanaUsername}
@@ -871,8 +871,8 @@ Resources:
           files:
             /tmp/wazuh_cf_settings:
               content: !Sub |
-                SSHUsername: ${SshUsername}
-                SSHPassword: ${SshPassword}
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
                 WazuhApiAdminUsername: ${WazuhApiAdminUsername}
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
@@ -950,8 +950,8 @@ Resources:
           files:
             /tmp/wazuh_cf_settings:
               content: !Sub |
-                SSHUsername: ${SshUsername}
-                SSHPassword: ${SshPassword}
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
                 WazuhServerPort: ${WazuhServerPort}
                 WazuhRegistrationPort: ${WazuhRegistrationPort}
