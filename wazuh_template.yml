@@ -507,11 +507,7 @@ Resources:
           InstancePort: 22 
           Protocol: TCP
           InstanceProtocol: TCP
-        - LoadBalancerPort: !Ref KibanaPort
-          InstancePort: !Ref KibanaPort
-          Protocol: HTTPS
-          InstanceProtocol: HTTPS
-          SSLCertificateId: !If [SSLCertSpecified, !Ref SSLCertificateARN, '']
+        - !If [SSLCertSpecified, { LoadBalancerPort: !Ref KibanaPort, InstancePort: !Ref KibanaPort, Protocol: HTTPS, InstanceProtocol: HTTPS, SSLCertificateId: !Ref SSLCertificateARN }, { LoadBalancerPort: !Ref KibanaPort, InstancePort: !Ref KibanaPort, Protocol: HTTPS, InstanceProtocol: HTTPS }]
 
   # Wazuh server load balancer
   ElbWazuhSecurityGroup:
