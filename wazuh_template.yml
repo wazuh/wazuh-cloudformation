@@ -198,6 +198,7 @@ Parameters:
 Conditions:
   HasZone: !Not [!Equals [!Ref ParentDomainName, '']]
   SSLCertSpecified: !Not [!Equals [!Ref SSLCertificateARN, '']]
+  ParentDomainSpecified: !Not [!Equals [!Ref ParentDomainName, '']]
 
 
 Resources:
@@ -944,7 +945,7 @@ Outputs:
     Value: !Ref ElasticWazuhVersion
   KibanaDNS:
     Description: The URL for the Kibana WUI and SSH access
-    Value: !Ref KibanaRecordSet
+    Value: !If [ParentDomainSpecified, !Ref KibanaRecordSet, '']
   KibanaPort: 
     Description: Port number for Kibana WUI access
     Value: !Ref KibanaPort
@@ -953,7 +954,7 @@ Outputs:
     Value: !Ref KibanaUsername
   WazuhServerDNS:
     Description: The DNS name for agents communication with Wazuh server
-    Value: !Ref WazuhDataRecordSet
+    Value: !If [ParentDomainSpecified, !Ref WazuhDataRecordSet, '']
   WazuhServerPort:
     Description: Port number for agents communication with Wazuh server
     Value: !Ref WazuhServerPort
@@ -962,7 +963,7 @@ Outputs:
     Value: !Ref WazuhRegistrationPort
   WazuhRegistrationDNS:
     Description: The DNS name for agents registration with Wazuh server
-    Value: !Ref WazuhRegistrationRecordSet
+    Value: !If [ParentDomainSpecified, !Ref WazuhRegistrationRecordSet, '']
   WazuhApiPort:
     Description: Port number used by Wazuh API
     Value: !Ref WazuhApiPort
@@ -983,4 +984,4 @@ Outputs:
     Value: !Ref KibanaInstanceType
   SSLCertificateARN:
     Description: SSL Certificate for Kibana access via HTTPS
-    Value: !Ref SSLCertificateARN
+    Value: !If [SSLCertSpecified, !Ref SSLCertificateARN, '']
