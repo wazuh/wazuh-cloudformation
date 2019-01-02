@@ -504,8 +504,8 @@ Resources:
           InstanceProtocol: TCP
         - LoadBalancerPort: !Ref KibanaPort
           InstancePort: !Ref KibanaPort
-          Protocol: HTTPS
-          InstanceProtocol: HTTPS
+          Protocol: TCP
+          InstanceProtocol: TCP
 
   # Wazuh server load balancer
   ElbWazuhSecurityGroup:
