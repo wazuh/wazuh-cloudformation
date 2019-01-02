@@ -970,7 +970,7 @@ Outputs:
     Value: !Ref ElasticWazuhVersion
   KibanaDNS:
     Description: The URL for the Kibana WUI and SSH access
-    Value: !If [KibanaRecordSet, !Ref KibanaRecordSet, '']
+    Value: !If [ParentDomainSpecified, !Ref KibanaRecordSet, '']
   KibanaPort: 
     Description: Port number for Kibana WUI access
     Value: !Ref KibanaPort
