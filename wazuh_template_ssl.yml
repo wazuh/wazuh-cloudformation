@@ -1019,6 +1019,9 @@ Outputs:
   ElasticWazuhVersion:
     Description: Elastic Stack and Wazuh versions
     Value: !Ref ElasticWazuhVersion
+  SshUsername:
+    Description: SSH Username
+    Value: !Ref SshUsername
   KibanaDNS:
     Description: The URL for the Kibana WUI and SSH access
     Value: !If [ParentDomainSpecified, !Ref KibanaRecordSet, '']

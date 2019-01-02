@@ -59,6 +59,8 @@ Metadata:
           - WazuhInstanceType
           - ElasticInstanceType
           - KibanaInstanceType
+          - SshUsername
+          - SshPassword
       - 
         Label:
           default: "Wazuh configuration"
@@ -93,6 +95,22 @@ Parameters:
   KeyPairName:
     Description: Existing EC2 key pair for SSH access
     Type: 'AWS::EC2::KeyPair::KeyName'
+  SshUsername:
+    Default: wazuh
+    Description: SSH username
+    Type: String
+    MinLength: '5'
+    MaxLength: '32'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: Only alphanumeric characters. Minimum length 5. Maximum length 32.
+  SshPassword:
+    Description: SSH Password
+    NoEcho: 'True'
+    Type: String
+    MinLength: '8'
+    MaxLength: '64'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: Only alphanumeric characters. Minimum length 8. Maximum length 64.
 
   # Version and instance types
   ElasticWazuhVersion:
@@ -683,6 +701,8 @@ Resources:
           files:
             /tmp/wazuh_cf_settings:
               content: !Sub |
+                SSHUsername: ${SshUsername}
+                SSHPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
               mode: '000600'
               owner: root
@@ -748,6 +768,8 @@ Resources:
           files:
             /tmp/wazuh_cf_settings:
               content: !Sub |
+                SSHUsername: ${SshUsername}
+                SSHPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
                 KibanaPort: ${KibanaPort}
                 KibanaUsername: ${KibanaUsername}
@@ -844,6 +866,8 @@ Resources:
           files:
             /tmp/wazuh_cf_settings:
               content: !Sub |
+                SSHUsername: ${SshUsername}
+                SSHPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
                 WazuhApiAdminUsername: ${WazuhApiAdminUsername}
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
@@ -921,6 +945,8 @@ Resources:
           files:
             /tmp/wazuh_cf_settings:
               content: !Sub |
+                SSHUsername: ${SshUsername}
+                SSHPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
                 WazuhServerPort: ${WazuhServerPort}
                 WazuhRegistrationPort: ${WazuhRegistrationPort}
@@ -988,6 +1014,9 @@ Outputs:
   ElasticWazuhVersion:
     Description: Elastic Stack and Wazuh versions
     Value: !Ref ElasticWazuhVersion
+  SshUsername:
+    Description: SSH Username
+    Value: !Ref SshUsername
   KibanaDNS:
     Description: The URL for the Kibana WUI and SSH access
     Value: !If [ParentDomainSpecified, !Ref KibanaRecordSet, '']
