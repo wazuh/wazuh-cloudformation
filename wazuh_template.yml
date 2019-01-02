@@ -216,6 +216,8 @@ Resources:
       Tags:
         - Key: Application
           Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: !Ref 'AWS::StackName'
   SubnetElastic:
     Type: 'AWS::EC2::Subnet'
     Properties:
@@ -227,6 +229,8 @@ Resources:
       Tags:
         - Key: Application
           Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-SubnetElastic'
   SubnetWazuh:
     Type: 'AWS::EC2::Subnet'
     Properties:
@@ -238,6 +242,8 @@ Resources:
       Tags:
         - Key: Application
           Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-SubnetWazuh'
 
   # Internet access
   InternetGateway:
@@ -246,6 +252,8 @@ Resources:
       Tags:
         - Key: Application
           Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-InternetGateway'
   GatewayToInternet:
     Type: 'AWS::EC2::VPCGatewayAttachment'
     Properties:
@@ -258,6 +266,8 @@ Resources:
       Tags:
         - Key: Application
           Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-PublicRouteTable'
   PublicRoute:
     Type: 'AWS::EC2::Route'
     DependsOn: GatewayToInternet
@@ -304,6 +314,9 @@ Resources:
             - SubnetConfig
             - WazuhVpc
             - CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-ElasticSecurityGroup'
   KibanaSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -325,6 +338,9 @@ Resources:
             - SubnetConfig
             - WazuhVpc
             - CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-KibanaSecurityGroup'
   WazuhSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -363,6 +379,9 @@ Resources:
             - SubnetConfig
             - WazuhVpc
             - CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-WazuhSecurityGroup'
 
   # Elasticsearch load balancer
   ElbElasticSecurityGroup:
@@ -378,6 +397,9 @@ Resources:
             - SubnetConfig
             - WazuhVpc
             - CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-ElbElasticSecurityGroup'
   ElbElastic:
     Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
     Properties:
@@ -418,6 +440,9 @@ Resources:
             - SubnetConfig
             - WazuhVpc
             - CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-ElbLogstashSecurityGroup'
   ElbLogstash:
     Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
     Properties:
@@ -455,6 +480,9 @@ Resources:
           FromPort: !Ref KibanaPort
           ToPort: !Ref KibanaPort
           CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-ElbKibanaSecurityGroup'
   ElbKibana:
     Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
     Properties:
@@ -496,6 +524,9 @@ Resources:
           FromPort: !Ref WazuhServerPort
           ToPort: !Ref WazuhServerPort
           CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-ElbWazuhSecurityGroup'
   ElbWazuh:
     Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
     Properties:
