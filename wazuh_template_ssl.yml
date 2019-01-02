@@ -57,6 +57,7 @@ Metadata:
           - KibanaPort
           - KibanaUsername
           - KibanaPassword
+          - SSLCertificateARN
       -
         Label:
           default: "Optional: Domain names"
@@ -181,6 +182,9 @@ Parameters:
     MaxLength: '48'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Only alphanumeric characters
+  SSLCertificateARN:
+    Description: 'Optional. Used for HTTPS access to WUI. Existent certificate, identified by its Amazon Resource Name (ARN).'
+    Type: String
 
   # Optional: Domain names
   ParentDomainName:
@@ -506,6 +510,7 @@ Resources:
           InstancePort: !Ref KibanaPort
           Protocol: HTTPS
           InstanceProtocol: HTTPS
+          SSLCertificateId: !Ref SSLCertificateARN
 
   # Wazuh server load balancer
   ElbWazuhSecurityGroup:
@@ -1007,3 +1012,6 @@ Outputs:
   KibanaInstanceType:
     Description: Kibana server instance type
     Value: !Ref KibanaInstanceType
+  SSLCertificateARN:
+    Description: SSL Certificate for Kibana access via HTTPS
+    Value: !If [SSLCertSpecified, !Ref SSLCertificateARN, '']
