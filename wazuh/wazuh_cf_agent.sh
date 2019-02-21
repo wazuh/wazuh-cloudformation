@@ -37,10 +37,6 @@ baseurl=https://packages.wazuh.com/${wazuh_major_version}.x/yum/
 protect=1
 EOF
 
-# Register agent using authd
-/var/ossec/bin/agent-auth -m ${master_ip} -A ubuntu-ag
-sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' /var/ossec/etc/ossec.conf
-
 # Installing wazuh-manager
 yum -y install wazuh-agent-${wazuh_version}
 chkconfig --add wazuh-agent
@@ -54,6 +50,10 @@ sed -i "s/<port>1514<\/port>/<port>${wazuh_server_port}<\/port>/" ${manager_conf
 
 # Setting password for agents registration
 echo "${wazuh_registration_password}" > /var/ossec/etc/authd.pass
+
+# Register agent using authd
+/var/ossec/bin/agent-auth -m ${master_ip} -A ubuntu-ag
+sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' /var/ossec/etc/ossec.conf
 
 # Restart wazuh-manager
 service wazuh-agent restart
