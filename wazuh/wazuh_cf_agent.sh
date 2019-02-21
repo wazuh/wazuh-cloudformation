@@ -1,8 +1,6 @@
 #!/bin/bash
-# Install Wazuh master instance using Cloudformation template
+# Install Wazuh agent using Cloudformation template
 # Support for Amazon Linux
-
-set -exf
 
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 master_ip=$(cat /tmp/wazuh_cf_settings | grep '^WazuhMasterIP:' | cut -d' ' -f2)
@@ -18,13 +16,6 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-# Creating SSH user
-adduser ${ssh_username}
-echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
-usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
-sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
-service sshd restart
-
 # Adding Wazuh repository
 wazuh_major_version=$(echo ${wazuh_version} | cut -d'.' -f1)
 cat > /etc/yum.repos.d/wazuh.repo << EOF
@@ -39,8 +30,6 @@ EOF
 
 # Installing wazuh-manager
 yum -y install wazuh-agent-${wazuh_version}
-chkconfig --add wazuh-agent
-agent_config="/var/ossec/etc/ossec.conf"
 
 # Change manager protocol to tcp, to be used by Amazon ELB
 sed -i "s/<protocol>udp<\/protocol>/<protocol>tcp<\/protocol>/" ${manager_config}
@@ -52,8 +41,8 @@ sed -i "s/<port>1514<\/port>/<port>${wazuh_server_port}<\/port>/" ${manager_conf
 echo "${wazuh_registration_password}" > /var/ossec/etc/authd.pass
 
 # Register agent using authd
-/var/ossec/bin/agent-auth -m ${master_ip} -A ubuntu-ag
+/var/ossec/bin/agent-auth -m ${master_ip} -A AmazonLinuxAgent
 sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' /var/ossec/etc/ossec.conf
 
 # Restart wazuh-manager
-service wazuh-agent restart
+/var/ossec/bin/ossec-control restart
