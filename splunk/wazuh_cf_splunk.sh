@@ -1,0 +1,51 @@
+#!/bin/bash
+# Install Splunk using Cloudformation template
+# Support for Amazon Linux
+
+
+set -exf
+
+ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
+ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
+splunk_port=$(cat /tmp/wazuh_cf_settings | grep '^SplunkPort:' | cut -d' ' -f2)
+splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^KibanaUsername:' | cut -d' ' -f2)
+splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^KibanaPassword:' | cut -d' ' -f2)
+eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet addr:' | cut -d: -f2  | cut -d' ' -f1)
+wazuh_master_ip=$(cat /tmp/wazuh_cf_settings | grep '^WazuhMasterIP:' | cut -d' ' -f2)
+wazuh_api_user=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminUsername:' | cut -d' ' -f2)
+wazuh_api_password=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminPassword:' | cut -d' ' -f2)
+wazuh_api_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiPort:' | cut -d' ' -f2)
+
+# Install net-tools, wget, git
+yum install net-tools wget git curl -y -q
+
+# download splunk
+wget -O splunk-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm 'https://www.splunk.com/bin/splunk/DownloadActivityServlet?architecture=x86_64&platform=linux&version=7.2.3&product=splunk&filename=splunk-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm&wget=true' &> /dev/null
+
+# install splunk
+yum install splunk-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm -y &> /dev/null
+
+# create credential file
+touch /opt/splunk/etc/system/local/user-seed.conf
+
+# add admin user
+cat > /opt/splunk/etc/system/local/user-seed.conf <<\EOF
+[user_info]
+USERNAME = ${splunk_username}
+PASSWORD = ${splunk_password}
+EOF
+
+# fetching configuration files
+curl -so /opt/splunk/etc/system/local/inputs.conf https://raw.githubusercontent.com/wazuh/wazuh/3.8/extensions/splunk/peer-inputs.conf &> /dev/null
+curl -so /opt/splunk/etc/system/local/indexes.conf https://raw.githubusercontent.com/wazuh/wazuh/3.8/extensions/splunk/peer-indexes.conf &> /dev/null
+
+# clone app
+git clone https://github.com/wazuh/wazuh-splunk &> /dev/null
+
+# install app
+cp -R ./wazuh-splunk/SplunkAppForWazuh/ /opt/splunk/etc/apps/
+
+# restart splunk
+/opt/splunk/bin/splunk start --accept-license --answer-yes --no-prompt &> /dev/null
+
+curl -XPOST http://${eth0_ip}:${splunk_port}/custom/SplunkAppForWazuh/manager/add_api?url=${wazuh_master_ip}&portapi=${wazuh_api_port}&userapi=${wazuh_api_user}&passapi=${wazuh_api_password}
