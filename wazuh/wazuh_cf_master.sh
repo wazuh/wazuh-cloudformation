@@ -17,6 +17,9 @@ wazuh_api_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiPort:' | cut -d' ' 
 wazuh_cluster_key=$(cat /tmp/wazuh_cf_settings | grep '^WazuhClusterKey:' | cut -d' ' -f2)
 elb_logstash=$(cat /tmp/wazuh_cf_settings | grep '^ElbLogstashDNS:' | cut -d' ' -f2)
 eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet addr:' | cut -d: -f2  | cut -d' ' -f1)
+splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^KibanaUsername:' | cut -d' ' -f2)
+splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^KibanaPassword:' | cut -d' ' -f2)
+splunk_ip=$(cat /tmp/wazuh_cf_settings | grep '^SplunkIP:' | cut -d' ' -f2)
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -170,3 +173,45 @@ service filebeat start
 # Disable repositories
 sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
 sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/wazuh.repo
+
+# Setting up Splunk Forwarder
+yum -y install wget
+# download splunkforwarder
+echo 'Downloading Splunk Forwarder...'
+wget -O splunkforwarder-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm 'https://www.splunk.com/bin/splunk/DownloadActivityServlet?architecture=x86_64&platform=linux&version=7.2.3&product=universalforwarder&filename=splunkforwarder-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm&wget=true' &> /dev/null
+
+# install splunkforwarder
+echo 'Installing Splunk Forwarder...'
+yum install splunkforwarder-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm -y -q &> /dev/null
+
+echo "Setting up Splunk forwarder..."
+# props.conf
+curl -so /opt/splunkforwarder/etc/system/local/props.conf https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/splunk/props.conf
+
+# inputs.conf
+curl -so /opt/splunkforwarder/etc/system/local/inputs.conf https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/splunk/inputs.conf
+
+# set hostname
+sed -i "s:MANAGER_HOSTNAME:$(hostname):g" /opt/splunkforwarder/etc/system/local/inputs.conf
+
+touch /opt/splunkforwarder/etc/system/local/user-seed.conf
+
+# create credential file
+touch /opt/splunk/etc/system/local/user-seed.conf
+
+# add admin user
+cat > /opt/splunk/etc/system/local/user-seed.conf <<\EOF
+[user_info]
+USERNAME = ${splunk_username}
+PASSWORD = ${splunk_password}
+EOF
+
+echo "Starting Splunk..."
+# accept license
+/opt/splunkforwarder/bin/splunk start --accept-license --answer-yes --auto-ports --no-prompt &> /dev/null
+
+# forward to index
+/opt/splunkforwarder/bin/splunk add forward-server ${splunk_ip}:9997 -auth admin:changeme &> /dev/null
+
+# restart service
+/opt/splunkforwarder/bin/splunk restart &> /dev/null
