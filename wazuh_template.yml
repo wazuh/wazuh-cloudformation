@@ -4,9 +4,10 @@ AWSTemplateFormatVersion: 2010-09-09
 Mappings:
   RegionMap:
     us-east-1:
-      HVM64: ami-0ff8a91507f77f867
+      - HVM64: ami-0ff8a91507f77f867
+      - HVMUBUNTU64: ami-0cb9ad1491169312b
     us-east-2:
-      HVM64: ami-0b59bfac6be064b78	
+      - HVM64: ami-0b59bfac6be064b78	
     us-west-1:
       HVM64: ami-0bdb828fd58c52235
     us-west-2:
@@ -1011,7 +1012,6 @@ Resources:
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                ElbSplunkDNS: !GetAtt ElbSplunk.DNSName
               mode: '000600'
               owner: root
               group: root
@@ -1300,23 +1300,82 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Designer':
         id: ac938975-e7f3-43cb-adf4-af2737efb52d
-  WazuhAgentEIP:
-    Type: 'AWS::EC2::EIP'
+
+
+  AgentInstance:
+    Type: 'AWS::EC2::Instance'
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          WazuhInstallationSet:
+            - WazuhFiles
+            - WazuhInstall
+        WazuhFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                WazuhServerPort: ${WazuhServerPort}
+                WazuhRegistrationPort: ${WazuhRegistrationPort}
+                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                ElbWazuhDNS: ${ElbWazuh.DNSName}
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_agent.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/deploying-agents/wazuh/wazuh_cf_agent.sh
+              mode: '000700'
+              owner: root
+              group: root
+        WazuhInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_agent.sh
+      'AWS::CloudFormation::Designer':
+        id: ebbc5d7f-ce5b-43f0-b5d3-04c0c4b93ced
     Properties:
-      Domain: vpc
+      ImageId: !FindInMap 
+        - RegionMap
+        - Ref: 'AWS::Region'
+        - HVMUBUNTU64
+      InstanceType: !Ref WazuhInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref WazuhAgentInstanceEth0
+          DeviceIndex: 0
+      Tags:
+        - Key: Name
+          Value: WazuhAgent
+      UserData:
+        'Fn::Base64': !Sub >
+          #!/bin/bash -xe
+
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource
+          AgentInstance --configsets WazuhInstallationSet --region
+          ${AWS::Region}
+
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource
+          AgentInstance --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+  WazuhAgentInstanceEth0:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref SubnetWazuh
+      GroupSet:
+        - !Ref WazuhSecurityGroup
     Metadata:
       'AWS::CloudFormation::Designer':
-        id: e226ca2b-8625-42de-a8d0-a65722633d16
-  WazuhAgentEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref WazuhAgentInstanceEth0
-      AllocationId: !GetAtt 
-        - WazuhAgentEIP
-        - AllocationId
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: b6d63941-d79d-4a70-be12-170faa500e2d
+        id: ac938975-e7f3-43cb-adf4-af2737efb52d
 
 Outputs:
   ElasticWazuhVersion:
