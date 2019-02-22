@@ -664,7 +664,7 @@ Resources:
           InstancePort: 22 
           Protocol: TCP
           InstanceProtocol: TCP
-        - LoadBalancerPort: 443
+        - LoadBalancerPort: 8000
           InstancePort: 8000
           Protocol: TCP
           InstanceProtocol: TCP
