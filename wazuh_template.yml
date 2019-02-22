@@ -1251,21 +1251,21 @@ Resources:
               group: root
             /tmp/wazuh_cf_agent.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/deploying-agents/wazuh/wazuh_cf_agent.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/deploying-agents/wazuh/wazuh_cf_agent_ubuntu.sh
               mode: '000700'
               owner: root
               group: root
         WazuhInstall:
           commands:
             01_RunInstallationScript:
-              command: /tmp/wazuh_cf_agent.sh
+              command: /tmp/wazuh_cf_agent_ubuntu.sh
       'AWS::CloudFormation::Designer':
         id: ebbc5d7f-ce5b-43f0-b5d3-04c0c4b93ced
     Properties:
       ImageId: !FindInMap 
         - RegionMap
         - Ref: 'AWS::Region'
-        - HVM64
+        - HVMUBUNTU64
       InstanceType: !Ref WazuhInstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
@@ -1302,7 +1302,7 @@ Resources:
         id: ac938975-e7f3-43cb-adf4-af2737efb52d
 
 
-  AgentInstance:
+  AgentUbuntuInstance:
     Type: 'AWS::EC2::Instance'
     Metadata:
       'AWS::CloudFormation::Init':
@@ -1351,23 +1351,23 @@ Resources:
             VolumeSize: 200
             VolumeType: gp2
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref WazuhAgentInstanceEth0
+        - NetworkInterfaceId: !Ref WazuhAgentUbuntuInstanceEth0
           DeviceIndex: 0
       Tags:
         - Key: Name
-          Value: WazuhAgent
+          Value: WazuhAgentUbuntu
       UserData:
         'Fn::Base64': !Sub >
           #!/bin/bash -xe
 
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource
-          AgentInstance --configsets WazuhInstallationSet --region
+          AgentUbuntuInstance --configsets WazuhInstallationSet --region
           ${AWS::Region}
 
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource
-          AgentInstance --region ${AWS::Region}
+          AgentUbuntuInstance --region ${AWS::Region}
     DependsOn: GatewayToInternet
-  WazuhAgentInstanceEth0:
+  WazuhAgentUbuntuInstanceEth0:
     Type: 'AWS::EC2::NetworkInterface'
     Properties:
       SubnetId: !Ref SubnetWazuh
