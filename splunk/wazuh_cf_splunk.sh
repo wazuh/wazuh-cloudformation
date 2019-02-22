@@ -25,15 +25,10 @@ wget -O splunk-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm 'https://www.splunk.com/b
 # install splunk
 yum install splunk-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm -y &> /dev/null
 
-# create credential file
-touch /opt/splunk/etc/system/local/user-seed.conf
-
 # add admin user
-cat > /opt/splunk/etc/system/local/user-seed.conf <<\EOF
-[user_info]
-USERNAME = ${splunk_username}
-PASSWORD = ${splunk_password}
-EOF
+echo "[user_info]" > /opt/splunk/etc/system/local/user-seed.conf
+echo "USERNAME = ${splunk_username}" >> /opt/splunk/etc/system/local/user-seed.conf
+echo "PASSWORD = ${splunk_password}" >> /opt/splunk/etc/system/local/user-seed.conf
 
 # fetching configuration files
 curl -so /opt/splunk/etc/system/local/inputs.conf https://raw.githubusercontent.com/wazuh/wazuh/3.8/extensions/splunk/peer-inputs.conf &> /dev/null
