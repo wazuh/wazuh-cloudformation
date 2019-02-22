@@ -130,8 +130,9 @@ Parameters:
       - 6.5.2_3.7.1
       - 6.5.3_3.7.2
       - 6.5.4_3.7.2
+      - 6.6.1_3.8.2
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
-    Default: 6.5.4_3.7.2
+    Default: 6.6.1_3.8.2
     Description: Elastic and Wazuh versions to be installed
     Type: String
   WazuhInstanceType:
@@ -312,7 +313,7 @@ Resources:
   SubnetSplunk:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      VpcId: !Ref SplunkVpc
+      VpcId: !Ref WazuhVpc
       CidrBlock: !FindInMap
         - SubnetConfig
         - SubnetSplunk
@@ -753,9 +754,8 @@ Resources:
         DNSName: !GetAtt ElbSplunk.DNSName
   
   
-        # IAM role and profile
-  
-        InstanceRole:
+  # IAM role and profile
+  InstanceRole:
     Type: 'AWS::IAM::Role'
     Properties:
       AssumeRolePolicyDocument:
@@ -1011,7 +1011,7 @@ Resources:
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                ElbSplunkDNS: ${ElbSplunk.DNSName}
+                ElbSplunkDNS: !GetAtt ElbSplunk.DNSName
               mode: '000600'
               owner: root
               group: root
@@ -1092,7 +1092,7 @@ Resources:
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
                 ElbLogstashDNS: ${ElbLogstash.DNSName}
-                SplunkIP: ${SplunkInstance.PrivateIp}
+                SplunkIP: !GetAtt SplunkInstance.PrivateIp
 
               mode: '000600'
               owner: root
