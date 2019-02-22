@@ -1,7 +1,7 @@
 #!/bin/bash
 # Install Wazuh agent using Cloudformation template
 # Support for Amazon Linux
-
+agent_name=$(cat /tmp/wazuh_cf_settings | grep '^agent_name:' | cut -d' ' -f2)
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 master_ip=$(cat /tmp/wazuh_cf_settings | grep '^WazuhMasterIP:' | cut -d' ' -f2)
 elb_wazuh_dns=$(cat /tmp/wazuh_cf_settings | grep '^ElbWazuhDNS:' | cut -d' ' -f2)
@@ -41,7 +41,7 @@ sed -i "s/<port>1514<\/port>/<port>${wazuh_server_port}<\/port>/" ${manager_conf
 echo "${wazuh_registration_password}" > /var/ossec/etc/authd.pass
 
 # Register agent using authd
-/var/ossec/bin/agent-auth -m ${master_ip} -A AmazonLinuxAgent
+/var/ossec/bin/agent-auth -m ${master_ip} -A ${agent_name}
 sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' /var/ossec/etc/ossec.conf
 
 # Restart wazuh-manager
