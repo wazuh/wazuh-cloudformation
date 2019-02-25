@@ -4,10 +4,10 @@ AWSTemplateFormatVersion: 2010-09-09
 Mappings:
   RegionMap:
     us-east-1:
-      - HVM64: ami-0ff8a91507f77f867
-      - HVMUBUNTU64: ami-0cb9ad1491169312b
+      HVM64: ami-0ff8a91507f77f867
+      HVMUBUNTU64: ami-0ac019f4fcb7cb7e6
     us-east-2:
-      - HVM64: ami-0b59bfac6be064b78	
+      HVM64: ami-0b59bfac6be064b78
     us-west-1:
       HVM64: ami-0bdb828fd58c52235
     us-west-2:
@@ -15,7 +15,7 @@ Mappings:
     ca-central-1:
       HVM64: ami-0b18956f
     eu-central-1:
-      HVM64: ami-0233214e13e500f77	
+      HVM64: ami-0233214e13e500f77
     eu-west-1:
       HVM64: ami-047bb4163c506cd98
     eu-west-2:
@@ -43,8 +43,6 @@ Mappings:
       CIDR: 10.0.2.0/24
     SubnetSplunk:
       CIDR: 10.0.3.0/24
-
-
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -1018,7 +1016,7 @@ Resources:
 
             /tmp/wazuh_cf_splunk.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/deploying-splunk/splunk/wazuh_cf_splunk.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/splunk/wazuh_cf_splunk.sh
               mode: '000700'
               owner: root
               group: root
@@ -1251,21 +1249,21 @@ Resources:
               group: root
             /tmp/wazuh_cf_agent.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/deploying-agents/wazuh/wazuh_cf_agent_ubuntu.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_cf_agent.sh
               mode: '000700'
               owner: root
               group: root
         WazuhInstall:
           commands:
             01_RunInstallationScript:
-              command: /tmp/wazuh_cf_agent_ubuntu.sh
+              command: /tmp/wazuh_cf_agent.sh
       'AWS::CloudFormation::Designer':
         id: ebbc5d7f-ce5b-43f0-b5d3-04c0c4b93ced
     Properties:
       ImageId: !FindInMap 
         - RegionMap
         - Ref: 'AWS::Region'
-        - HVMUBUNTU64
+        - HVM64
       InstanceType: !Ref WazuhInstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
@@ -1300,6 +1298,23 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Designer':
         id: ac938975-e7f3-43cb-adf4-af2737efb52d
+  WazuhAgentEIP:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e226ca2b-8625-42de-a8d0-a65722633d16
+  WazuhAgentEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref WazuhAgentInstanceEth0
+      AllocationId: !GetAtt 
+        - WazuhAgentEIP
+        - AllocationId
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: b6d63941-d79d-4a70-be12-170faa500e2d
 
 
   AgentUbuntuInstance:
@@ -1318,7 +1333,6 @@ Resources:
                 SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
                 WazuhServerPort: ${WazuhServerPort}
-                WazuhRegistrationPort: ${WazuhRegistrationPort}
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
                 ElbWazuhDNS: ${ElbWazuh.DNSName}
@@ -1327,14 +1341,14 @@ Resources:
               group: root
             /tmp/wazuh_cf_agent.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/deploying-agents/wazuh/wazuh_cf_agent.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_cf_agent_ubuntu.sh
               mode: '000700'
               owner: root
               group: root
         WazuhInstall:
           commands:
             01_RunInstallationScript:
-              command: /tmp/wazuh_cf_agent.sh
+              command: /tmp/wazuh_cf_agent_ubuntu.sh
       'AWS::CloudFormation::Designer':
         id: ebbc5d7f-ce5b-43f0-b5d3-04c0c4b93ced
     Properties:
@@ -1376,6 +1390,23 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Designer':
         id: ac938975-e7f3-43cb-adf4-af2737efb52d
+  WazuhAgentUbuntuEIP:
+    Type: 'AWS::EC2::EIP'
+    Properties:
+      Domain: vpc
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e226ca2b-8625-42de-a8d0-a65722633d16
+  WazuhAgentUbuntuEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref WazuhAgentUbuntuInstanceEth0
+      AllocationId: !GetAtt 
+        - WazuhAgentUbuntuEIP
+        - AllocationId
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: b6d63941-d79d-4a70-be12-170faa500e2d
 
 Outputs:
   ElasticWazuhVersion:
