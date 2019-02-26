@@ -29,7 +29,7 @@ protect=1
 EOF
 
 # Installing wazuh-manager
-yum -y install wazuh-agent-${wazuh_version}
+yum -y install wazuh-agent
 
 # Change manager protocol to tcp, to be used by Amazon ELB
 sed -i "s/<protocol>udp<\/protocol>/<protocol>tcp<\/protocol>/" ${manager_config}

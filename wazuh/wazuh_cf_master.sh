@@ -61,7 +61,7 @@ type=rpm-md
 EOF
 
 # Installing wazuh-manager
-yum -y install wazuh-manager-${wazuh_version}
+yum -y install wazuh-manager
 chkconfig --add wazuh-manager
 manager_config="/var/ossec/etc/ossec.conf"
 
@@ -145,7 +145,7 @@ curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
 yum -y install nodejs
 
 # Installing wazuh-api
-yum -y install wazuh-api-${wazuh_version}
+yum -y install wazuh-api
 chkconfig --add wazuh-api
 
 # Configuring Wazuh API user and password
