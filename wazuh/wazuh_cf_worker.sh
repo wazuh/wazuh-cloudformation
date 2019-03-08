@@ -111,4 +111,4 @@ service filebeat start
 
 # Disable repositories
 sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
-sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/wazuh.repo
+sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/wazuh_pre.repo
