@@ -16,10 +16,8 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # Adding Wazuh repository
-wazuh_major_version=$(echo ${wazuh_version} | cut -d'.' -f1)
-
-curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add -
-echo "deb https://packages.wazuh.com/${wazuh_major_version}.x/apt/ stable main" | tee /etc/apt/sources.list.d/wazuh.list
+curl -s https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH | apt-key add -
+echo "deb https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/apt/ unstable main" | tee -a /etc/apt/sources.list.d/wazuh_pre_release.list
 
 # Install Wazuh agent
 apt-get update

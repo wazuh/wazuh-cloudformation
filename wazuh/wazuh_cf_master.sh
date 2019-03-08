@@ -35,16 +35,7 @@ sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/s
 service sshd restart
 
 # Adding Wazuh repository
-wazuh_major_version=$(echo ${wazuh_version} | cut -d'.' -f1)
-cat > /etc/yum.repos.d/wazuh.repo << EOF
-[wazuh_repo]
-gpgcheck=1
-gpgkey=https://packages.wazuh.com/key/GPG-KEY-WAZUH
-enabled=1
-name=Wazuh repository
-baseurl=https://packages.wazuh.com/${wazuh_major_version}.x/yum/
-protect=1
-EOF
+echo -e '[wazuh_pre_release]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_pre.repo
 
 # Configuring Elastic repository
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
