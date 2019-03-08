@@ -1,5 +1,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 
+Description: >
+  Devel-demo testing environment
 
 Mappings:
   RegionMap:
@@ -130,8 +132,9 @@ Parameters:
       - 6.5.3_3.7.2
       - 6.5.4_3.7.2
       - 6.6.1_3.8.2
+      - 6.6.1_3.9.0
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
-    Default: 6.6.1_3.8.2
+    Default: 6.6.1_3.9.0
     Description: Elastic and Wazuh versions to be installed
     Type: String
   WazuhInstanceType:
