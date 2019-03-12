@@ -111,7 +111,7 @@ service elasticsearch start
 sleep 60
 
 # Loading and tuning Wazuh alerts template
-url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v${wazuh_version}/extensions/elasticsearch/wazuh-elastic6-template-alerts.json"
+url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/elasticsearch/wazuh-elastic6-template-alerts.json"
 alerts_template="/tmp/wazuh-elastic6-template-alerts.json"
 curl -Lo ${alerts_template} ${url_alerts_template}
 sed -i 's/"index.refresh_interval": "5s"/"index.refresh_interval": "5s",/' ${alerts_template}
@@ -122,7 +122,7 @@ curl -XDELETE "http://${eth0_ip}:9200/wazuh-alerts-*"
 
 # Inserting Wazuh alert sample
 alert_sample="/tmp/alert_sample.json"
-curl -Lo ${alert_sample} "https://raw.githubusercontent.com/wazuh/wazuh/v${wazuh_version}/extensions/elasticsearch/alert_sample.json"
+curl -Lo ${alert_sample} "https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/elasticsearch/alert_sample.json"
 curl -XPUT "http://${eth0_ip}:9200/wazuh-alerts-${wazuh_major}.x-"`date +%Y.%m.%d`"/wazuh/sample" -H 'Content-Type: application/json' -d@${alert_sample}
 rm -f ${alert_sample}
 
@@ -153,7 +153,7 @@ NODE_OPTIONS="--max-old-space-size=4096"
 EOF
 
 # Installing Wazuh plugin for Kibana
-plugin_url="https://packages.wazuh.com/wazuhapp/wazuhapp-${wazuh_version}_${elastic_version}.zip"
+plugin_url="https://packages.wazuh.com/3.x/wazuhapp-dev/wazuhapp-3.9.0_6.6.1-beta.zip"
 NODE_OPTIONS="--max-old-space-size=4096" /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
 cat >> /usr/share/kibana/plugins/wazuh/config.yml << 'EOF'
 wazuh.shards: 1
