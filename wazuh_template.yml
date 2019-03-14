@@ -6,12 +6,12 @@ Description: >
 Mappings:
   RegionMap:
     us-west-1:
-      HVM64: ami-0ff8a91507f77f867
-      HVMUBUNTU64: ami-0ac019f4fcb7cb7e6
-      HVMCENTOS7: ami-9887c6e7
-      HVMREDHAT7: ami-011b3ccf1bd6db744
-      HVMDEBIAN: ami-0bd9223868b4778d7
-      HVMWINDOWS: ami-0c34e56c5b17e933d
+      HVM64: ami-0019ef04ac50be30f
+      HVMUBUNTU64: ami-06397100adf427136
+      HVMCENTOS7: ami-074e2d6769f445be5
+      HVMREDHAT7: ami-18726478
+      HVMDEBIAN: ami-0343ae47
+      HVMWINDOWS: ami-0811910c9eeebb49b
   SubnetConfig:
     WazuhVpc:
       CIDR: 10.0.0.0/16
@@ -62,12 +62,6 @@ Metadata:
           - SplunkPort
           - SplunkUsername
           - SplunkPassword
-      -
-        Label:
-          default: "Optional: Domain names"
-        Parameters:
-          - ParentDomainName
-          - SubDomainName
 
 Parameters:
 
@@ -78,6 +72,8 @@ Parameters:
   KeyPairName:
     Description: Existing EC2 key pair for SSH access
     Type: 'AWS::EC2::KeyPair::KeyName'
+  
+
   SshUsername:
     Default: wazuh
     Description: SSH username
@@ -215,10 +211,6 @@ Parameters:
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Only alphanumeric characters
 
-Conditions:
-  HasZone: !Not [!Equals [!Ref ParentDomainName, '']]
-  ParentDomainSpecified: !Not [!Equals [!Ref ParentDomainName, '']]
-
 
 Resources:
 
@@ -292,7 +284,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Elasticsearch security group
-      VpcId: vpc-921e61fa
+      VpcId: !Ref WazuhVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -313,7 +305,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Kibana security group
-      VpcId: vpc-921e61fa
+      VpcId: !Ref WazuhVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -334,7 +326,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Splunk security group
-      VpcId: vpc-921e61fa
+      VpcId: !Ref WazuhVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -358,7 +350,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: ELB Elasticsearch security group
-      VpcId: vpc-921e61fa
+      VpcId: !Ref WazuhVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 9200
@@ -370,7 +362,7 @@ Resources:
   ElbElastic:
     Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
     Properties:
-      LoadBalancerName: !Sub '${AWS::StackName}-demo-devel-elasticsearch-lb'
+      LoadBalancerName: !Sub '${AWS::StackName}-demodevel-elk'
       Scheme: internal
       Subnets:
         - !Ref SubnetWazuh
@@ -398,7 +390,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: ELB Logstash security group
-      VpcId: vpc-921e61fa
+      VpcId: !Ref WazuhVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 5000
@@ -410,7 +402,7 @@ Resources:
   ElbLogstash:
     Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
     Properties:
-      LoadBalancerName: !Sub '${AWS::StackName}-demo-devel-logstash-lb'
+      LoadBalancerName: !Sub '${AWS::StackName}-demodevel-logstash'
       Scheme: internal
       Subnets:
         - !Ref SubnetWazuh
@@ -434,7 +426,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: ELB Kibana security group
-      VpcId: vpc-921e61fa
+      VpcId: !Ref WazuhVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -450,7 +442,7 @@ Resources:
   ElbKibana:
     Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
     Properties:
-      LoadBalancerName: !Sub '${AWS::StackName}-demo-devel-kibana-lb'
+      LoadBalancerName: !Sub '${AWS::StackName}-demodevel-kibana'
       Scheme: internet-facing
       Subnets:
         - !Ref SubnetWazuh
@@ -481,7 +473,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: ELB Splunk security group
-      VpcId: vpc-921e61fa
+      VpcId: !Ref WazuhVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -497,7 +489,7 @@ Resources:
   ElbSplunk:
     Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
     Properties:
-      LoadBalancerName: !Sub '${AWS::StackName}-demo-devel-splunk-lb'
+      LoadBalancerName: !Sub '${AWS::StackName}-demodevel-splunklb'
       Scheme: internet-facing
       Subnets:
         - !Ref SubnetWazuh
@@ -522,7 +514,44 @@ Resources:
           InstancePort: 8000
           Protocol: TCP
           InstanceProtocol: TCP
-
+  WazuhSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Wazuh security group
+      VpcId: !Ref WazuhVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: !Ref WazuhServerPort
+          ToPort: !Ref WazuhServerPort
+          CidrIp: !FindInMap
+            - SubnetConfig
+            - WazuhVpc
+            - CIDR
+        - IpProtocol: tcp
+          FromPort: !Ref WazuhRegistrationPort
+          ToPort: !Ref WazuhRegistrationPort
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 1516
+          ToPort: 1516
+          CidrIp: !FindInMap
+            - SubnetConfig
+            - WazuhVpc
+            - CIDR
+        - IpProtocol: tcp
+          FromPort: !Ref WazuhApiPort
+          ToPort: !Ref WazuhApiPort
+          CidrIp: !FindInMap
+            - SubnetConfig
+            - WazuhVpc
+            - CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-WazuhSecurityGroup'
   # Wazuh server load balancer
   ElbWazuhSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -540,7 +569,7 @@ Resources:
   ElbWazuh:
     Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
     Properties:
-      LoadBalancerName: !Sub '${AWS::StackName}-demo-devel-wazuh-lb'
+      LoadBalancerName: !Sub '${AWS::StackName}-demodevel-wazuhlb'
       Scheme: internet-facing
       Subnets:
         - !Ref SubnetWazuh
@@ -774,6 +803,8 @@ Resources:
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref KibanaInstanceEth0
           DeviceIndex: 0
+          
+
       Tags:
         - Key: Name
           Value: demo-devel-kibana
@@ -788,6 +819,7 @@ Resources:
     Properties:
       SubnetId: !Ref SubnetWazuh
       GroupSet: [!Ref 'KibanaSecurityGroup']
+      
 
   # Splunk instance
   SplunkInstance:
@@ -842,6 +874,8 @@ Resources:
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref SplunkInstanceEth0
           DeviceIndex: 0
+          
+
       Tags:
         - Key: Name
           Value: demo-devel-splunk
@@ -912,6 +946,8 @@ Resources:
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref WazuhMasterInstanceEth0
           DeviceIndex: 0
+          
+
       Tags:
         - Key: Name
           Value: demo-devel-master
@@ -978,6 +1014,8 @@ Resources:
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref WazuhWorkerInstanceEth0
           DeviceIndex: 0
+          
+
       Tags:
         - Key: Name
           Value: demo-devel-worker
@@ -1045,6 +1083,8 @@ Resources:
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref WazuhAgentInstanceEth0
           DeviceIndex: 0
+          
+
       Tags:
         - Key: Name
           Value: demo-devel-agent-amazonlinux
@@ -1070,81 +1110,6 @@ Resources:
         id: ac938975-e7f3-43cb-adf4-af2737efb52d
 
   
-  AgentInstanceCentos:
-    Type: 'AWS::EC2::Instance'
-    Metadata:
-      'AWS::CloudFormation::Init':
-        configSets:
-          WazuhInstallationSet:
-            - WazuhFiles
-            - WazuhInstall
-        WazuhFiles:
-          files:
-            /tmp/wazuh_cf_settings:
-              content: !Sub |
-                SshUsername: ${SshUsername}
-                SshPassword: ${SshPassword}
-                Elastic_Wazuh: ${ElasticWazuhVersion}
-                WazuhServerPort: ${WazuhServerPort}
-                WazuhRegistrationPort: ${WazuhRegistrationPort}
-                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
-                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                ElbWazuhDNS: ${ElbWazuh.DNSName}
-                AgentName: Centos7
-              mode: '000600'
-              owner: root
-              group: root
-            /tmp/wazuh_cf_agent.sh:
-              source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_cf_agent.sh
-              mode: '000700'
-              owner: root
-              group: root
-        WazuhInstall:
-          commands:
-            01_RunInstallationScript:
-              command: /tmp/wazuh_cf_agent.sh
-      'AWS::CloudFormation::Designer':
-        id: ebbc5d7f-ce5b-43f0-b5d3-04c0c4b93ced
-    Properties:
-      ImageId: !FindInMap 
-        - RegionMap
-        - Ref: 'AWS::Region'
-        - HVMCENTOS7
-      InstanceType: !Ref WazuhInstanceType
-      IamInstanceProfile: !Ref InstanceProfile
-      KeyName: !Ref KeyPairName
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeSize: 200
-            VolumeType: gp2
-      NetworkInterfaces:
-        - NetworkInterfaceId: !Ref WazuhAgentInstanceCentosEth0
-          DeviceIndex: 0
-      Tags:
-        - Key: Name
-          Value: demo-devel-agent-amazonlinux
-      UserData:
-        'Fn::Base64': !Sub >
-          #!/bin/bash -xe
-
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource
-          AgentInstance --configsets WazuhInstallationSet --region
-          ${AWS::Region}
-
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource
-          AgentInstance --region ${AWS::Region}
-    DependsOn: GatewayToInternet
-  WazuhAgentInstanceCentosEth0:
-    Type: 'AWS::EC2::NetworkInterface'
-    Properties:
-      SubnetId: !Ref SubnetWazuh
-      GroupSet:
-        - !Ref WazuhSecurityGroup
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: ac938975-e7f3-43cb-adf4-af2737efb52d
 
   AgentInstanceRedhat:
     Type: 'AWS::EC2::Instance'
@@ -1198,6 +1163,8 @@ Resources:
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref WazuhAgentInstanceRedhatEth0
           DeviceIndex: 0
+          
+
       Tags:
         - Key: Name
           Value: demo-devel-agent-amazonlinux
@@ -1224,6 +1191,83 @@ Resources:
 
   
 
+  AgentInstanceCentos:
+    Type: 'AWS::EC2::Instance'
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          WazuhInstallationSet:
+            - WazuhFiles
+            - WazuhInstall
+        WazuhFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                WazuhServerPort: ${WazuhServerPort}
+                WazuhRegistrationPort: ${WazuhRegistrationPort}
+                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                ElbWazuhDNS: ${ElbWazuh.DNSName}
+                AgentName: Centos7
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_agent.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_cf_agent.sh
+              mode: '000700'
+              owner: root
+              group: root
+        WazuhInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_agent.sh
+      'AWS::CloudFormation::Designer':
+        id: ebbc5d7f-ce5b-43f0-b5d3-04c0c4b93ced
+    Properties:
+      ImageId: !FindInMap 
+        - RegionMap
+        - Ref: 'AWS::Region'
+        - HVMCENTOS7
+      InstanceType: !Ref WazuhInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref WazuhAgentInstanceCentosEth0
+          DeviceIndex: 0
+          
+
+      Tags:
+        - Key: Name
+          Value: demo-devel-agent-amazonlinux
+      UserData:
+        'Fn::Base64': !Sub >
+          #!/bin/bash -xe
+
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource
+          AgentInstance --configsets WazuhInstallationSet --region
+          ${AWS::Region}
+
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource
+          AgentInstance --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+  WazuhAgentInstanceCentosEth0:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref SubnetWazuh
+      GroupSet:
+        - !Ref WazuhSecurityGroup
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: ac938975-e7f3-43cb-adf4-af2737efb52d
 
 
 
@@ -1278,6 +1322,8 @@ Resources:
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref WazuhAgentUbuntuInstanceEth0
           DeviceIndex: 0
+          
+
       Tags:
         - Key: Name
           Value: demo-devel-agent-ubuntu
@@ -1355,6 +1401,8 @@ Resources:
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref WazuhAgentDebianInstanceEth0
           DeviceIndex: 0
+          
+
       Tags:
         - Key: Name
           Value: demo-devel-agent-debian
@@ -1392,9 +1440,6 @@ Outputs:
   SshUsername:
     Description: SSH Username
     Value: !Ref SshUsername
-  KibanaDNS:
-    Description: The URL for the Kibana WUI and SSH access
-    Value: !If [ParentDomainSpecified, !Ref KibanaRecordSet, '']
   KibanaPort: 
     Description: Port number for Kibana WUI access
     Value: !Ref KibanaPort
