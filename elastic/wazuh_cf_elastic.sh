@@ -117,7 +117,7 @@ service elasticsearch start
 yum -y install logstash-${elastic_version}
 
 #Wazuh configuration for Logstash
-curl -so /etc/logstash/conf.d/01-wazuh.conf "https://raw.githubusercontent.com/wazuh/wazuh/v${wazuh_version}/extensions/logstash/01-wazuh-remote.conf"
+curl -so /etc/logstash/conf.d/01-wazuh.conf "https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/logstash/01-wazuh-remote.conf"
 sed -i "s/localhost:9200/${eth0_ip}:9200/" /etc/logstash/conf.d/01-wazuh.conf
 
 # Creating data and logs directories

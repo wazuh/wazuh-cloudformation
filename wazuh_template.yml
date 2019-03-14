@@ -139,29 +139,23 @@ Parameters:
     Type: String
   WazuhInstanceType:
     AllowedValues:
-      - m5.large
-      - m5.xlarge
-      - m5.2xlarge
+      - t2.medium
     ConstraintDescription: Must contain valid instance type
-    Default: m5.large
+    Default: t2.medium
     Description: Type of EC2 instance for Wazuh instance
     Type: String
   IndexerType:
     AllowedValues:
-      - i3.large
-      - i3.xlarge
-      - i3.2xlarge
+      - t2.medium
     ConstraintDescription: Must contain valid instance type
-    Default: i3.large
+    Default: t2.medium
     Description: Type of EC2 instance for Elastic/Splunk instance
     Type: String
   KibanaInstanceType:
     AllowedValues:
-      - m5.large
-      - m5.xlarge
-      - m5.2xlarge
+      - t2.medium
     ConstraintDescription: Must contain valid instance type
-    Default: m5.large
+    Default: t2.medium
     Description: Type of EC2 instance for Kibana instance
     Type: String
 
@@ -332,7 +326,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Elasticsearch security group
-      VpcId: !Ref WazuhVpc
+      VpcId: vpc-921e61fa
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -341,17 +335,11 @@ Resources:
         - IpProtocol: tcp
           FromPort: 5000
           ToPort: 5000
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
+          CidrIp: 10.0.0.0/24
         - IpProtocol: tcp
           FromPort: 9200
           ToPort: 9400
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
+          CidrIp: 10.0.0.0/24
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-ElasticSecurityGroup'
@@ -359,7 +347,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Kibana security group
-      VpcId: !Ref WazuhVpc
+      VpcId: vpc-921e61fa
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -372,56 +360,15 @@ Resources:
         - IpProtocol: tcp
           FromPort: 9200
           ToPort: 9400
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
+          CidrIp: 10.0.0.0/24
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-KibanaSecurityGroup'
-  WazuhSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupDescription: Wazuh security group
-      VpcId: !Ref WazuhVpc
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: !Ref WazuhServerPort
-          ToPort: !Ref WazuhServerPort
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
-        - IpProtocol: tcp
-          FromPort: !Ref WazuhRegistrationPort
-          ToPort: !Ref WazuhRegistrationPort
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 1516
-          ToPort: 1516
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
-        - IpProtocol: tcp
-          FromPort: !Ref WazuhApiPort
-          ToPort: !Ref WazuhApiPort
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}-WazuhSecurityGroup'
   SplunkSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Splunk security group
-      VpcId: !Ref WazuhVpc
+      VpcId: vpc-921e61fa
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -434,10 +381,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 9997
           ToPort: 9997
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
+          CidrIp: 10.0.0.0/24
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-SplunkSecurityGroup'
@@ -448,15 +392,12 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: ELB Elasticsearch security group
-      VpcId: !Ref WazuhVpc
+      VpcId: vpc-921e61fa
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 9200
           ToPort: 9200
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
+          CidrIp: 10.0.0.0/24
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-ElbElasticSecurityGroup'
@@ -491,15 +432,12 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: ELB Logstash security group
-      VpcId: !Ref WazuhVpc
+      VpcId: vpc-921e61fa
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 5000
           ToPort: 5000
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
+          CidrIp: 10.0.0.0/24
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-ElbLogstashSecurityGroup'
@@ -530,7 +468,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: ELB Kibana security group
-      VpcId: !Ref WazuhVpc
+      VpcId: vpc-921e61fa
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -577,7 +515,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: ELB Splunk security group
-      VpcId: !Ref WazuhVpc
+      VpcId: vpc-921e61fa
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -796,7 +734,7 @@ Resources:
           #!/bin/bash -xe
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticLaunchConfiguration --configsets ElasticInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticLaunchConfiguration --region ${AWS::Region}
-    DependsOn: GatewayToInternet
+
 
   # Kibana instance
   KibanaInstance:
@@ -817,10 +755,10 @@ Resources:
                 KibanaPort: ${KibanaPort}
                 KibanaUsername: ${KibanaUsername}
                 KibanaPassword: ${KibanaPassword}
-                WazuhApiAdminUsername: ${WazuhApiAdminUsername}
-                WazuhApiAdminPassword: ${WazuhApiAdminPassword}
-                WazuhApiPort: ${WazuhApiPort}
-                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                WazuhApiAdminUsername: foo
+                WazuhApiAdminPassword: bar
+                WazuhApiPort: 55000
+                WazuhMasterIP: 10.0.0.83
                 ElbElasticDNS: ${ElbElastic.DNSName}
                 ElbLogstashDNS: ${ElbLogstash.DNSName}
               mode: '000600'
@@ -878,7 +816,7 @@ Resources:
           #!/bin/bash -xe
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource KibanaInstance --configsets KibanaInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Kibana --region ${AWS::Region}
-    DependsOn: GatewayToInternet
+
   KibanaInstanceEth0:
     Type: AWS::EC2::NetworkInterface
     Properties:
@@ -904,10 +842,10 @@ Resources:
                 SplunkPort: ${SplunkPort}
                 SplunkUsername: ${SplunkUsername}
                 SplunkPassword: ${SplunkPassword}
-                WazuhApiAdminUsername: ${WazuhApiAdminUsername}
-                WazuhApiAdminPassword: ${WazuhApiAdminPassword}
-                WazuhApiPort: ${WazuhApiPort}
-                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                WazuhApiAdminUsername: foo
+                WazuhApiAdminPassword: bar
+                WazuhApiPort: 55000
+                WazuhMasterIP: 10.0.0.83
               mode: '000600'
               owner: root
               group: root
@@ -946,7 +884,7 @@ Resources:
           #!/bin/bash -xe
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource SplunkInstance --configsets SplunkInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Splunk --region ${AWS::Region}
-    DependsOn: GatewayToInternet
+
   SplunkInstanceEth0:
     Type: AWS::EC2::NetworkInterface
     Properties:
@@ -1254,30 +1192,9 @@ Outputs:
   KibanaUsername:
     Description: Username for Kibana WUI
     Value: !Ref KibanaUsername
-  WazuhServerDNS:
-    Description: The DNS name for agents communication with Wazuh server
-    Value: !If [ParentDomainSpecified, !Ref WazuhDataRecordSet, '']
-  WazuhServerPort:
-    Description: Port number for agents communication with Wazuh server
-    Value: !Ref WazuhServerPort
-  WazuhRegistrationPort:
-    Description: Port number for agents registration with Wazuh server
-    Value: !Ref WazuhRegistrationPort
-  WazuhRegistrationDNS:
-    Description: The DNS name for agents registration with Wazuh server
-    Value: !If [ParentDomainSpecified, !Ref WazuhRegistrationRecordSet, '']
-  WazuhApiPort:
-    Description: Port number used by Wazuh API
-    Value: !Ref WazuhApiPort
-  WazuhApiAdminUsername:
-    Description: Admin username for Wazuh API
-    Value: !Ref WazuhApiAdminUsername
   KeyPairName:
     Description: Key pair used for SSH access
     Value: !Ref KeyPairName
-  WazuhInstanceType:
-    Description: Wazuh servers instance type
-    Value: !Ref WazuhInstanceType
   IndexerType:
     Description: Elasticsearch data nodes instance type
     Value: !Ref IndexerType
