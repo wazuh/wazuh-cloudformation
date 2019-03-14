@@ -5,46 +5,18 @@ Description: >
 
 Mappings:
   RegionMap:
-    us-east-1:
+    us-west-1:
       HVM64: ami-0ff8a91507f77f867
       HVMUBUNTU64: ami-0ac019f4fcb7cb7e6
-    us-east-2:
-      HVM64: ami-0b59bfac6be064b78
-    us-west-1:
-      HVM64: ami-0bdb828fd58c52235
-    us-west-2:
-      HVM64: ami-a0cfeed8
-    ca-central-1:
-      HVM64: ami-0b18956f
-    eu-central-1:
-      HVM64: ami-0233214e13e500f77
-    eu-west-1:
-      HVM64: ami-047bb4163c506cd98
-    eu-west-2:
-      HVM64: ami-f976839e
-    eu-west-3:
-      HVM64: ami-0ebc281c20e89ba4b
-    ap-northeast-1:
-      HVM64: ami-06cd52961ce9f0d85
-    ap-northeast-2:
-      HVM64: ami-0a10b2721688ce9d2
-    ap-southeast-1:
-      HVM64: ami-08569b978cc4dfa10
-    ap-southeast-2:
-      HVM64: ami-09b42976632b27e9b
-    ap-south-1:
-      HVM64: ami-0912f71e06545ad88
-    sa-east-1:
-      HVM64: ami-07b14488da8ea02a0
+      HVMCENTOS7: ami-9887c6e7
+      HVMREDHAT7: ami-011b3ccf1bd6db744
+      HVMDEBIAN: ami-0bd9223868b4778d7
+      HVMWINDOWS: ami-0c34e56c5b17e933d
   SubnetConfig:
     WazuhVpc:
       CIDR: 10.0.0.0/16
     SubnetWazuh:
-      CIDR: 10.0.1.0/24
-    SubnetWazuh:
-      CIDR: 10.0.2.0/24
-    SubnetWazuh:
-      CIDR: 10.0.3.0/24
+      CIDR: 10.0.0.0/24
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -126,12 +98,6 @@ Parameters:
   # Version and instance types
   ElasticWazuhVersion:
     AllowedValues:
-      - 6.5.0_3.7.0
-      - 6.5.1_3.7.1
-      - 6.5.2_3.7.1
-      - 6.5.3_3.7.2
-      - 6.5.4_3.7.2
-      - 6.6.1_3.8.2
       - 6.6.1_3.9.0
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
     Default: 6.6.1_3.9.0
@@ -404,7 +370,7 @@ Resources:
   ElbElastic:
     Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
     Properties:
-      LoadBalancerName: !Sub '${AWS::StackName}-Elastic'
+      LoadBalancerName: !Sub '${AWS::StackName}-demo-devel-elasticsearch-lb'
       Scheme: internal
       Subnets:
         - !Ref SubnetWazuh
@@ -444,7 +410,7 @@ Resources:
   ElbLogstash:
     Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
     Properties:
-      LoadBalancerName: !Sub '${AWS::StackName}-Logstash'
+      LoadBalancerName: !Sub '${AWS::StackName}-demo-devel-logstash-lb'
       Scheme: internal
       Subnets:
         - !Ref SubnetWazuh
@@ -484,7 +450,7 @@ Resources:
   ElbKibana:
     Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
     Properties:
-      LoadBalancerName: !Sub '${AWS::StackName}-Kibana'
+      LoadBalancerName: !Sub '${AWS::StackName}-demo-devel-kibana-lb'
       Scheme: internet-facing
       Subnets:
         - !Ref SubnetWazuh
@@ -531,7 +497,7 @@ Resources:
   ElbSplunk:
     Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
     Properties:
-      LoadBalancerName: !Sub '${AWS::StackName}-Splunk'
+      LoadBalancerName: !Sub '${AWS::StackName}-demo-devel-splunk-lb'
       Scheme: internet-facing
       Subnets:
         - !Ref SubnetWazuh
@@ -574,7 +540,7 @@ Resources:
   ElbWazuh:
     Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
     Properties:
-      LoadBalancerName: !Sub '${AWS::StackName}-Wazuh'
+      LoadBalancerName: !Sub '${AWS::StackName}-demo-devel-wazuh-lb'
       Scheme: internet-facing
       Subnets:
         - !Ref SubnetWazuh
@@ -653,7 +619,7 @@ Resources:
         - !Ref ElbLogstash
       Tags:
         - Key: Name
-          Value: WazuhElasticCluster
+          Value: demo-devel-elasticsearch
           PropagateAtLaunch: true
         - Key: Creator
           Value: !Ref KeyPairName
@@ -810,7 +776,7 @@ Resources:
           DeviceIndex: 0
       Tags:
         - Key: Name
-          Value: WazuhKibana
+          Value: demo-devel-kibana
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
@@ -878,7 +844,7 @@ Resources:
           DeviceIndex: 0
       Tags:
         - Key: Name
-          Value: WazuhSplunk
+          Value: demo-devel-splunk
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
@@ -948,7 +914,7 @@ Resources:
           DeviceIndex: 0
       Tags:
         - Key: Name
-          Value: WazuhMaster
+          Value: demo-devel-master
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
@@ -1014,7 +980,7 @@ Resources:
           DeviceIndex: 0
       Tags:
         - Key: Name
-          Value: WazuhWorker
+          Value: demo-devel-worker
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
@@ -1047,6 +1013,7 @@ Resources:
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
                 ElbWazuhDNS: ${ElbWazuh.DNSName}
+                AgentName: AmazonLinux
               mode: '000600'
               owner: root
               group: root
@@ -1080,7 +1047,7 @@ Resources:
           DeviceIndex: 0
       Tags:
         - Key: Name
-          Value: WazuhAgent
+          Value: demo-devel-agent-amazonlinux
       UserData:
         'Fn::Base64': !Sub >
           #!/bin/bash -xe
@@ -1102,6 +1069,165 @@ Resources:
       'AWS::CloudFormation::Designer':
         id: ac938975-e7f3-43cb-adf4-af2737efb52d
 
+  
+  AgentInstanceCentos:
+    Type: 'AWS::EC2::Instance'
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          WazuhInstallationSet:
+            - WazuhFiles
+            - WazuhInstall
+        WazuhFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                WazuhServerPort: ${WazuhServerPort}
+                WazuhRegistrationPort: ${WazuhRegistrationPort}
+                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                ElbWazuhDNS: ${ElbWazuh.DNSName}
+                AgentName: Centos7
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_agent.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_cf_agent.sh
+              mode: '000700'
+              owner: root
+              group: root
+        WazuhInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_agent.sh
+      'AWS::CloudFormation::Designer':
+        id: ebbc5d7f-ce5b-43f0-b5d3-04c0c4b93ced
+    Properties:
+      ImageId: !FindInMap 
+        - RegionMap
+        - Ref: 'AWS::Region'
+        - HVMCENTOS7
+      InstanceType: !Ref WazuhInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref WazuhAgentInstanceCentosEth0
+          DeviceIndex: 0
+      Tags:
+        - Key: Name
+          Value: demo-devel-agent-amazonlinux
+      UserData:
+        'Fn::Base64': !Sub >
+          #!/bin/bash -xe
+
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource
+          AgentInstance --configsets WazuhInstallationSet --region
+          ${AWS::Region}
+
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource
+          AgentInstance --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+  WazuhAgentInstanceCentosEth0:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref SubnetWazuh
+      GroupSet:
+        - !Ref WazuhSecurityGroup
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: ac938975-e7f3-43cb-adf4-af2737efb52d
+
+  AgentInstanceRedhat:
+    Type: 'AWS::EC2::Instance'
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          WazuhInstallationSet:
+            - WazuhFiles
+            - WazuhInstall
+        WazuhFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                WazuhServerPort: ${WazuhServerPort}
+                WazuhRegistrationPort: ${WazuhRegistrationPort}
+                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                ElbWazuhDNS: ${ElbWazuh.DNSName}
+                AgentName: RHEL7
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_agent.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_cf_agent.sh
+              mode: '000700'
+              owner: root
+              group: root
+        WazuhInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_agent.sh
+      'AWS::CloudFormation::Designer':
+        id: ebbc5d7f-ce5b-43f0-b5d3-04c0c4b93ced
+    Properties:
+      ImageId: !FindInMap 
+        - RegionMap
+        - Ref: 'AWS::Region'
+        - HVMREDHAT7
+      InstanceType: !Ref WazuhInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref WazuhAgentInstanceRedhatEth0
+          DeviceIndex: 0
+      Tags:
+        - Key: Name
+          Value: demo-devel-agent-amazonlinux
+      UserData:
+        'Fn::Base64': !Sub >
+          #!/bin/bash -xe
+
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource
+          AgentInstance --configsets WazuhInstallationSet --region
+          ${AWS::Region}
+
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource
+          AgentInstance --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+  WazuhAgentInstanceRedhatEth0:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref SubnetWazuh
+      GroupSet:
+        - !Ref WazuhSecurityGroup
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: ac938975-e7f3-43cb-adf4-af2737efb52d
+
+  
+
+
+
+
+        
   AgentUbuntuInstance:
     Type: 'AWS::EC2::Instance'
     Metadata:
@@ -1154,7 +1280,7 @@ Resources:
           DeviceIndex: 0
       Tags:
         - Key: Name
-          Value: WazuhAgentUbuntu
+          Value: demo-devel-agent-ubuntu
       UserData:
         'Fn::Base64': !Sub >
           #!/bin/bash -xe
@@ -1175,6 +1301,89 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Designer':
         id: ac938975-e7f3-43cb-adf4-af2737efb52d
+
+
+
+  AgentDebianInstance:
+    Type: 'AWS::EC2::Instance'
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          WazuhInstallationSet:
+            - WazuhFiles
+            - WazuhInstall
+        WazuhFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                WazuhServerPort: ${WazuhServerPort}
+                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                ElbWazuhDNS: ${ElbWazuh.DNSName}
+                AgentName: Debian
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_agent.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_cf_agent_ubuntu.sh
+              mode: '000700'
+              owner: root
+              group: root
+        WazuhInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_agent_ubuntu.sh
+      'AWS::CloudFormation::Designer':
+        id: ebbc5d7f-ce5b-43f0-b5d3-04c0c4b93ced
+    Properties:
+      ImageId: !FindInMap 
+        - RegionMap
+        - Ref: 'AWS::Region'
+        - HVMDEBIAN
+      InstanceType: !Ref WazuhInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref WazuhAgentDebianInstanceEth0
+          DeviceIndex: 0
+      Tags:
+        - Key: Name
+          Value: demo-devel-agent-debian
+      UserData:
+        'Fn::Base64': !Sub >
+          #!/bin/bash -xe
+
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource
+          AgentDebianInstance --configsets WazuhInstallationSet --region
+          ${AWS::Region}
+
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource
+          AgentDebianInstance --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+  WazuhAgentDebianInstanceEth0:
+    Type: 'AWS::EC2::NetworkInterface'
+    Properties:
+      SubnetId: !Ref SubnetWazuh
+      GroupSet:
+        - !Ref WazuhSecurityGroup
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: ac938975-e7f3-43cb-adf4-af2737efb52d
+
+
+
+
+
+
 
 Outputs:
   ElasticWazuhVersion:
