@@ -39,11 +39,11 @@ Mappings:
   SubnetConfig:
     WazuhVpc:
       CIDR: 10.0.0.0/16
-    SubnetElastic:
+    SubnetWazuh:
       CIDR: 10.0.1.0/24
     SubnetWazuh:
       CIDR: 10.0.2.0/24
-    SubnetSplunk:
+    SubnetWazuh:
       CIDR: 10.0.3.0/24
 
 Metadata:
@@ -255,15 +255,6 @@ Parameters:
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Only alphanumeric characters
 
-  # Optional: Domain names
-  ParentDomainName:
-    Description: 'Optional. Public domain name, already registered with a hosted zone in Route 53 (e.g. wazuh.net).'
-    Type: String
-  SubDomainName:
-    Description: 'Optional. Requires ParentDomainName. Used to create DNS entries (e.g. subdomain.wazuh.net).'
-    Type: String
-
-
 Conditions:
   HasZone: !Not [!Equals [!Ref ParentDomainName, '']]
   ParentDomainSpecified: !Not [!Equals [!Ref ParentDomainName, '']]
@@ -286,19 +277,6 @@ Resources:
           Value: !Ref 'AWS::StackId'
         - Key: Name
           Value: !Ref 'AWS::StackName'
-  SubnetElastic:
-    Type: 'AWS::EC2::Subnet'
-    Properties:
-      VpcId: !Ref WazuhVpc
-      CidrBlock: !FindInMap
-        - SubnetConfig
-        - SubnetElastic
-        - CIDR
-      Tags:
-        - Key: Application
-          Value: !Ref 'AWS::StackId'
-        - Key: Name
-          Value: !Sub '${AWS::StackName}-SubnetElastic'
   SubnetWazuh:
     Type: 'AWS::EC2::Subnet'
     Properties:
@@ -312,19 +290,6 @@ Resources:
           Value: !Ref 'AWS::StackId'
         - Key: Name
           Value: !Sub '${AWS::StackName}-SubnetWazuh'
-  SubnetSplunk:
-    Type: 'AWS::EC2::Subnet'
-    Properties:
-      VpcId: !Ref WazuhVpc
-      CidrBlock: !FindInMap
-        - SubnetConfig
-        - SubnetSplunk
-        - CIDR
-      Tags:
-        - Key: Application
-          Value: !Ref 'AWS::StackId'
-        - Key: Name
-          Value: !Sub '${AWS::StackName}-SubnetSplunk'
 
   # Internet access
   InternetGateway:
@@ -356,22 +321,11 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
-  SubnetElasticPublicRouteTable:
-    Type: 'AWS::EC2::SubnetRouteTableAssociation'
-    Properties:
-      SubnetId: !Ref SubnetElastic
-      RouteTableId: !Ref PublicRouteTable
   SubnetWazuhPublicRouteTable:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
       SubnetId: !Ref SubnetWazuh
       RouteTableId: !Ref PublicRouteTable
-  SubnetSplunkPublicRouteTable:
-    Type: 'AWS::EC2::SubnetRouteTableAssociation'
-    Properties:
-      SubnetId: !Ref SubnetSplunk
-      RouteTableId: !Ref PublicRouteTable
-
 
   # Instance security groups
   ElasticSecurityGroup:
@@ -512,7 +466,7 @@ Resources:
       LoadBalancerName: !Sub '${AWS::StackName}-Elastic'
       Scheme: internal
       Subnets:
-        - !Ref SubnetElastic
+        - !Ref SubnetWazuh
       SecurityGroups:
         - !Ref ElbElasticSecurityGroup
       ConnectionSettings:
@@ -555,7 +509,7 @@ Resources:
       LoadBalancerName: !Sub '${AWS::StackName}-Logstash'
       Scheme: internal
       Subnets:
-        - !Ref SubnetElastic
+        - !Ref SubnetWazuh
       SecurityGroups:
         - !Ref ElbLogstashSecurityGroup
       ConnectionSettings:
@@ -595,7 +549,7 @@ Resources:
       LoadBalancerName: !Sub '${AWS::StackName}-Kibana'
       Scheme: internet-facing
       Subnets:
-        - !Ref SubnetElastic
+        - !Ref SubnetWazuh
       SecurityGroups:
         - !Ref ElbKibanaSecurityGroup
       ConnectionSettings:
@@ -642,7 +596,7 @@ Resources:
       LoadBalancerName: !Sub '${AWS::StackName}-Splunk'
       Scheme: internet-facing
       Subnets:
-        - !Ref SubnetSplunk
+        - !Ref SubnetWazuh
       SecurityGroups:
         - !Ref ElbSplunkSecurityGroup
       ConnectionSettings:
@@ -707,49 +661,7 @@ Resources:
         Enabled: 'true'
         Timeout: '600'
 
-  # Domain names
-  WazuhDataRecordSet:
-    Condition: HasZone
-    Type: 'AWS::Route53::RecordSet'
-    Properties:
-      HostedZoneName: !Join ['', [!Ref 'ParentDomainName', .]]
-      Name: !Join ['', [data., !Ref 'SubDomainName', ., !Ref 'ParentDomainName', .]]
-      Type: A
-      AliasTarget:
-        HostedZoneId: !GetAtt ElbWazuh.CanonicalHostedZoneNameID
-        DNSName: !GetAtt ElbWazuh.DNSName
-  WazuhRegistrationRecordSet:
-    Condition: HasZone
-    Type: 'AWS::Route53::RecordSet'
-    Properties:
-      HostedZoneName: !Join ['', [!Ref 'ParentDomainName', .]]
-      Name: !Join ['', [registration., !Ref 'SubDomainName', ., !Ref 'ParentDomainName', .]]
-      Type: A
-      TTL: '600'
-      ResourceRecords:
-        - !Ref WazuhMasterEIP
-  KibanaRecordSet:
-    Condition: HasZone
-    Type: 'AWS::Route53::RecordSet'
-    Properties:
-      HostedZoneName: !Join ['', [!Ref 'ParentDomainName', .]]
-      Name: !Join ['', [!Ref 'SubDomainName', ., !Ref 'ParentDomainName', .]]
-      Type: A
-      AliasTarget:
-        HostedZoneId: !GetAtt ElbKibana.CanonicalHostedZoneNameID
-        DNSName: !GetAtt ElbKibana.DNSName
-  SplunkRecordSet:
-    Condition: HasZone
-    Type: 'AWS::Route53::RecordSet'
-    Properties:
-      HostedZoneName: !Join ['', [!Ref 'ParentDomainName', .]]
-      Name: !Join ['', [!Ref 'SubDomainName', ., !Ref 'ParentDomainName', .]]
-      Type: A
-      AliasTarget:
-        HostedZoneId: !GetAtt ElbSplunk.CanonicalHostedZoneNameID
-        DNSName: !GetAtt ElbSplunk.DNSName
-  
-  
+
   # IAM role and profile
   InstanceRole:
     Type: 'AWS::IAM::Role'
@@ -791,7 +703,7 @@ Resources:
     Type: 'AWS::AutoScaling::AutoScalingGroup'
     Properties:
       VPCZoneIdentifier:
-        - !Ref SubnetElastic
+        - !Ref SubnetWazuh
       HealthCheckGracePeriod: '600'
       HealthCheckType: EC2
       LaunchConfigurationName: !Ref ElasticLaunchConfiguration
@@ -970,21 +882,10 @@ Resources:
   KibanaInstanceEth0:
     Type: AWS::EC2::NetworkInterface
     Properties:
-      SubnetId: !Ref SubnetElastic
+      SubnetId: !Ref SubnetWazuh
       GroupSet: [!Ref 'KibanaSecurityGroup']
-  KibanaEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-  KibanaEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref KibanaInstanceEth0
-      AllocationId: !GetAtt
-        - KibanaEIP
-        - AllocationId
 
- # Splunk instance
+  # Splunk instance
   SplunkInstance:
     Type: AWS::EC2::Instance
     Metadata:
@@ -1049,19 +950,8 @@ Resources:
   SplunkInstanceEth0:
     Type: AWS::EC2::NetworkInterface
     Properties:
-      SubnetId: !Ref SubnetSplunk
+      SubnetId: !Ref SubnetWazuh
       GroupSet: [!Ref 'SplunkSecurityGroup']
-  SplunkEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-  SplunkEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref SplunkInstanceEth0
-      AllocationId: !GetAtt
-        - SplunkEIP
-        - AllocationId
 
   # Wazuh master instance
   WazuhMasterInstance:
@@ -1132,17 +1022,6 @@ Resources:
     Properties:
       SubnetId: !Ref SubnetWazuh
       GroupSet: [!Ref 'WazuhSecurityGroup']
-  WazuhMasterEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-  WazuhMasterEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref WazuhMasterInstanceEth0
-      AllocationId: !GetAtt
-        - WazuhMasterEIP
-        - AllocationId
 
   # Wazuh worker instance
   WazuhWorkerInstance:
@@ -1209,17 +1088,6 @@ Resources:
     Properties:
       SubnetId: !Ref SubnetWazuh
       GroupSet: [!Ref 'WazuhSecurityGroup']
-  WazuhWorkerEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-  WazuhWorkerEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref WazuhWorkerInstanceEth0
-      AllocationId: !GetAtt
-        - WazuhWorkerEIP
-        - AllocationId
 
   AgentInstance:
     Type: 'AWS::EC2::Instance'
@@ -1295,24 +1163,6 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Designer':
         id: ac938975-e7f3-43cb-adf4-af2737efb52d
-  WazuhAgentEIP:
-    Type: 'AWS::EC2::EIP'
-    Properties:
-      Domain: vpc
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: e226ca2b-8625-42de-a8d0-a65722633d16
-  WazuhAgentEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref WazuhAgentInstanceEth0
-      AllocationId: !GetAtt 
-        - WazuhAgentEIP
-        - AllocationId
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: b6d63941-d79d-4a70-be12-170faa500e2d
-
 
   AgentUbuntuInstance:
     Type: 'AWS::EC2::Instance'
@@ -1387,23 +1237,6 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Designer':
         id: ac938975-e7f3-43cb-adf4-af2737efb52d
-  WazuhAgentUbuntuEIP:
-    Type: 'AWS::EC2::EIP'
-    Properties:
-      Domain: vpc
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: e226ca2b-8625-42de-a8d0-a65722633d16
-  WazuhAgentUbuntuEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref WazuhAgentUbuntuInstanceEth0
-      AllocationId: !GetAtt 
-        - WazuhAgentUbuntuEIP
-        - AllocationId
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: b6d63941-d79d-4a70-be12-170faa500e2d
 
 Outputs:
   ElasticWazuhVersion:
