@@ -2,9 +2,6 @@
 # Install Splunk using Cloudformation template
 # Support for Amazon Linux
 
-
-set -exf
-
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
 splunk_port=$(cat /tmp/wazuh_cf_settings | grep '^SplunkPort:' | cut -d' ' -f2)

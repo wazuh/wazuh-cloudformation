@@ -2,8 +2,6 @@
 # Install Elastic data node using Cloudformation template
 # Support for Amazon Linux
 
-set -exf
-
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
 elastic_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f1)
@@ -106,6 +104,7 @@ cat > /etc/elasticsearch/jvm.options << EOF
 9-:-Djava.locale.providers=COMPAT
 EOF
 
+mkdir -p /etc/systemd/system/elasticsearch.service.d/
 echo '[Service]' > /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
 echo 'LimitMEMLOCK=infinity' >> /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
 

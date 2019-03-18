@@ -2,8 +2,6 @@
 # Install Kibana instance using Cloudformation template
 # Support for Amazon Linux
 
-set -exf
-
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
 elastic_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f1)
@@ -212,7 +210,7 @@ curl -POST "http://localhost:5601/api/telemetry/v1/optIn" -H "Content-Type: appl
 sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
 
 # Install Nginx ang generate certificates
-yum -y install nginx httpd-tools
+sudo amazon-linux-extras install nginx1.12
 mkdir -p /etc/ssl/certs /etc/ssl/private
 openssl req -x509 -batch -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/kibana.key -out /etc/ssl/certs/kibana.pem
 

@@ -117,9 +117,9 @@ Parameters:
       - 6.5.2_3.7.1
       - 6.5.3_3.7.2
       - 6.5.4_3.7.2
-      - 6.6.1_3.9.0
+      - 6.6.2_3.9.0
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
-    Default: 6.5.4_3.7.2
+    Default: 6.6.2_3.9.0
     Description: Elastic and Wazuh versions to be installed
     Type: String
   WazuhInstanceType:
@@ -132,6 +132,7 @@ Parameters:
   ElasticInstanceType:
     AllowedValues:
       - t2.medium
+      - t2.large
     ConstraintDescription: Must contain valid instance type
     Default: t2.medium
     Description: Type of EC2 instance for Elastic instance
@@ -139,6 +140,7 @@ Parameters:
   KibanaInstanceType:
     AllowedValues:
       - t2.medium
+      - t2.large
     ConstraintDescription: Must contain valid instance type
     Default: t2.medium
     Description: Type of EC2 instance for Kibana instance
