@@ -1,6 +1,8 @@
 #!/bin/bash
 # Install Wazuh worker instance using Cloudformation template
 # Support for Amazon Linux
+touch /tmp/log
+echo "Starting process." > /tmp/log
 
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
@@ -24,6 +26,7 @@ echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
 usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
 sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
 service sshd restart
+echo "Added user  ${ssh_username}." > /tmp/log
 
 # Adding Wazuh repository
 
@@ -46,6 +49,7 @@ EOF
 yum -y install wazuh-manager
 chkconfig --add wazuh-manager
 manager_config="/var/ossec/etc/ossec.conf"
+echo "Installed wazuh master" > /tmp/log
 
 # Enable registration service (only for master node)
 /var/ossec/bin/ossec-control enable auth
@@ -56,9 +60,11 @@ sed -i "s/<protocol>udp<\/protocol>/<protocol>tcp<\/protocol>/" ${manager_config
 # Set manager ports for registration and agents communication
 sed -i "s/<port>1515<\/port>/<port>${wazuh_registration_port}<\/port>/" ${manager_config}
 sed -i "s/<port>1514<\/port>/<port>${wazuh_server_port}<\/port>/" ${manager_config}
+echo "Sed commands" > /tmp/log
 
 # Installing Python Cryptography module for the cluster
 pip install cryptography
+echo "Installed cryptography with pip" > /tmp/log
 
 # Configuring cluster section
 sed -i '/<cluster>/,/<\/cluster>/d' ${manager_config}
@@ -93,6 +99,7 @@ sed -i '/<auth>/,/<\/auth>/d' ${manager_config}
 sed -i '/<!--.*-->/d' ${manager_config}
 sed -i '/<!--/,/-->/d' ${manager_config}
 sed -i '/^$/d' ${manager_config}
+echo "Cluster configuration" > /tmp/log
 
 # Restart wazuh-manager
 service wazuh-manager restart
@@ -100,12 +107,11 @@ service wazuh-manager restart
 # Installing Filebeat
 yum -y install filebeat
 chkconfig --add filebeat
+echo "Installed Filebeat" > /tmp/log
 
 # Configuring Filebeat
-curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/v${wazuh_version}/extensions/filebeat/filebeat.yml
+curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/${wazuh_version}/extensions/filebeat/filebeat.yml
 sed -i "s/YOUR_ELASTIC_SERVER_IP/${elb_logstash}/" /etc/filebeat/filebeat.yml
 service filebeat start
-
-# Disable repositories
-sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
-sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/wazuh_pre.repo
+echo "Started Filebeat" > /tmp/log
+echo "Done" > /tmp/log

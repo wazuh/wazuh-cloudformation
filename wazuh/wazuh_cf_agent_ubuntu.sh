@@ -1,6 +1,8 @@
 #!/bin/bash
 # Install Wazuh agent using Cloudformation template
-# Support for Amazon Linux
+# Support for Debian/Ubuntu
+touch /tmp/log
+echo "Starting process." > /tmp/log
 agent_name=$(cat /tmp/wazuh_cf_settings | grep '^agent_name:' | cut -d' ' -f2)
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 master_ip=$(cat /tmp/wazuh_cf_settings | grep '^WazuhMasterIP:' | cut -d' ' -f2)
@@ -21,19 +23,24 @@ echo "deb https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/staging/apt/
 # Install Wazuh agent
 apt-get update
 apt-get install curl apt-transport-https lsb-release -y
-
+echo "Installed dependencies." > /tmp/log
 
 # Install Wazuh agent
-apt-get update
 apt-get install wazuh-agent -y
+echo "Installed Wazuh agent." > /tmp/log
 
 # Add registration password
 echo "${wazuh_registration_password}" > /var/ossec/etc/authd.pass
+echo "Set registration password." > /tmp/log
+echo "Registering agent..." > /tmp/log
 
 # Register agent using authd
-/var/ossec/bin/agent-auth -m ${master_ip} -A ubuntu-ag
+/var/ossec/bin/agent-auth -m ${master_ip} -A ubuntu-ag < /tmp/log
+echo "Agent registered." > /tmp/log
+
 sed -i 's:MANAGER_IP:'${elb_wazuh_dns}
 # Enable and restart the Wazuh agent
 
 systemctl enable wazuh-agent
 systemctl restart wazuh-agent
+echo "Agent restarted." > /tmp/log

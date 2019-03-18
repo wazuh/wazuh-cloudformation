@@ -241,7 +241,7 @@ echo "Installing NGINX..." >> /tmp/log
 sudo amazon-linux-extras install nginx1.12
 mkdir -p /etc/ssl/certs /etc/ssl/private
 openssl req -x509 -batch -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/kibana.key -out /etc/ssl/certs/kibana.pem
-
+echo "Installed NGINX." >> /tmp/log
 # Configure Nginx
 htpasswd -b -c /etc/nginx/conf.d/kibana.htpasswd ${kibana_username} ${kibana_password}
 cat > /etc/nginx/conf.d/kibana.conf << EOF
@@ -262,5 +262,5 @@ server {
 EOF
 
 # Starting Nginx
-/etc/init.d/nginx restart
+service nginx restart
 echo "Restarted NGINX..." >> /tmp/log
