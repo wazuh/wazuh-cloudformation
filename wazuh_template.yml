@@ -293,10 +293,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 5000
           ToPort: 5000

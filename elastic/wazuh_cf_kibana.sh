@@ -1,6 +1,8 @@
 #!/bin/bash
 # Install Kibana instance using Cloudformation template
 # Support for Amazon Linux
+touch /tmp/log
+echo "Starting process." > /tmp/log
 
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
@@ -15,19 +17,24 @@ wazuh_master_ip=$(cat /tmp/wazuh_cf_settings | grep '^WazuhMasterIP:' | cut -d' 
 wazuh_api_user=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminUsername:' | cut -d' ' -f2)
 wazuh_api_password=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminPassword:' | cut -d' ' -f2)
 wazuh_api_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiPort:' | cut -d' ' -f2)
+echo "Added env vars." >> /tmp/log
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root"
    exit 1
 fi
+echo "Running as root." >> /tmp/log
 
 # Creating SSH user
 adduser ${ssh_username}
 echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
+echo "Created SSH user." >> /tmp/log
+
 usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
 sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
 service sshd restart
+echo "Started SSH service." >> /tmp/log
 
 # Downloading and installing JRE
 url_jre="https://download.oracle.com/otn-pub/java/jdk/8u202-b08/1961070e4c9b4e26a04e7f5a083f551e/jre-8u202-linux-x64.rpm"
@@ -35,6 +42,7 @@ jre_rpm="/tmp/jre-8-linux-x64.rpm"
 curl -Lo ${jre_rpm} --header "Cookie: oraclelicense=accept-securebackup-cookie" ${url_jre}
 rpm -qlp ${jre_rpm} > /dev/null 2>&1 || $(echo "Unable to download JRE. Exiting." && exit 1)
 yum -y localinstall ${jre_rpm} && rm -f ${jre_rpm}
+echo "Installed JAVA." >> /tmp/log
 
 # Configuring Elastic repository
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
@@ -49,22 +57,27 @@ enabled=1
 autorefresh=1
 type=rpm-md
 EOF
+echo "Added Elasticsearch repo." >> /tmp/log
 
 # Installing Elasticsearch
 yum -y install elasticsearch-${elastic_version}
 chkconfig --add elasticsearch
+echo "Installed Elasticsearch." >> /tmp/log
 
 # Installing Elasticsearch plugin for EC2
 /usr/share/elasticsearch/bin/elasticsearch-plugin install --batch discovery-ec2
+echo "Installed EC2 plugin." >> /tmp/log
 
 # Configuration file created by AWS Cloudformation template
 mv -f /tmp/wazuh_cf_elasticsearch.yml /etc/elasticsearch/elasticsearch.yml
 chown elasticsearch:elasticsearch /etc/elasticsearch/elasticsearch.yml
+echo "Copying YML to elasticsearch folder." >> /tmp/log
 
 # Calculating RAM for Elasticsearch
 ram_gb=$(free -g | awk '/^Mem:/{print $2}')
 ram=$(( ${ram_gb} / 2 ))
 if [ $ram -eq "0" ]; then ram=1; fi
+echo "RAM parameters." >> /tmp/log
 
 # Configuring jvm.options
 cat > /etc/elasticsearch/jvm.options << EOF
@@ -107,10 +120,15 @@ echo 'LimitMEMLOCK=infinity' >> /etc/systemd/system/elasticsearch.service.d/elas
 # Allowing unlimited memory allocation
 echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
 echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
+echo "Setting memory lock options." >> /tmp/log
+
+systemctl daemon-reload
+echo "daemon-reload." >> /tmp/log
 
 # Starting Elasticsearch
 service elasticsearch start
 sleep 60
+echo "Started service." >> /tmp/log
 
 # Loading and tuning Wazuh alerts template
 url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/elasticsearch/wazuh-elastic6-template-alerts.json"
@@ -118,10 +136,12 @@ alerts_template="/tmp/wazuh-elastic6-template-alerts.json"
 curl -Lo ${alerts_template} ${url_alerts_template}
 curl -XPUT "http://${eth0_ip}:9200/_template/wazuh" -H 'Content-Type: application/json' -d@${alerts_template}
 curl -XDELETE "http://${eth0_ip}:9200/wazuh-alerts-*"
+echo "Added template." >> /tmp/log
 
 # Installing Kibana
 yum -y install kibana-${elastic_version}
 chkconfig --add kibana
+echo "Kibana installed." >> /tmp/log
 
 # Configuring kibana.yml
 cat > /etc/kibana/kibana.yml << EOF
@@ -130,9 +150,11 @@ server.port: 5601
 server.host: "localhost"
 server.ssl.enabled: false
 EOF
+echo "Kibana.yml configured." >> /tmp/log
 
 # Allow Kibana to listen on privileged ports
 setcap 'CAP_NET_BIND_SERVICE=+eip' /usr/share/kibana/node/bin/node
+echo "Setcap executed" >> /tmp/log
 
 # Configuring Kibana default settings
 cat > /etc/default/kibana << 'EOF'
@@ -144,6 +166,7 @@ nice=""
 KILL_ON_STOP_TIMEOUT=0
 NODE_OPTIONS="--max-old-space-size=4096"
 EOF
+echo "/etc/default/kibana completed" >> /tmp/log
 
 # Installing Wazuh plugin for Kibana
 plugin_url="https://packages.wazuh.com/3.x/wazuhapp-dev/wazuhapp-3.9.0_6.6.2-beta.zip"
@@ -156,6 +179,7 @@ wazuh-version.replicas: 1
 wazuh.monitoring.shards: 1
 wazuh.monitoring.replicas: 1
 EOF
+echo "App installed!" >> /tmp/log
 
 # Configuring Wazuh API for Kibana plugin
 api_config="/tmp/api_config.json"
@@ -180,10 +204,12 @@ EOF
 
 curl -s -XPUT "http://${eth0_ip}:9200/.wazuh/wazuh-configuration/${api_time}" -H 'Content-Type: application/json' -d@${api_config}
 rm -f ${api_config}
+echo "Configured API" >> /tmp/log
 
 # Starting Kibana
 service kibana start
 sleep 60
+echo "Started Kibana" >> /tmp/log
 
 # Configuring default index pattern for Kibana
 default_index="/tmp/default_index.json"
@@ -208,6 +234,8 @@ curl -POST "http://localhost:5601/api/telemetry/v1/optIn" -H "Content-Type: appl
 
 # Disable Elastic repository
 sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
+echo "Configured Kibana" >> /tmp/log
+echo "Installing NGINX..." >> /tmp/log
 
 # Install Nginx ang generate certificates
 sudo amazon-linux-extras install nginx1.12
@@ -234,4 +262,5 @@ server {
 EOF
 
 # Starting Nginx
-service nginx start
+/etc/init.d/nginx restart
+echo "Restarted NGINX..." >> /tmp/log

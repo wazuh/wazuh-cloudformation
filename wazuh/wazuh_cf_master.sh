@@ -1,6 +1,8 @@
 #!/bin/bash
 # Install Wazuh master instance using Cloudformation template
 # Support for Amazon Linux
+touch /tmp/log
+echo "Starting process." > /tmp/log
 
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
@@ -18,6 +20,7 @@ eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet addr:' | cut -d: -f2  | cut -d' ' -f1
 splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^KibanaUsername:' | cut -d' ' -f2)
 splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^KibanaPassword:' | cut -d' ' -f2)
 splunk_ip=$(cat /tmp/wazuh_cf_settings | grep '^SplunkIP:' | cut -d' ' -f2)
+echo "Added env vars." >> /tmp/log
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -127,14 +130,17 @@ sed -i '/^$/d' ${manager_config}
 
 # Restart wazuh-manager
 service wazuh-manager restart
+echo "Restarted Wazuh manager." >> /tmp/log
 
 # Installing NodeJS
 curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
 yum -y install nodejs
+echo "Installed NODEJS." >> /tmp/log
 
 # Installing wazuh-api
 yum -y install wazuh-api
 chkconfig --add wazuh-api
+echo "Installed Wazuh API." >> /tmp/log
 
 # Configuring Wazuh API user and password
 cd /var/ossec/api/configuration/auth
@@ -145,18 +151,22 @@ api_ssl_dir="/var/ossec/api/configuration/ssl"
 openssl req -x509 -batch -nodes -days 3650 -newkey rsa:2048 -keyout ${api_ssl_dir}/server.key -out ${api_ssl_dir}/server.crt
 sed -i "s/config.https = \"no\";/config.https = \"yes\";/" /var/ossec/api/configuration/config.js
 sed -i "s/config.port = \"55000\";/config.port = \"${wazuh_api_port}\";/" /var/ossec/api/configuration/config.js
+echo "Setting port and SSL to Wazuh API." >> /tmp/log
 
 # Restart wazuh-api
 service wazuh-api restart
+echo "Restarted Wazuh API." >> /tmp/log
 
 # Installing Filebeat
-yum -y install filebeat
+yum -y install filebeat-${elastic_version}
 chkconfig --add filebeat
+echo "Installed Filebeat." >> /tmp/log
 
 # Configuring Filebeat
 curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/v${wazuh_version}/extensions/filebeat/filebeat.yml
 sed -i "s/YOUR_ELASTIC_SERVER_IP/${elb_logstash}/" /etc/filebeat/filebeat.yml
-service filebeat start
+service filebeat restart
+echo "Restarted Filebeat." >> /tmp/log
 
 # Disable repositories
 sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
@@ -203,3 +213,4 @@ echo "Starting Splunk..."
 
 # restart service
 /opt/splunkforwarder/bin/splunk restart &> /dev/null
+echo "Done with Splunk." >> /tmp/log
