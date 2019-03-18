@@ -23,8 +23,8 @@ service sshd restart
 
 # Mounting ephemeral partition
 mkdir /mnt/ephemeral
-mkfs -t ext4 /dev/nvme0n1
-mount /dev/nvme0n1 /mnt/ephemeral
+mkfs -t ext4 /dev/nvme0n1 &> /dev/null
+mount /dev/nvme0n1 /mnt/ephemeral &> /dev/null
 echo "/dev/nvme0n1 /mnt/ephemeral ext4 defaults,nofail 0 2" | tee -a /etc/fstab
 
 # Downloading and installing JRE
