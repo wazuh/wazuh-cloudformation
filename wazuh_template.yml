@@ -586,6 +586,39 @@ Resources:
         - !Ref InstanceRole
 
   # Elasticsearch instances
+  ElasticAutoScalingGroup:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    Properties:
+      VPCZoneIdentifier:
+        - !Ref SubnetWazuh
+      HealthCheckGracePeriod: '600'
+      HealthCheckType: EC2
+      LaunchConfigurationName: !Ref ElasticLaunchConfiguration
+      MinSize: '3'
+      MaxSize: '6'
+      DesiredCapacity: '3'
+      LoadBalancerNames:
+        - !Ref ElbElastic
+        - !Ref ElbLogstash
+      Tags:
+        - Key: Name
+          Value: WazuhElasticCluster
+          PropagateAtLaunch: true
+        - Key: Creator
+          Value: !Ref KeyPairName
+          PropagateAtLaunch: true
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: '3'
+  CpuUtilization:
+    Type: 'AWS::AutoScaling::ScalingPolicy'
+    Properties:
+      AutoScalingGroupName: !Ref ElasticAutoScalingGroup
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        TargetValue: 70
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
   ElasticLaunchConfiguration:
     Type: 'AWS::AutoScaling::LaunchConfiguration'
     Metadata:
@@ -621,7 +654,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/master/elastic/wazuh_cf_elastic.sh
               mode: '000700'
               owner: root
               group: root
