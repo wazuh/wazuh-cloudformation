@@ -586,39 +586,6 @@ Resources:
         - !Ref InstanceRole
 
   # Elasticsearch instances
-  ElasticAutoScalingGroup:
-    Type: 'AWS::AutoScaling::AutoScalingGroup'
-    Properties:
-      VPCZoneIdentifier:
-        - !Ref SubnetWazuh
-      HealthCheckGracePeriod: '600'
-      HealthCheckType: EC2
-      LaunchConfigurationName: !Ref ElasticLaunchConfiguration
-      MinSize: '3'
-      MaxSize: '6'
-      DesiredCapacity: '3'
-      LoadBalancerNames:
-        - !Ref ElbElastic
-        - !Ref ElbLogstash
-      Tags:
-        - Key: Name
-          Value: WazuhElasticCluster
-          PropagateAtLaunch: true
-        - Key: Creator
-          Value: !Ref KeyPairName
-          PropagateAtLaunch: true
-    UpdatePolicy:
-      AutoScalingRollingUpdate:
-        MinInstancesInService: '3'
-  CpuUtilization:
-    Type: 'AWS::AutoScaling::ScalingPolicy'
-    Properties:
-      AutoScalingGroupName: !Ref ElasticAutoScalingGroup
-      PolicyType: TargetTrackingScaling
-      TargetTrackingConfiguration:
-        TargetValue: 70
-        PredefinedMetricSpecification:
-          PredefinedMetricType: ASGAverageCPUUtilization
   ElasticLaunchConfiguration:
     Type: 'AWS::AutoScaling::LaunchConfiguration'
     Metadata:
@@ -755,8 +722,14 @@ Resources:
             VolumeSize: 100
             VolumeType: gp2
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref KibanaInstanceEth0
-          DeviceIndex: 0
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "KibanaSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetWazuh"
+
+
       Tags:
         - Key: Name
           Value: WazuhKibana
@@ -766,22 +739,6 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource KibanaInstance --configsets KibanaInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Kibana --region ${AWS::Region}
     DependsOn: GatewayToInternet
-  KibanaInstanceEth0:
-    Type: AWS::EC2::NetworkInterface
-    Properties:
-      SubnetId: !Ref SubnetWazuh
-      GroupSet: [!Ref 'KibanaSecurityGroup']
-  KibanaEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-  KibanaEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref KibanaInstanceEth0
-      AllocationId: !GetAtt
-        - KibanaEIP
-        - AllocationId
 
   # Wazuh master instance
   WazuhMasterInstance:
@@ -833,9 +790,14 @@ Resources:
           Ebs:
             VolumeSize: 200
             VolumeType: gp2
+
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref WazuhMasterInstanceEth0
-          DeviceIndex: 0
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "WazuhSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetWazuh"
       Tags:
         - Key: Name
           Value: WazuhMaster
@@ -845,22 +807,6 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource WazuhMasterInstance --configsets WazuhInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WazuhMasterInstance --region ${AWS::Region}
     DependsOn: GatewayToInternet
-  WazuhMasterInstanceEth0:
-    Type: AWS::EC2::NetworkInterface
-    Properties:
-      SubnetId: !Ref SubnetWazuh
-      GroupSet: [!Ref 'WazuhSecurityGroup']
-  WazuhMasterEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-  WazuhMasterEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref WazuhMasterInstanceEth0
-      AllocationId: !GetAtt
-        - WazuhMasterEIP
-        - AllocationId
 
   # Wazuh worker instance
   WazuhWorkerInstance:
@@ -911,8 +857,12 @@ Resources:
             VolumeSize: 200
             VolumeType: gp2
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref WazuhWorkerInstanceEth0
-          DeviceIndex: 0
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "WazuhSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetWazuh"
       Tags:
         - Key: Name
           Value: WazuhWorker
@@ -922,22 +872,6 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource WazuhWorkerInstance --configsets WazuhInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WazuhWorkerInstance --region ${AWS::Region}
     DependsOn: GatewayToInternet
-  WazuhWorkerInstanceEth0:
-    Type: AWS::EC2::NetworkInterface
-    Properties:
-      SubnetId: !Ref SubnetWazuh
-      GroupSet: [!Ref 'WazuhSecurityGroup']
-  WazuhWorkerEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-  WazuhWorkerEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref WazuhWorkerInstanceEth0
-      AllocationId: !GetAtt
-        - WazuhWorkerEIP
-        - AllocationId
 
 
   AgentInstance:
@@ -989,10 +923,14 @@ Resources:
           Ebs:
             VolumeSize: 200
             VolumeType: gp2
+
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref WazuhAgentInstanceEth0
-          DeviceIndex: 0
-          
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "WazuhSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetWazuh"
 
       Tags:
         - Key: Name
@@ -1008,26 +946,6 @@ Resources:
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource
           AgentInstance --region ${AWS::Region}
     DependsOn: GatewayToInternet
-  WazuhAgentInstanceEth0:
-    Type: 'AWS::EC2::NetworkInterface'
-    Properties:
-      SubnetId: !Ref SubnetWazuh
-      GroupSet:
-        - !Ref WazuhSecurityGroup
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: ac938975-e7f3-43cb-adf4-af2737efb52d
-  WazuhAgentEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-  WazuhAgentEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref WazuhAgentInstanceEth0
-      AllocationId: !GetAtt
-        - WazuhAgentEIP
-        - AllocationId
 
 
   AgentInstanceRedhat:
@@ -1080,8 +998,12 @@ Resources:
             VolumeSize: 200
             VolumeType: gp2
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref WazuhAgentInstanceRedhatEth0
-          DeviceIndex: 0
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "WazuhSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetWazuh"
           
 
       Tags:
@@ -1098,28 +1020,7 @@ Resources:
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource
           AgentInstance --region ${AWS::Region}
     DependsOn: GatewayToInternet
-  WazuhAgentInstanceRedhatEth0:
-    Type: 'AWS::EC2::NetworkInterface'
-    Properties:
-      SubnetId: !Ref SubnetWazuh
-      GroupSet:
-        - !Ref WazuhSecurityGroup
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: ac938975-e7f3-43cb-adf4-af2737efb52d
-  WazuhAgentRedhatEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-  WazuhAgentEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref WazuhAgentInstanceRedhatEth0
-      AllocationId: !GetAtt
-        - WazuhAgentRedhatEIP
-        - AllocationId
 
-  
 
   AgentInstanceCentos:
     Type: 'AWS::EC2::Instance'
@@ -1171,8 +1072,12 @@ Resources:
             VolumeSize: 200
             VolumeType: gp2
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref WazuhAgentInstanceCentosEth0
-          DeviceIndex: 0
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "WazuhSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetWazuh"
           
 
       Tags:
@@ -1189,29 +1094,7 @@ Resources:
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource
           AgentInstance --region ${AWS::Region}
     DependsOn: GatewayToInternet
-  WazuhAgentInstanceCentosEth0:
-    Type: 'AWS::EC2::NetworkInterface'
-    Properties:
-      SubnetId: !Ref SubnetWazuh
-      GroupSet:
-        - !Ref WazuhSecurityGroup
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: ac938975-e7f3-43cb-adf4-af2737efb52d
-  WazuhAgentEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-  WazuhAgentCentosEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref WazuhAgentInstanceCentosEth0
-      AllocationId: !GetAtt
-        - WazuhAgentCentosEIP
-        - AllocationId
-
-
-        
+    
   AgentUbuntuInstance:
     Type: 'AWS::EC2::Instance'
     Metadata:
@@ -1260,8 +1143,12 @@ Resources:
             VolumeSize: 200
             VolumeType: gp2
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref WazuhAgentUbuntuInstanceEth0
-          DeviceIndex: 0
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "WazuhSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetWazuh"
           
 
       Tags:
@@ -1278,27 +1165,6 @@ Resources:
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource
           AgentUbuntuInstance --region ${AWS::Region}
     DependsOn: GatewayToInternet
-  WazuhAgentUbuntuInstanceEth0:
-    Type: 'AWS::EC2::NetworkInterface'
-    Properties:
-      SubnetId: !Ref SubnetWazuh
-      GroupSet:
-        - !Ref WazuhSecurityGroup
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: ac938975-e7f3-43cb-adf4-af2737efb52d
-  WazuhAgentUbuntuEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-  WazuhAgentCentosEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref WazuhAgentUbuntuInstanceEth0
-      AllocationId: !GetAtt
-        - WazuhAgentUbuntuEIP
-        - AllocationId
-
 
 
   AgentDebianInstance:
@@ -1350,9 +1216,12 @@ Resources:
             VolumeSize: 200
             VolumeType: gp2
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref WazuhAgentDebianInstanceEth0
-          DeviceIndex: 0
-          
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "WazuhSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetWazuh"
 
       Tags:
         - Key: Name
@@ -1368,27 +1237,6 @@ Resources:
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource
           AgentDebianInstance --region ${AWS::Region}
     DependsOn: GatewayToInternet
-  WazuhAgentDebianInstanceEth0:
-    Type: 'AWS::EC2::NetworkInterface'
-    Properties:
-      SubnetId: !Ref SubnetWazuh
-      GroupSet:
-        - !Ref WazuhSecurityGroup
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: ac938975-e7f3-43cb-adf4-af2737efb52d
-  WazuhAgentDebianEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-  WazuhAgentDebianEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref WazuhAgentDebianInstanceEth0
-      AllocationId: !GetAtt
-        - WazuhAgentDebianEIP
-        - AllocationId
-
 
 
 Outputs:
