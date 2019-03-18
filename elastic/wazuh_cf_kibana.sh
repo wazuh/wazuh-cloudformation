@@ -102,6 +102,10 @@ cat > /etc/elasticsearch/jvm.options << EOF
 9-:-Djava.locale.providers=COMPAT
 EOF
 
+mkdir -p /etc/systemd/system/elasticsearch.service.d/
+echo '[Service]' > /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
+echo 'LimitMEMLOCK=infinity' >> /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
+
 # Allowing unlimited memory allocation
 echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
 echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
