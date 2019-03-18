@@ -459,94 +459,119 @@ Resources:
           InstancePort: '5000'
           Protocol: TCP
 
-  # Kibana load balancer
-  ElbKibanaSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
+  # Kibana Network Load Balancer
+  KibanaLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      GroupDescription: ELB Kibana security group
-      VpcId: !Ref WazuhVpc
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: !Ref KibanaPort
-          ToPort: !Ref KibanaPort
-          CidrIp: 0.0.0.0/0
+      Name: !Sub '${AWS::StackName}-Kibana'
+      Scheme: internet-facing
+      Subnets: 
+        - !Ref SubnetWazuh
+      Type: network
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}-ElbKibanaSecurityGroup'
-  ElbKibana:
-    Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
-    Properties:
-      LoadBalancerName: !Sub '${AWS::StackName}-Kibana'
-      Scheme: internet-facing
-      Subnets:
-        - !Ref SubnetWazuh
-      SecurityGroups:
-        - !Ref ElbKibanaSecurityGroup
-      ConnectionSettings:
-        IdleTimeout: '1200'
-      Instances:
-        - Ref: KibanaInstance
-      HealthCheck:
-        Target: !Sub 'TCP:${KibanaPort}'
-        HealthyThreshold: '3'
-        UnhealthyThreshold: '3'
-        Interval: '60'
-        Timeout: '5'
-      Listeners:
-        - LoadBalancerPort: 22 
-          InstancePort: 22 
-          Protocol: TCP
-          InstanceProtocol: TCP
-        - LoadBalancerPort: !Ref KibanaPort
-          InstancePort: !Ref KibanaPort
-          Protocol: TCP
-          InstanceProtocol: TCP
+          Value: nlbkibana
 
-  # Wazuh server load balancer
-  ElbWazuhSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
+  # Kibana Target Group for Network Load Balancer
+  KibanaTG:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      GroupDescription: ELB Wazuh security group
+      Name: registrationTargetGroup
+      Port: !Ref KibanaPort
+      Protocol: TCP
       VpcId: !Ref WazuhVpc
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: !Ref WazuhServerPort
-          ToPort: !Ref WazuhServerPort
-          CidrIp: 0.0.0.0/0
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 600
+      Targets:
+      - Id: !Ref KibanaInstance
+        Port: !Ref KibanaPort
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}-ElbWazuhSecurityGroup'
-  ElbWazuh:
-    Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
+          Value: kibanaTG
+
+  # Kibana Listener for Network Load Balancer
+  KibanaListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
-      LoadBalancerName: !Sub '${AWS::StackName}-Wazuh'
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref KibanaTG
+      LoadBalancerArn: !Ref KibanaLoadBalancer
+      Port: !Ref KibanaPort
+      Protocol: TCP
+
+  # Wazuh Network Load Balancer
+  WazuhNetworkLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub '${AWS::StackName}-Wazuh'
       Scheme: internet-facing
-      Subnets:
+      Subnets: 
         - !Ref SubnetWazuh
-      SecurityGroups:
-        - !Ref ElbWazuhSecurityGroup
-      ConnectionSettings:
-        IdleTimeout: '1200'
-      Instances:
-        - Ref: WazuhMasterInstance
-        - Ref: WazuhWorkerInstance
-      HealthCheck:
-        Target: !Sub 'TCP:${WazuhServerPort}'
-        HealthyThreshold: '3'
-        UnhealthyThreshold: '3'
-        Interval: '60'
-        Timeout: '5'
-      Listeners:
-        - LoadBalancerPort: !Ref WazuhServerPort
-          InstancePort: !Ref WazuhServerPort
-          Protocol: TCP
-      ConnectionDrainingPolicy:
-        Enabled: 'true'
-        Timeout: '600'
+      Type: network
+      Tags:
+        - Key: Name
+          Value: nlbwazuh
+
+  # Wazuh registration Target Group for Network Load Balancer
+  RegistrationTG:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: registrationTargetGroup
+      Port: 1515
+      Protocol: TCP
+      VpcId: !Ref WazuhVpc
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 600
+      Targets:
+      - Id: !Ref WazuhMasterInstance
+        Port: 1515
+      Tags:
+        - Key: Name
+          Value: registrationTG
+
+  # Wazuh registration Listener for Network Load Balancer
+  RegistrationListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref RegistrationTG
+      LoadBalancerArn: !Ref WazuhNetworkLoadBalancer
+      Port: '1515'
+      Protocol: TCP
+
+  ReportingTG:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: reportingTargetGroup
+      Port: 1514
+      Protocol: TCP
+      VpcId: !Ref WazuhVpc
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 600
+      Targets:
+      - Id: !Ref WazuhMasterInstance
+        Port: 1514
+      - Id: !Ref WazuhWorkerInstance
+        Port: 1514  
+      Tags:
+        - Key: Name
+          Value: reportingTG
+
+  WazuhNetworkLoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref ReportingTG
+      LoadBalancerArn: !Ref WazuhNetworkLoadBalancer
+      Port: '1514'
+      Protocol: TCP
+
 
   # IAM role and profile
   InstanceRole:
@@ -925,7 +950,7 @@ Resources:
                 WazuhRegistrationPort: ${WazuhRegistrationPort}
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                ElbWazuhDNS: ${ElbWazuh.DNSName}
+                ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
                 AgentName: AmazonLinux
               mode: '000600'
               owner: root
@@ -999,7 +1024,7 @@ Resources:
                 WazuhRegistrationPort: ${WazuhRegistrationPort}
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                ElbWazuhDNS: ${ElbWazuh.DNSName}
+                ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
                 AgentName: RHEL7
               mode: '000600'
               owner: root
@@ -1073,7 +1098,7 @@ Resources:
                 WazuhRegistrationPort: ${WazuhRegistrationPort}
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                ElbWazuhDNS: ${ElbWazuh.DNSName}
+                ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
                 AgentName: Centos7
               mode: '000600'
               owner: root
@@ -1145,7 +1170,7 @@ Resources:
                 WazuhServerPort: ${WazuhServerPort}
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                ElbWazuhDNS: ${ElbWazuh.DNSName}
+                ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
               mode: '000600'
               owner: root
               group: root
@@ -1217,7 +1242,7 @@ Resources:
                 WazuhServerPort: ${WazuhServerPort}
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                ElbWazuhDNS: ${ElbWazuh.DNSName}
+                ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
                 AgentName: Debian
               mode: '000600'
               owner: root
