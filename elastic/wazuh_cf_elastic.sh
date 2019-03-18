@@ -23,9 +23,6 @@ service sshd restart
 
 # Mounting ephemeral partition
 mkdir /mnt/ephemeral
-mkfs -t ext4 /dev/nvme0n1 &> /dev/null
-mount /dev/nvme0n1 /mnt/ephemeral &> /dev/null
-echo "/dev/nvme0n1 /mnt/ephemeral ext4 defaults,nofail 0 2" | tee -a /etc/fstab
 
 # Downloading and installing JRE
 url_jre="https://download.oracle.com/otn-pub/java/jdk/8u202-b08/1961070e4c9b4e26a04e7f5a083f551e/jre-8u202-linux-x64.rpm"
@@ -112,7 +109,7 @@ echo 'LimitMEMLOCK=infinity' >> /etc/systemd/system/elasticsearch.service.d/elas
 # Allowing unlimited memory allocation
 echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
 echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
-
+systemctl daemon-reload
 # Starting Elasticsearch
 service elasticsearch start
 
@@ -157,7 +154,7 @@ cat > /etc/logstash/jvm.options << EOF
 EOF
 
 # Starting Logstash
-initctl start logstash
+service logstash restart
 
 # Disable repositories
 sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
