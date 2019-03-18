@@ -476,7 +476,7 @@ Resources:
   KibanaTG:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: registrationTargetGroup
+      Name: KibanaTargetGroup
       Port: !Ref KibanaPort
       Protocol: TCP
       VpcId: !Ref WazuhVpc
