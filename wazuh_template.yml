@@ -965,8 +965,6 @@ Resources:
           commands:
             01_RunInstallationScript:
               command: /tmp/wazuh_cf_agent.sh
-      'AWS::CloudFormation::Designer':
-        id: ebbc5d7f-ce5b-43f0-b5d3-04c0c4b93ced
     Properties:
       ImageId: !FindInMap 
         - RegionMap
@@ -980,7 +978,6 @@ Resources:
           Ebs:
             VolumeSize: 200
             VolumeType: gp2
-
       NetworkInterfaces:
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
@@ -1039,8 +1036,6 @@ Resources:
           commands:
             01_RunInstallationScript:
               command: /tmp/wazuh_cf_agent.sh
-      'AWS::CloudFormation::Designer':
-        id: ebbc5d7f-ce5b-43f0-b5d3-04c0c4b93ced
     Properties:
       ImageId: !FindInMap 
         - RegionMap
@@ -1061,8 +1056,6 @@ Resources:
             - Ref: "WazuhSecurityGroup"
           SubnetId: 
             Ref: "SubnetWazuh"
-          
-
       Tags:
         - Key: Name
           Value: demo-devel-agent-redhat
@@ -1071,11 +1064,11 @@ Resources:
           #!/bin/bash -xe
 
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource
-          AgentInstance --configsets WazuhInstallationSet --region
+          AgentInstanceRedhat --configsets WazuhInstallationSet --region
           ${AWS::Region}
 
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource
-          AgentInstance --region ${AWS::Region}
+          AgentInstanceRedhat --region ${AWS::Region}
     DependsOn: GatewayToInternet
 
 
@@ -1113,8 +1106,7 @@ Resources:
           commands:
             01_RunInstallationScript:
               command: /tmp/wazuh_cf_agent.sh
-      'AWS::CloudFormation::Designer':
-        id: ebbc5d7f-ce5b-43f0-b5d3-04c0c4b93ced
+
     Properties:
       ImageId: !FindInMap 
         - RegionMap
@@ -1145,11 +1137,11 @@ Resources:
           #!/bin/bash -xe
 
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource
-          AgentInstance --configsets WazuhInstallationSet --region
+          AgentInstanceCentos --configsets WazuhInstallationSet --region
           ${AWS::Region}
 
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource
-          AgentInstance --region ${AWS::Region}
+          AgentInstanceCentos --region ${AWS::Region}
     DependsOn: GatewayToInternet
     
   AgentUbuntuInstance:
@@ -1184,8 +1176,7 @@ Resources:
           commands:
             01_RunInstallationScript:
               command: /tmp/wazuh_cf_agent_ubuntu.sh
-      'AWS::CloudFormation::Designer':
-        id: ebbc5d7f-ce5b-43f0-b5d3-04c0c4b93ced
+
     Properties:
       ImageId: !FindInMap 
         - RegionMap
@@ -1257,8 +1248,7 @@ Resources:
           commands:
             01_RunInstallationScript:
               command: /tmp/wazuh_cf_agent_ubuntu.sh
-      'AWS::CloudFormation::Designer':
-        id: ebbc5d7f-ce5b-43f0-b5d3-04c0c4b93ced
+
     Properties:
       ImageId: !FindInMap 
         - RegionMap
