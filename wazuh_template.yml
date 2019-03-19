@@ -1065,7 +1065,7 @@ Resources:
 
       Tags:
         - Key: Name
-          Value: demo-devel-agent-amazonlinux
+          Value: demo-devel-agent-redhat
       UserData:
         'Fn::Base64': !Sub >
           #!/bin/bash -xe
