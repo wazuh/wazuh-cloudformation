@@ -242,6 +242,10 @@ sudo amazon-linux-extras install nginx1.12
 mkdir -p /etc/ssl/certs /etc/ssl/private
 openssl req -x509 -batch -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/kibana.key -out /etc/ssl/certs/kibana.pem
 echo "Installed NGINX." >> /tmp/log
+
+# Installing htpasswd (needed for Amazon Linux)
+yum install httpd-tools-2.4.33-2.amzn2.0.2.x86_64
+
 # Configure Nginx
 htpasswd -b -c /etc/nginx/conf.d/kibana.htpasswd ${kibana_username} ${kibana_password}
 cat > /etc/nginx/conf.d/kibana.conf << EOF
