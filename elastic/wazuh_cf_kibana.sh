@@ -244,7 +244,7 @@ openssl req -x509 -batch -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/priv
 echo "Installed NGINX." >> /tmp/log
 
 # Installing htpasswd (needed for Amazon Linux)
-yum install httpd-tools-2.4.33-2.amzn2.0.2.x86_64
+yum install httpd-tools-2.4.33-2.amzn2.0.2.x86_64 -y
 
 # Configure Nginx
 htpasswd -b -c /etc/nginx/conf.d/kibana.htpasswd ${kibana_username} ${kibana_password}
