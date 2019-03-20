@@ -36,9 +36,9 @@ echo -e '[wazuh_pre_release]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
 elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
 cat > /etc/yum.repos.d/elastic.repo << EOF
-[elasticsearch-${elastic_major_version}.x]
-name=Elasticsearch repository for ${elastic_major_version}.x packages
-baseurl=https://artifacts.elastic.co/packages/${elastic_major_version}.x/yum
+[elasticsearch-6.x]
+name=Elasticsearch repository for 6.x packages
+baseurl=https://artifacts.elastic.co/packages/6.x/yum
 gpgcheck=1
 gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
 enabled=1
@@ -111,7 +111,7 @@ chkconfig --add filebeat
 echo "Installed Filebeat" > /tmp/log
 
 # Configuring Filebeat
-curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/${wazuh_version}/extensions/filebeat/filebeat.yml
+curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/filebeat/filebeat.yml
 sed -i "s/YOUR_ELASTIC_SERVER_IP/${elb_logstash}/" /etc/filebeat/filebeat.yml
 service filebeat start
 echo "Started Filebeat" > /tmp/log
