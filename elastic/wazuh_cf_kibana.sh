@@ -217,7 +217,7 @@ default_index="/tmp/default_index.json"
 cat > ${default_index} << EOF
 {
   "changes": {
-    "defaultIndex": "wazuh-alerts-${wazuh_major}.x-*"
+    "defaultIndex": "wazuh-alerts-3.x-*"
   }
 }
 EOF
