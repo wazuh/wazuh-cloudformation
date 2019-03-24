@@ -418,10 +418,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: !Ref WazuhServerPort
           ToPort: !Ref WazuhServerPort
@@ -1222,6 +1219,173 @@ Resources:
 
     # Wazuh worker instance
 
+  # Debian agent instance and networking requirements
+  Debian:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          DebianInstallationSet:
+            - WazuhFiles
+            - WazuhInstall
+        WazuhFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                WazuhServerPort: ${WazuhServerPort}
+                WazuhRegistrationPort: ${WazuhRegistrationPort}
+                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
+                AgentName: Debian
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_agent_debian.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_cf_agent_debian.sh
+              mode: '000700'
+              owner: root
+              group: root
+        WazuhInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_agent_debian.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVMDEBIAN
+      InstanceType: !Ref AgentInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref DebianEth0
+          DeviceIndex: 0
+      Tags:
+        - Key: Name
+          Value: Debian
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          echo 'Starting...' > /tmp/cflog.log
+          apt update
+          apt-get -y install python-setuptools curl 
+          mkdir aws-cfn-bootstrap-latest
+          curl https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz | tar xz -C aws-cfn-bootstrap-latest --strip-components 1
+          easy_install aws-cfn-bootstrap-latest
+          echo 'Copied' > /tmp/checkpoint.log
+          /usr/local/bin/cfn-init --stack ${AWS::StackName} --resource Debian --configsets DebianInstallationSet --region ${AWS::Region} 2> /tmp/cfnerror.log
+          /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Debian --region ${AWS::Region} 2> /tmp/cfnerror.log
+          echo 'Exiting...' >> /tmp/cflog.log
+    DependsOn: GatewayToInternet
+  DebianEth0: 
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetAgents
+      GroupSet: [!Ref 'WazuhSecurityGroup']
+  DebianEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  DebianEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref DebianEth0
+      AllocationId: !GetAtt
+        - DebianEIP
+        - AllocationId
+
+  # Ubuntu agent instance and networking requirements
+  Ubuntu:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          UbuntuInstallationSet:
+            - WazuhFiles
+            - WazuhInstall
+        WazuhFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                WazuhServerPort: ${WazuhServerPort}
+                WazuhRegistrationPort: ${WazuhRegistrationPort}
+                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
+                AgentName: Ubuntu
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_agent_ubuntu.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_cf_agent_ubuntu.sh
+              mode: '000700'
+              owner: root
+              group: root
+        WazuhInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_agent_ubuntu.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVMUBUNTU64
+      InstanceType: !Ref AgentInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref UbuntuEth0
+          DeviceIndex: 0
+      Tags:
+        - Key: Name
+          Value: Ubuntu
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          echo 'Starting...' > /tmp/cflog.log
+          apt update
+          apt-get -y install python-setuptools curl python-pip
+          pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+          echo 'Copied' > /tmp/checkpoint.log
+          /usr/local/bin/cfn-init --stack ${AWS::StackName} --resource Ubuntu --configsets UbuntuInstallationSet --region ${AWS::Region} 2> /tmp/cfnerror.log
+          /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Ubuntu --region ${AWS::Region} 2> /tmp/cfnerror.log
+          echo 'Exiting...' >> /tmp/cflog.log
+    DependsOn: GatewayToInternet
+  UbuntuEth0: 
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetAgents
+      GroupSet: [!Ref 'WazuhSecurityGroup']
+  UbuntuEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  UbuntuEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref UbuntuEth0
+      AllocationId: !GetAtt
+        - UbuntuEIP
+        - AllocationId
 
 Outputs:
   ElasticWazuhVersion:
