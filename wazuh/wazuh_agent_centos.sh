@@ -38,7 +38,7 @@ echo "Set Wazuh password registration." >> /tmp/log
 
 # Register agent using authd
 /var/ossec/bin/agent-auth -m ${master_ip} -A ${agent_name}
-sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' /var/ossec/etc/ossec.conf
+sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' ${manager_config}
 echo "Registered Wazuh agent." >> /tmp/log
 
 # Restart wazuh-manager

@@ -34,13 +34,17 @@ echo "${wazuh_registration_password}" > /var/ossec/etc/authd.pass
 echo "Set registration password." > /tmp/log
 echo "Registering agent..." > /tmp/log
 
+# Setting Wazuh NLB DNS name
+sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' ${manager_config}
+
+# Change manager protocol to tcp, to be used by Amazon ELB
+sed -i "s/<protocol>udp<\/protocol>/<protocol>tcp<\/protocol>/" ${manager_config}
+
 # Register agent using authd
-/var/ossec/bin/agent-auth -m ${master_ip} -A ubuntu-ag < /tmp/log
+/var/ossec/bin/agent-auth -m ${master_ip} -A Ubuntu < /tmp/log
 echo "Agent registered." > /tmp/log
 
-sed -i 's:MANAGER_IP:'${elb_wazuh_dns}
 # Enable and restart the Wazuh agent
-
 systemctl enable wazuh-agent
 systemctl restart wazuh-agent
 echo "Agent restarted." > /tmp/log
