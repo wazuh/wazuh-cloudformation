@@ -1387,6 +1387,92 @@ Resources:
         - UbuntuEIP
         - AllocationId
 
+  # RHEL7 agent instance and networking requirements
+  RHEL7:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          RHEL7InstallationSet:
+            - WazuhFiles
+            - WazuhInstall
+        WazuhFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                WazuhServerPort: ${WazuhServerPort}
+                WazuhRegistrationPort: ${WazuhRegistrationPort}
+                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
+                AgentName: RHEL7
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_agent_rhel.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_agent_rhel.sh
+              mode: '000700'
+              owner: root
+              group: root
+        WazuhInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_agent_rhel.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVMREDHAT7
+      InstanceType: !Ref AgentInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref RHELEth0
+          DeviceIndex: 0
+      Tags:
+        - Key: Name
+          Value: RHEL7
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          echo 'Starting...' > /tmp/cflog.log
+          ### This is redhat 7. It supports cloud-init but Cfn packages need to be installed unlike AWS Linux. And they are installed in a different location\n,
+          # First enable EPEL\n,
+          rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+          # Now install Python Setuptools(easy_install) and Pip
+          yum -y install python-pip
+          # Now install cfn scripts
+          /bin/easy_install --script-dir /opt/aws/bin https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource RHEL7 --configsets RHEL7InstallationSet --region ${AWS::Region} 2> /tmp/cfnerror.log
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource RHEL7 --region ${AWS::Region} 2> /tmp/cfnerror.log
+          echo 'Exiting...' >> /tmp/cflog.log
+    DependsOn: GatewayToInternet
+  RHELEth0: 
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetAgents
+      GroupSet: [!Ref 'WazuhSecurityGroup']
+  RHELEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  RHELEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref RHELEth0
+      AllocationId: !GetAtt
+        - RHELEIP
+        - AllocationId
+
 Outputs:
   ElasticWazuhVersion:
     Description: Elastic Stack and Wazuh versions
