@@ -39,6 +39,7 @@ echo "Registering agent..." > /tmp/log
 echo "Agent registered." > /tmp/log
 
 sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' /var/ossec/etc/ossec.conf
+sed -i "s/<protocol>udp<\/protocol>/<protocol>tcp<\/protocol>/" ${manager_config}
 
 # Enable and restart the Wazuh agent
 
