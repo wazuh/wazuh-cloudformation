@@ -665,7 +665,9 @@ Resources:
         TargetGroupArn: !Ref TLSTargetGroup
       LoadBalancerArn: !Ref WazuhNetworkLoadBalancer
       Port: !Ref KibanaPort
-      Protocol: TCP
+      Protocol: TLS
+      Certificates:
+      - CertificateArn: !Ref SSLCertificateARN
 
   # IAM role and profile
   InstanceRole:
