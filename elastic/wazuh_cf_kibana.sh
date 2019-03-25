@@ -252,9 +252,6 @@ cat > /etc/nginx/conf.d/kibana.conf << EOF
 server {
     listen ${kibana_port} default_server;
     listen            [::]:${kibana_port};
-    ssl on;
-    ssl_certificate /etc/ssl/certs/kibana.pem;
-    ssl_certificate_key /etc/ssl/private/kibana.key;
     access_log            /var/log/nginx/nginx.access.log;
     error_log            /var/log/nginx/nginx.error.log;
     location / {
