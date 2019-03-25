@@ -73,6 +73,10 @@ Metadata:
           - AgentInstanceType
           - CentosAgentInstanceType
           - WindowsInstanceType
+          - RedHatInstanceType
+          - DebianInstanceType
+          - UbuntuInstanceType
+          
       - 
         Label:
           default: "Wazuh configuration"
@@ -91,6 +95,7 @@ Metadata:
           - KibanaPort
           - KibanaUsername
           - KibanaPassword
+          - SSLCertificateARN
 
 Parameters:
 
@@ -160,6 +165,17 @@ Parameters:
     Description: Type of EC2 instance for Wazuh CentOS agent instance
     Type: String
 
+
+  RedHatInstanceType:
+    AllowedValues:
+      - t2.micro
+      - t2.medium
+      - t2.large
+    ConstraintDescription: Must contain valid instance type
+    Default: t2.micro
+    Description: Type of EC2 instance for Wazuh RedHat agent instance
+    Type: String
+
   WindowsInstanceType:
     AllowedValues:
       - t2.micro
@@ -168,6 +184,26 @@ Parameters:
     ConstraintDescription: Must contain valid instance type
     Default: t2.micro
     Description: Type of EC2 instance for Windows Wazuh agent instance
+    Type: String
+
+  DebianInstanceType:
+    AllowedValues:
+      - t2.micro
+      - t2.medium
+      - t2.large
+    ConstraintDescription: Must contain valid instance type
+    Default: t2.micro
+    Description: Type of EC2 instance for Debian Wazuh agent instance
+    Type: String
+
+  UbuntuInstanceType:
+    AllowedValues:
+      - t2.micro
+      - t2.medium
+      - t2.large
+    ConstraintDescription: Must contain valid instance type
+    Default: t2.micro
+    Description: Type of EC2 instance for Ubuntu Wazuh agent instance
     Type: String
 
   ElasticInstanceType:
@@ -253,7 +289,9 @@ Parameters:
     MaxLength: '48'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Only alphanumeric characters
-
+  SSLCertificateARN:
+    Description: 'Optional. Used for HTTPS access to WUI. Existent certificate, identified by its Amazon Resource Name (ARN).'
+    Type: String
 Resources:
 
   # Network resources
@@ -563,7 +601,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       Name: !Sub '${AWS::StackName}-TLSTargetGroup'
-      Port: 443
+      Port: !Ref KibanaPort
       Protocol: TCP
       VpcId: !Ref WazuhVpc
       TargetGroupAttributes:
@@ -571,7 +609,7 @@ Resources:
           Value: 600
       Targets:
       - Id: !Ref KibanaInstance
-        Port: 443
+        Port: !Ref KibanaPort
       Tags:
         - Key: Name
           Value: TLSTargetGroup
@@ -626,7 +664,7 @@ Resources:
       - Type: forward
         TargetGroupArn: !Ref TLSTargetGroup
       LoadBalancerArn: !Ref WazuhNetworkLoadBalancer
-      Port: '443'
+      Port: !Ref KibanaPort
       Protocol: TCP
 
   # IAM role and profile
@@ -1124,7 +1162,7 @@ Resources:
         - "RegionMap"
         - Ref: "AWS::Region"
         - HVMCENTOS7
-      InstanceType: !Ref AgentInstanceType
+      InstanceType: !Ref CentosAgentInstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
       BlockDeviceMappings:
@@ -1210,15 +1248,6 @@ Resources:
         - WindowsEIP
         - AllocationId
 
-  
-
-
-
-
-
-
-    # Wazuh worker instance
-
   # Debian agent instance and networking requirements
   Debian:
     Type: AWS::EC2::Instance
@@ -1259,7 +1288,7 @@ Resources:
         - "RegionMap"
         - Ref: "AWS::Region"
         - HVMDEBIAN
-      InstanceType: !Ref AgentInstanceType
+      InstanceType: !Ref DebianInstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
       BlockDeviceMappings:
@@ -1344,7 +1373,7 @@ Resources:
         - "RegionMap"
         - Ref: "AWS::Region"
         - HVMUBUNTU64
-      InstanceType: !Ref AgentInstanceType
+      InstanceType: !Ref UbuntuInstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
       BlockDeviceMappings:
@@ -1427,7 +1456,7 @@ Resources:
         - "RegionMap"
         - Ref: "AWS::Region"
         - HVMREDHAT7
-      InstanceType: !Ref AgentInstanceType
+      InstanceType: !Ref RedHatInstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
       BlockDeviceMappings:
