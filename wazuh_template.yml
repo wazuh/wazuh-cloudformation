@@ -1055,15 +1055,6 @@ Resources:
         - WazuhWorkerEIP
         - AllocationId
 
-  
-
-
-
-
-
-
-    # Wazuh worker instance
-    
   # Amazon Linux agent instance and networking requirements
   AmazonLinux:
     Type: AWS::EC2::Instance
@@ -1325,6 +1316,10 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
           echo 'Starting...' > /tmp/cflog.log
+          # the current sources seems to be down, so we gotta change them as a workaround
+          rm -rf /etc/apt/sources.list
+          echo 'deb http://deb.debian.org/debian jessie main' > /etc/apt/sources.list
+          echo 'deb-src http://deb.debian.org/debian jessie main' >> /etc/apt/sources.list
           apt update
           apt-get -y install python-setuptools curl 
           mkdir aws-cfn-bootstrap-latest
