@@ -29,7 +29,9 @@ echo "Running as root." >> /tmp/log
 # Creating SSH user
 adduser ${ssh_username}
 echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
-echo "Created SSH user." >> /tmp/log
+usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
+sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
+service sshd restart
 
 usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
 sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
