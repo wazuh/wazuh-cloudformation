@@ -20,6 +20,13 @@ if [[ $EUID -ne 0 ]]; then
 fi
 echo "Env vars completed." >> /tmp/log
 
+# Add SSH user
+adduser ${ssh_username}
+echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
+usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
+sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
+service sshd restart
+
 # Adding Wazuh repository
 echo -e '[wazuh_pre_release]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_pre.repo
 # Installing wazuh-manager
