@@ -18,8 +18,12 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+# Installing dependencies
+apt-get install curl apt-transport-https lsb-release -y
+echo "Installed dependencies." > /tmp/log
+
 # Add SSH user
-adduser ${ssh_username}
+useradd ${ssh_username}
 echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
 usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
 sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
@@ -30,8 +34,6 @@ curl -s https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WA
 echo "deb https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/apt/ unstable main" | tee -a /etc/apt/sources.list.d/wazuh_pre_release.list
 # Install Wazuh agent
 apt-get update
-apt-get install curl apt-transport-https lsb-release -y
-echo "Installed dependencies." > /tmp/log
 
 # Install Wazuh agent
 apt-get install wazuh-agent -y
