@@ -27,6 +27,47 @@ usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
 sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
 service sshd restart
 
+# Install dependencies
+yum install wget -y
+
+### Use case 1: Docker
+
+# Add Docker-ce repo
+yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+# add selinux dependencies 
+yum install -y http://mirror.centos.org/centos/7/extras/x86_64/Packages/container-selinux-2.74-1.el7.noarch.rpm
+
+# install Docker
+yum install -y docker-ce
+
+### Use case 2: Web server
+yum install httpd -y
+service httpd restart
+
+### Use case 3: Mysql
+wget https://repo.mysql.com//mysql80-community-release-el7-2.noarch.rpm
+yum localinstall mysql80-community-release-el7-2.noarch.rpm -y
+yum install mysql -y
+yum install mysql-server -y
+
+### Use case 4: Netcat
+yum install nc -y
+
+### Use case 5: OpenSCAP
+yum install openscap -y
+
+### Use case 6: Suricata
+# Install Suricata
+yum -y install suricata
+
+### Use case 7: Diamorphine
+yum install "kernel-devel-uname-r == $(uname -r)" -y
+yum install gcc make epel-release -y
+git clone https://github.com/m0nad/Diamorphine
+cd Diamorphine
+make
+
 # Adding Wazuh repository
 echo -e '[wazuh_pre_release]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_pre.repo
 # Installing wazuh-manager

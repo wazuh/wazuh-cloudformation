@@ -20,6 +20,8 @@ eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*/
 splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^KibanaUsername:' | cut -d' ' -f2)
 splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^KibanaPassword:' | cut -d' ' -f2)
 splunk_ip=$(cat /tmp/wazuh_cf_settings | grep '^SplunkIP:' | cut -d' ' -f2)
+WindowsPrivateIp=$(cat /tmp/wazuh_cf_settings | grep '^WindowsPrivateIp:' | cut -d' ' -f2)
+
 echo "Added env vars." >> /tmp/log
 
 # Check if running as root
@@ -58,6 +60,19 @@ manager_config="/var/ossec/etc/ossec.conf"
 
 # Enable registration service (only for master node)
 /var/ossec/bin/ossec-control enable auth
+
+### Use case 1: IP reputation
+
+wget https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/alienvault_reputation.ipset -O /var/ossec/etc/lists/alienvault_reputation.ipset
+wget http://blog.wazuh.com/resources/posts/2953/iplist-to-cdblist.py -O /var/ossec/etc/lists/iplist-to-cdblist.py
+# Add Windows public IP to the list
+echo ${WindowsPrivateIp} >> /var/ossec/etc/lists/alienvault_reputation.ipset
+python iplist-to-cdblist.py /var/ossec/etc/lists/alienvault_reputation.ipset /var/ossec/etc/lists/blacklist-alienvault
+
+# Delete ipset and python script
+rm -rf /var/ossec/etc/lists/alienvault_reputation.ipset
+rm -rf /var/ossec/etc/lists/iplist-to-cdblist.py
+
 
 # Change manager protocol to tcp, to be used by Amazon ELB
 sed -i "s/<protocol>udp<\/protocol>/<protocol>tcp<\/protocol>/" ${manager_config}

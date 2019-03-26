@@ -933,6 +933,7 @@ Resources:
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
                 ElbLogstashDNS: ${ElbLogstash.DNSName}
+                WindowsPrivateIp: ${Windows.PublicIp}
               mode: '000600'
               owner: root
               group: root
