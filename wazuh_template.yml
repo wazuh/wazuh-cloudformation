@@ -141,6 +141,7 @@ Parameters:
       - t2.micro
       - t2.medium
       - t2.large
+      - m5.large
     ConstraintDescription: Must contain valid instance type
     Default: t2.medium
     Description: Type of EC2 instance for Wazuh instance
@@ -150,6 +151,7 @@ Parameters:
       - t2.micro
       - t2.medium
       - t2.large
+      - m5.large
     ConstraintDescription: Must contain valid instance type
     Default: t2.micro
     Description: Type of EC2 instance for Wazuh Amazon Linux agent instance
@@ -160,6 +162,7 @@ Parameters:
       - t2.micro
       - t2.medium
       - t2.large
+      - m5.large
     ConstraintDescription: Must contain valid instance type
     Default: t2.micro
     Description: Type of EC2 instance for Wazuh CentOS agent instance
@@ -171,6 +174,7 @@ Parameters:
       - t2.micro
       - t2.medium
       - t2.large
+      - m5.large
     ConstraintDescription: Must contain valid instance type
     Default: t2.micro
     Description: Type of EC2 instance for Wazuh RedHat agent instance
@@ -181,6 +185,7 @@ Parameters:
       - t2.micro
       - t2.medium
       - t2.large
+      - m5.large
     ConstraintDescription: Must contain valid instance type
     Default: t2.micro
     Description: Type of EC2 instance for Windows Wazuh agent instance
@@ -191,6 +196,7 @@ Parameters:
       - t2.micro
       - t2.medium
       - t2.large
+      - m5.large
     ConstraintDescription: Must contain valid instance type
     Default: t2.micro
     Description: Type of EC2 instance for Debian Wazuh agent instance
@@ -201,6 +207,7 @@ Parameters:
       - t2.micro
       - t2.medium
       - t2.large
+      - m5.large
     ConstraintDescription: Must contain valid instance type
     Default: t2.micro
     Description: Type of EC2 instance for Ubuntu Wazuh agent instance
@@ -210,6 +217,8 @@ Parameters:
     AllowedValues:
       - t2.medium
       - t2.large
+      - i3.large
+      - i3.xlarge
     ConstraintDescription: Must contain valid instance type
     Default: t2.medium
     Description: Type of EC2 instance for Elastic instance
@@ -218,6 +227,9 @@ Parameters:
     AllowedValues:
       - t2.medium
       - t2.large
+      - m5.large
+      - r5.large
+
     ConstraintDescription: Must contain valid instance type
     Default: t2.medium
     Description: Type of EC2 instance for Kibana instance
@@ -456,6 +468,10 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3389
+          ToPort: 3389
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: !Ref WazuhServerPort
