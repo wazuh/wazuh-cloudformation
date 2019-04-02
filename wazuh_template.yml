@@ -977,6 +977,22 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource WazuhMasterInstance --configsets WazuhInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WazuhMasterInstance --region ${AWS::Region}
     DependsOn: GatewayToInternet
+  WazuhMasterEth0: 
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetWazuh
+      GroupSet: [!Ref 'WazuhSecurityGroup']
+  WazuhMasterEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  WazuhMasterEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref WazuhMasterEth0
+      AllocationId: !GetAtt
+        - WazuhMasterEIP
+        - AllocationId
 
   # Wazuh worker instance
   WazuhWorkerInstance:
