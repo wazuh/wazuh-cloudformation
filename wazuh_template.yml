@@ -726,7 +726,7 @@ Resources:
     Type: 'AWS::AutoScaling::AutoScalingGroup'
     Properties:
       VPCZoneIdentifier:
-        - !Ref SubnetWazuh
+        - !Ref SubnetElasticsearch
       HealthCheckGracePeriod: '600'
       HealthCheckType: EC2
       LaunchConfigurationName: !Ref ElasticLaunchConfiguration
@@ -1072,12 +1072,12 @@ Resources:
         - AllocationId
 
   # Amazon Linux agent instance and networking requirements
-  AmazonLinux:
+  Amazon:
     Type: AWS::EC2::Instance
     Metadata:
       'AWS::CloudFormation::Init':
         configSets:
-          AmazonLinuxInstallationSet:
+          AmazonInstallationSet:
             - WazuhFiles
             - WazuhInstall
         WazuhFiles:
@@ -1092,20 +1092,20 @@ Resources:
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
                 ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
-                AgentName: AmazonLinux
+                AgentName: Amazon
               mode: '000600'
               owner: root
               group: root
-            /tmp/wazuh_agent_amazonlinux.sh:
+            /tmp/wazuh_agent_amazon.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_agent_amazonlinux.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_agent_amazon.sh
               mode: '000700'
               owner: root
               group: root
         WazuhInstall:
           commands:
             01_RunInstallationScript:
-              command: /tmp/wazuh_agent_amazonlinux.sh
+              command: /tmp/wazuh_agent_amazon.sh
     Properties:
       ImageId: !FindInMap
         - "RegionMap"
@@ -1120,32 +1120,32 @@ Resources:
             VolumeSize: 200
             VolumeType: gp2
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref AmazonLinuxEth0
+        - NetworkInterfaceId: !Ref AmazonEth0
           DeviceIndex: 0
       Tags:
         - Key: Name
-          Value: AmazonLinux
+          Value: Amazon
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource AmazonLinux --configsets AmazonLinuxInstallationSet --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource AmazonLinux --region ${AWS::Region}
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Amazon --configsets AmazonInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Amazon --region ${AWS::Region}
     DependsOn: GatewayToInternet
-  AmazonLinuxEth0: 
+  AmazonEth0: 
     Type: AWS::EC2::NetworkInterface
     Properties:
       SubnetId: !Ref SubnetAgents
       GroupSet: [!Ref 'WazuhSecurityGroup']
-  AmazonLinuxEIP:
+  AmazonEIP:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
-  AmazonLinuxEIPAssociation:
+  AmazonEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
-      NetworkInterfaceId: !Ref AmazonLinuxEth0
+      NetworkInterfaceId: !Ref AmazonEth0
       AllocationId: !GetAtt
-        - AmazonLinuxEIP
+        - AmazonEIP
         - AllocationId
 
   # CentOS agent instance and networking requirements
