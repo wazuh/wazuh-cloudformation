@@ -1,10 +1,10 @@
 #!/bin/bash
 # Install Splunk using Cloudformation template
-# Support for Amazon Linux
+# Support for Splunk
 
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
-splunk_port=$(cat /tmp/wazuh_cf_settings | grep '^SplunkPort:' | cut -d' ' -f2)
+splunk_port="8000"
 splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^SplunkUsername:' | cut -d' ' -f2)
 splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^SplunkPassword:' | cut -d' ' -f2)
 eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet addr:' | cut -d: -f2  | cut -d' ' -f1)
@@ -12,6 +12,14 @@ wazuh_master_ip=$(cat /tmp/wazuh_cf_settings | grep '^WazuhMasterIP:' | cut -d' 
 wazuh_api_user=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminUsername:' | cut -d' ' -f2)
 wazuh_api_password=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminPassword:' | cut -d' ' -f2)
 wazuh_api_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiPort:' | cut -d' ' -f2)
+
+
+# Creating SSH user
+adduser ${ssh_username}
+echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
+usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
+sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
+service sshd restart
 
 # Install net-tools, wget, git
 yum install net-tools wget git curl -y -q

@@ -95,6 +95,17 @@ Metadata:
           - KibanaPort
           - KibanaUsername
           - KibanaPassword
+      -
+        Label:
+          default: "Splunk configuration"
+        Parameters:
+          - SplunkUsername
+          - SplunkPassword
+
+      -
+        Label:
+          default: "SSL Certificate"
+        Parameters:
           - SSLCertificateARN
 
 Parameters:
@@ -295,6 +306,22 @@ Parameters:
     ConstraintDescription: Only alphanumeric characters
   KibanaPassword:
     Description: Password for Kibana access
+    NoEcho: 'True'
+    Type: String
+    MinLength: '1'
+    MaxLength: '48'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: Only alphanumeric characters
+  SplunkUsername:
+    Default: wazuh
+    Description: Username for Splunk access
+    Type: String
+    MinLength: '1'
+    MaxLength: '16'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: Only alphanumeric characters
+  SplunkPassword:
+    Description: Password for Splunk access
     NoEcho: 'True'
     Type: String
     MinLength: '1'
@@ -908,6 +935,89 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource KibanaInstance --configsets KibanaInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Kibana --region ${AWS::Region}
     DependsOn: GatewayToInternet
+
+  # Kibana instance
+  SplunkInstance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          SplunkInstallationSet:
+            - SplunkFiles
+            - SplunkInstall
+        SplunkFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                SplunkUsername: ${SplunkUsername}
+                SplunkPassword: ${SplunkPassword}
+                WazuhApiAdminUsername: ${WazuhApiAdminUsername}
+                WazuhApiAdminPassword: ${WazuhApiAdminPassword}
+                WazuhApiPort: ${WazuhApiPort}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_elasticsearch.yml:
+              content: !Sub |
+                cluster.name: wazuh_elastic
+                path.data: /var/lib/elasticsearch
+                path.logs: /var/log/elasticsearch
+                bootstrap.memory_lock: true
+                network.host: _ec2_
+                discovery.zen.minimum_master_nodes: 2
+                discovery.zen.hosts_provider: ec2
+                discovery.ec2.groups: ${ElasticSecurityGroup}
+                discovery.ec2.host_type: private_ip
+                discovery.ec2.endpoint: ec2.${AWS::Region}.amazonaws.com
+                node.master: false
+                node.data: false
+                node.ingest: false
+              mode: '000644'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_splunk.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/splunk/wazuh_cf_splunk.sh
+              mode: '000700'
+              owner: root
+              group: root
+        SplunkInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_splunk.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVM64
+      InstanceType: !Ref SplunkInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 100
+            VolumeType: gp2
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "SplunkSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetWazuh"
+      Tags:
+        - Key: Name
+          Value: Splunk
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource SplunkInstance --configsets SplunkInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Splunk --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+
 
   # Wazuh master instance
   WazuhMasterInstance:
@@ -1545,6 +1655,9 @@ Outputs:
   KibanaUsername:
     Description: Username for Kibana WUI
     Value: !Ref KibanaUsername
+  SplunkUsername:
+    Description: Username for Splunk WUI
+    Value: !Ref SplunkUsername
   WazuhServerPort:
     Description: Port number for agents communication with Wazuh server
     Value: !Ref WazuhServerPort
