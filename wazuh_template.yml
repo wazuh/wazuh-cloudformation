@@ -144,8 +144,9 @@ Parameters:
       - 6.5.3_3.7.2
       - 6.5.4_3.7.2
       - 6.6.2_3.9.0
+      - 6.7.0_3.9.0
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
-    Default: 6.6.2_3.9.0
+    Default: 6.7.0_3.9.0
     Description: Elastic and Wazuh versions to be installed
     Type: String
   WazuhInstanceType:
