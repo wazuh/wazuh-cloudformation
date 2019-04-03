@@ -64,6 +64,7 @@ Metadata:
           - WazuhInstanceType
           - ElasticInstanceType
           - KibanaInstanceType
+          - SplunkInstanceType
           - SshUsername
           - SshPassword
       - 
@@ -240,10 +241,20 @@ Parameters:
       - t2.large
       - m5.large
       - r5.large
-
     ConstraintDescription: Must contain valid instance type
     Default: t2.medium
     Description: Type of EC2 instance for Kibana instance
+    Type: String
+
+  SplunkInstanceType:
+    AllowedValues:
+      - t2.medium
+      - t2.large
+      - m5.large
+      - r5.large
+    ConstraintDescription: Must contain valid instance type
+    Default: t2.medium
+    Description: Type of EC2 instance for Splunk instance
     Type: String
 
   # Wazuh configuration
@@ -525,7 +536,23 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-WazuhSecurityGroup'
-
+  SplunkSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Splunk security group
+      VpcId: !Ref WazuhVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 8000
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-SplunkSecurityGroup'
   # Elasticsearch load balancer
   ElbElasticSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -1685,3 +1712,6 @@ Outputs:
   KibanaInstanceType:
     Description: Kibana server instance type
     Value: !Ref KibanaInstanceType
+  SplunkInstanceType:
+    Description: Splunk server instance type
+    Value: !Ref SplunkInstanceType
