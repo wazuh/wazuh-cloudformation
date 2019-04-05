@@ -29,15 +29,20 @@ service sshd restart
 if [ ! -f /usr/bin/python ]; then ln -s /usr/bin/python3 /usr/bin/python; fi
 
 # Adding Wazuh repository
-if [ ${EnvironmentType} == 'staging' ] then
+if [[ ${EnvironmentType} == 'staging' ]]
+then
     curl -s https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH | apt-key add -
     echo "deb https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/apt/ unstable main" | tee -a /etc/apt/sources.list.d/wazuh_pre_release.list
-elif [ ${EnvironmentType} == 'production' ] then
+elif [[ ${EnvironmentType} == 'production' ]]
+then
     curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add -
     echo "deb https://packages.wazuh.com/3.x/apt/ stable main" | tee -a /etc/apt/sources.list.d/wazuh.list
-elif [ ${EnvironmentType} == 'devel' ] then
+elif [[ ${EnvironmentType} == 'devel' ]]
+then
     curl -s https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH | apt-key add -
     echo "deb https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/staging/apt/ unstable main" | tee -a /etc/apt/sources.list.d/wazuh_staging.list
+else
+	echo 'no repo' >> /tmp/stage
 fi
 # Install Wazuh agent
 apt-get update

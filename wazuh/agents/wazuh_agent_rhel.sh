@@ -75,10 +75,15 @@ yum install -y https://pkg.osquery.io/rpm/osquery-3.3.2-1.linux.x86_64.rpm
 /etc/init.d/osqueryd restart
 
 # Adding Wazuh repository
-if [ ${EnvironmentType} == 'staging' ] then
+if [[ ${EnvironmentType} == 'staging' ]]
+then
+echo 'stag' >> /tmp/stage
+
 	# Adding Wazuh pre_release repository
 	echo -e '[wazuh_pre_release]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_pre.repo
-elif [ ${EnvironmentType} == 'production' ] then
+elif [[ ${EnvironmentType} == 'production' ]]
+then
+echo 'prod' >> /tmp/stage
 cat > /etc/yum.repos.d/wazuh.repo <<\EOF
 [wazuh_repo]
 gpgcheck=1
@@ -88,10 +93,13 @@ name=Wazuh repository
 baseurl=https://packages.wazuh.com/3.x/yum/
 protect=1
 EOF
-elif [ ${EnvironmentType} == 'devel' ] then
+elif [[ ${EnvironmentType} == 'devel' ]]
+then
+	echo 'devel' >> /tmp/stage
 	echo -e '[wazuh_staging]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/staging/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_staging.repo
+else
+	echo 'no repo' >> /tmp/stage
 fi
-
 # Installing wazuh-manager
 yum -y install wazuh-agent
 echo "Installed Wazuh agent." >> /tmp/log
