@@ -28,7 +28,7 @@ sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/s
 service sshd restart
 
 # Install dependencies
-yum install wget -y
+yum install wget git -y
 
 ### Use case 1: Docker
 
