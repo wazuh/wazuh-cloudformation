@@ -446,3 +446,225 @@ echo "Starting Splunk..."
 # restart service
 /opt/splunkforwarder/bin/splunk restart &> /dev/null
 echo "Done with Splunk." >> /tmp/log
+
+# Creating groups
+/var/ossec/bin/agent_groups -a -g apache -q
+/var/ossec/bin/agent_groups -a -g redhat -q
+/var/ossec/bin/agent_groups -a -g windows -q
+/var/ossec/bin/agent_groups -a -g mysql -q
+
+# Give time to the instances dependencies to be properly installed
+sleep 360
+
+# Write RHEL7 shared config
+redhat_conf = '/var/ossec/etc/shared/redhat/agent.conf'
+sed -i '/<agent_config>/,/<\/agent_config>/d' ${redhat_conf}
+cat >> ${redhat_conf} << EOF
+<agent_config>
+	<syscheck>
+		<disabled>no</disabled>
+		<frequency>43200</frequency>
+		<scan_on_start>yes</scan_on_start>
+		<!-- Files/directories to monitor -->
+		<directories check_all="yes" whodata="yes">/usr/bin,/usr/sbin</directories>
+		<directories check_all="yes" whodata="yes">/bin,/sbin,/boot</directories>
+		<directories check_all="yes" report_changes="yes" whodata="yes" tags="cron">/etc/cron*</directories>
+		<directories check_all="yes" report_changes="yes" whodata="yes" recursion_level="2">/home,/root</directories>
+		<directories check_all="yes" report_changes="yes" whodata="yes" tags="tmp" restrict="!.tmp$">/tmp</directories>
+		<!-- Files/directories to ignore -->
+		<ignore>/etc/mtab</ignore>
+		<ignore>/etc/hosts.deny</ignore>
+		<ignore>/etc/mail/statistics</ignore>
+		<ignore>/etc/random-seed</ignore>
+		<ignore>/etc/random.seed</ignore>
+		<ignore>/etc/adjtime</ignore>
+		<ignore>/etc/httpd/logs</ignore>
+		<ignore>/etc/utmpx</ignore>
+		<ignore>/etc/wtmpx</ignore>
+		<ignore>/etc/cups/certs</ignore>
+		<ignore>/etc/dumpdates</ignore>
+		<ignore>/etc/svc/volatile</ignore>
+		<!-- File extensions ignored -->
+		<ignore type="sregex">.log$|.tmp$|.swp$|.viminfo$</ignore>
+		<!-- Check the file, but never compute the diff -->
+		<nodiff>/etc/ssl/private.key</nodiff>
+		<!-- NFS files -->
+		<skip_nfs>yes</skip_nfs>
+	</syscheck>
+	<!-- Policy monitoring -->
+	<rootcheck>
+		<disabled>no</disabled>
+		<check_unixaudit>yes</check_unixaudit>
+		<check_files>yes</check_files>
+		<check_trojans>yes</check_trojans>
+		<check_dev>no</check_dev>
+		<check_sys>no</check_sys>
+		<check_pids>yes</check_pids>
+		<check_ports>no</check_ports>
+		<check_if>no</check_if>
+		<!-- Frequency that rootcheck is executed - every 12 hours -->
+		<frequency>60</frequency>
+		<rootkit_files>/var/ossec/etc/shared/rootkit_files.txt</rootkit_files>
+		<rootkit_trojans>/var/ossec/etc/shared/rootkit_trojans.txt</rootkit_trojans>
+		<system_audit>/var/ossec/etc/shared/system_audit_rcl.txt</system_audit>
+		<system_audit>/var/ossec/etc/shared/system_audit_ssh.txt</system_audit>
+		<skip_nfs>yes</skip_nfs>
+	</rootcheck>
+	<!-- OpenSCAP integration -->
+	<wodle name="open-scap">
+		<disabled>no</disabled>
+		<timeout>1800</timeout>
+		<interval>1d</interval>
+		<scan-on-start>yes</scan-on-start>
+		<content type="xccdf" path="ssg-rhel-7-ds.xml">
+			<profile>xccdf_org.ssgproject.content_profile_pci-dss</profile>
+			<profile>xccdf_org.ssgproject.content_profile_common</profile>
+		</content>
+		<content type="xccdf" path="cve-redhat-7-ds.xml"/>
+	</wodle>
+	<!-- System inventory -->
+	<wodle name="syscollector">
+		<disabled>no</disabled>
+		<interval>1h</interval>
+		<scan_on_start>yes</scan_on_start>
+		<hardware>yes</hardware>
+		<os>yes</os>
+		<network>yes</network>
+		<packages>yes</packages>
+		<ports>yes</ports>
+		<processes>yes</processes>
+	</wodle>
+	<wodle name="osquery">
+		<disabled>no</disabled>
+		<run_daemon>yes</run_daemon>
+		<bin_path>/usr/bin</bin_path>
+		<log_path>/var/log/osquery/osqueryd.results.log</log_path>
+		<config_path>/etc/osquery/osquery.conf</config_path>
+		<add_labels>no</add_labels>
+	</wodle>
+	<!-- Log analysis -->
+	<localfile>
+		<log_format>command</log_format>
+		<command>df -P</command>
+		<frequency>360</frequency>
+	</localfile>
+	<localfile>
+		<log_format>full_command</log_format>
+		<command>netstat -tulpn | sed 's/\([[:alnum:]]\+\)\ \+[[:digit:]]\+\ \+[[:digit:]]\+\ \+\(.*\):\([[:digit:]]*\)\ \+\([0-9\.\:\*]\+\).\+\ \([[:digit:]]*\/[[:alnum:]\-]*\).*/\1 \2 == \3 == \4 \5/' | sort -k 4 -g | sed 's/ == \(.*\) ==/:\1/' | sed 1,2d</command>
+		<alias>netstat listening ports</alias>
+		<frequency>360</frequency>
+	</localfile>
+	<localfile>
+		<log_format>full_command</log_format>
+		<command>last -n 20</command>
+		<frequency>360</frequency>
+	</localfile>
+	<localfile>
+		<log_format>apache</log_format>
+		<location>/var/log/httpd/error_log*</location>
+	</localfile>
+	<localfile>
+		<log_format>apache</log_format>
+		<location>/var/log/httpd/access_log*</location>
+	</localfile>
+	<localfile>
+		<log_format>audit</log_format>
+		<location>/var/log/audit/audit.log</location>
+	</localfile>
+	<localfile>
+		<log_format>syslog</log_format>
+		<location>/var/ossec/logs/active-responses.log</location>
+	</localfile>
+	<localfile>
+		<log_format>syslog</log_format>
+		<location>/var/log/messages</location>
+	</localfile>
+	<localfile>
+		<log_format>syslog</log_format>
+		<location>/var/log/secure</location>
+	</localfile>
+	<localfile>
+		<log_format>syslog</log_format>
+		<location>/var/log/maillog</location>
+	</localfile>
+	<localfile>
+		<log_format>syslog</log_format>
+		<location>/var/log/suricata/eve.json</location>
+	</localfile>
+	<localfile>
+		<log_format>full_command</log_format>
+		<alias>process list</alias>
+		<command>ps -e -o pid,uname,command</command>
+		<frequency>30</frequency>
+	</localfile>
+</agent_config>
+EOF
+
+# Write Windows shared config
+windows_conf = '/var/ossec/etc/shared/windows/agent.conf'
+sed -i '/<agent_config>/,/<\/agent_config>/d' ${windows_conf}
+cat >> ${windows_conf} << EOF
+<agent_config>
+	<wodle name="syscollector">
+		<disabled>no</disabled>
+		<interval>1h</interval>
+		<scan_on_start>yes</scan_on_start>
+		<hardware>yes</hardware>
+		<os>yes</os>
+		<packages>yes</packages>
+	</wodle>
+	<wodle name="osquery">
+		<disabled>no</disabled>
+		<run_daemon>yes</run_daemon>
+		<bin_path>C:\ProgramData\osquery\osqueryd</bin_path>
+		<log_path>C:\ProgramData\osquery\log\osqueryd.results.log</log_path>
+		<config_path>C:\ProgramData\osquery\osquery.conf</config_path>
+		<add_labels>no</add_labels>
+	</wodle>
+	<localfile>
+		<location>C:\inetpub\logs\LogFiles\W3SVC1\u_ex%y%m%d.log</location>
+		<log_format>iis</log_format>
+	</localfile>
+	<syscheck>
+		<scan_on_start>yes</scan_on_start>
+		<directories check_all="yes" report_changes="yes" whodata="yes">C:\Santiago</directories>
+	</syscheck>
+</agent_config>
+EOF
+
+# Write apache shared config
+apache_conf = '/var/ossec/etc/shared/apache/agent.conf'
+sed -i '/<agent_config>/,/<\/agent_config>/d' ${apache_conf}
+cat >> ${apache_conf} << EOF
+<agent_config>
+	<syscheck>
+		<disabled>no</disabled>
+		<frequency>43200</frequency>
+		<scan_on_start>yes</scan_on_start>
+		<!-- Files/directories to monitor -->
+		<directories check_all="yes" report_changes="yes" whodata="yes" tags="apache,web,httpd" restrict=".conf$">/etc/httpd</directories>
+		<!-- File extensions ignored -->
+		<ignore type="sregex">.log$|.tmp$|.swp$|.viminfo$</ignore>
+	</syscheck>
+</agent_config>
+EOF
+
+# Write mysql shared config
+mysql_conf = '/var/ossec/etc/shared/mysql/agent.conf'
+sed -i '/<agent_config>/,/<\/agent_config>/d' ${mysql_conf}
+cat >> ${mysql_conf} << EOF
+<agent_config>
+	<syscheck>
+		<directories check_all="yes" report_changes="yes" whodata="yes" tags="visa" recursion_level="2" restrict=".conf$">/mysql</directories>
+	</syscheck>
+</agent_config>
+EOF
+
+# Attach agents to groups
+rhel_id = /var/ossec/bin/manage_agents -l | grep RHEL | cut -d':' -f2 | cut -d ',' -f1
+#windows_id = /var/ossec/bin/manage_agents -l | grep Windows | cut -d':' -f2 | cut -d ',' -f1
+
+/var/ossec/bin/agent_groups -a -g redhat -i ${rhel_id} -q
+/var/ossec/bin/agent_groups -a -g mysql -i ${rhel_id} -q
+/var/ossec/bin/agent_groups -a -g apache -i ${rhel_id} -q
+#/var/ossec/bin/agent_groups -a -g windows -i ${windows_id} -q

@@ -68,6 +68,10 @@ git clone https://github.com/m0nad/Diamorphine
 cd Diamorphine
 make
 
+# Install Osquery
+yum install -y https://pkg.osquery.io/rpm/osquery-3.3.2-1.linux.x86_64.rpm
+/etc/init.d/osqueryd restart
+
 # Adding Wazuh repository
 echo -e '[wazuh_pre_release]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_pre.repo
 # Installing wazuh-manager
@@ -89,6 +93,8 @@ echo "Set Wazuh password registration." >> /tmp/log
 sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' ${manager_config}
 echo "Registered Wazuh agent." >> /tmp/log
 
-# Restart wazuh-manager
+# Restarting services
 /var/ossec/bin/ossec-control restart
+systemctl restart suricata
+
 echo "Restarted Wazuh agent." >> /tmp/log
