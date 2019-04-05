@@ -1176,11 +1176,13 @@ Resources:
                 SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
                 WazuhServerPort: ${WazuhServerPort}
-                WazuhRegistrationPort: ${WazuhRegistrationPort}
-                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
                 ElbLogstashDNS: ${ElbLogstash.DNSName}
+                AwsSecretKey: ${AwsSecretKey}
+                AwsAccessKey: ${AwsAccessKey}
+                VirusTotalKey: ${VirusTotalKey}
+                SlackHook: ${SlackHook}
               mode: '000600'
               owner: root
               group: root
