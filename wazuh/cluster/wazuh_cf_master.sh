@@ -20,7 +20,7 @@ eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*/
 splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^KibanaUsername:' | cut -d' ' -f2)
 splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^KibanaPassword:' | cut -d' ' -f2)
 splunk_ip=$(cat /tmp/wazuh_cf_settings | grep '^SplunkIP:' | cut -d' ' -f2)
-WindowsPrivateIp=$(cat /tmp/wazuh_cf_settings | grep '^WindowsPrivateIp:' | cut -d' ' -f2)
+WindowsPublicIp=$(cat /tmp/wazuh_cf_settings | grep '^WindowsPublicIp:' | cut -d' ' -f2)
 
 echo "Added env vars." >> /tmp/log
 
@@ -36,6 +36,8 @@ echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
 usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
 sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
 service sshd restart
+
+echo "Created SSH user." >> /tmp/log
 
 # Adding Wazuh repository
 echo -e '[wazuh_pre_release]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_pre.repo
@@ -64,15 +66,16 @@ manager_config="/var/ossec/etc/ossec.conf"
 ### Use case 1: IP reputation
 
 wget https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/alienvault_reputation.ipset -O /var/ossec/etc/lists/alienvault_reputation.ipset
-wget http://blog.wazuh.com/resources/posts/2953/iplist-to-cdblist.py -O /var/ossec/etc/lists/iplist-to-cdblist.py
+wget https://wazuh.com/resources/iplist-to-cdblist.py -O /var/ossec/etc/lists/iplist-to-cdblist.py
 # Add Windows public IP to the list
-echo ${WindowsPrivateIp} >> /var/ossec/etc/lists/alienvault_reputation.ipset
+echo ${WindowsPublicIp} >> /var/ossec/etc/lists/alienvault_reputation.ipset
 python iplist-to-cdblist.py /var/ossec/etc/lists/alienvault_reputation.ipset /var/ossec/etc/lists/blacklist-alienvault
 
 # Delete ipset and python script
 rm -rf /var/ossec/etc/lists/alienvault_reputation.ipset
 rm -rf /var/ossec/etc/lists/iplist-to-cdblist.py
 
+echo "Updated CDB list ,added Windows agent IP." >> /tmp/log
 
 # Change manager protocol to tcp, to be used by Amazon ELB
 sed -i "s/<protocol>udp<\/protocol>/<protocol>tcp<\/protocol>/" ${manager_config}
