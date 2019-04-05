@@ -74,7 +74,7 @@ wget https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/alienvaul
 wget https://wazuh.com/resources/iplist-to-cdblist.py -O /var/ossec/etc/lists/iplist-to-cdblist.py
 # Add Windows public IP to the list
 echo ${WindowsPublicIp} >> /var/ossec/etc/lists/alienvault_reputation.ipset
-python iplist-to-cdblist.py /var/ossec/etc/lists/alienvault_reputation.ipset /var/ossec/etc/lists/blacklist-alienvault
+python /var/ossec/etc/lists/iplist-to-cdblist.py /var/ossec/etc/lists/alienvault_reputation.ipset /var/ossec/etc/lists/blacklist-alienvault
 
 # Delete ipset and python script
 rm -rf /var/ossec/etc/lists/alienvault_reputation.ipset
