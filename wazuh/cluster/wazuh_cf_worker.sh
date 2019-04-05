@@ -53,7 +53,7 @@ yum -y install wazuh-manager
 chkconfig --add wazuh-manager
 manager_config="/var/ossec/etc/ossec.conf"
 # Install dependencies
-yum install openscap-scanner
+yum -y install openscap-scanner
 
 echo "Installed wazuh manager package" >> /tmp/log
 
@@ -87,6 +87,11 @@ cat >> ${manager_config} << EOF
   </cluster>
 </ossec_config>
 EOF
+
+# Restart for receiving cluster data
+service wazuh-manager restart
+# Wait for cluster information to be received (rules,lists...)
+sleep 60
 
 # Disabling agent components and cleaning configuration file
 sed -i '/<rootcheck>/,/<\/rootcheck>/d' ${manager_config}
