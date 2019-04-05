@@ -102,7 +102,14 @@ Metadata:
         Parameters:
           - SplunkUsername
           - SplunkPassword
-
+      -
+        Label:
+          default: "Integration keys"
+        Parameters:
+          - AwsSecretKey
+          - AwsAccessKey
+          - VirusTotalKey
+          - SlackHook
       -
         Label:
           default: "SSL Certificate"
@@ -334,6 +341,38 @@ Parameters:
     ConstraintDescription: Only alphanumeric characters
   SplunkPassword:
     Description: Password for Splunk access
+    NoEcho: 'True'
+    Type: String
+    MinLength: '1'
+    MaxLength: '48'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: Only alphanumeric characters
+  AwsSecretKey:
+    Description: Secret key for AWS integration
+    NoEcho: 'True'
+    Type: String
+    MinLength: '1'
+    MaxLength: '48'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: Only alphanumeric characters
+  AwsAccessKey:
+    Description: Access key for AWS integration
+    NoEcho: 'True'
+    Type: String
+    MinLength: '1'
+    MaxLength: '48'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: Only alphanumeric characters
+  VirusTotalKey:
+    Description: Key for VirusTotal integration
+    NoEcho: 'True'
+    Type: String
+    MinLength: '1'
+    MaxLength: '48'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: Only alphanumeric characters
+  SlackHook:
+    Description: Webhook for Slack integration
     NoEcho: 'True'
     Type: String
     MinLength: '1'
@@ -1071,13 +1110,17 @@ Resources:
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
                 ElbLogstashDNS: ${ElbLogstash.DNSName}
-                WindowsPrivateIp: ${Windows.PublicIp}
+                WindowsPublicIp: ${Windows.PublicIp}
+                AwsSecretKey: ${AwsSecretKey}
+                AwsAccessKey: ${AwsAccessKey}
+                VirusTotalKey: ${VirusTotalKey}
+                SlackHook: ${SlackHook}
               mode: '000600'
               owner: root
               group: root
             /tmp/wazuh_cf_master.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_cf_master.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/cluster/wazuh_cf_master.sh
               mode: '000700'
               owner: root
               group: root
@@ -1159,7 +1202,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_worker.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_cf_worker.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/cluster/wazuh_cf_worker.sh
               mode: '000700'
               owner: root
               group: root
@@ -1236,7 +1279,7 @@ Resources:
               group: root
             /tmp/wazuh_agent_amazon.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_agent_amazon.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/agents/wazuh_agent_amazon.sh
               mode: '000700'
               owner: root
               group: root
@@ -1313,7 +1356,7 @@ Resources:
               group: root
             /tmp/wazuh_agent_centos.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_agent_centos.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/agents/wazuh_agent_centos.sh
               mode: '000700'
               owner: root
               group: root
@@ -1439,7 +1482,7 @@ Resources:
               group: root
             /tmp/wazuh_agent_debian.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_cf_agent_debian.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/agents/wazuh_cf_agent_debian.sh
               mode: '000700'
               owner: root
               group: root
@@ -1528,7 +1571,7 @@ Resources:
               group: root
             /tmp/wazuh_agent_ubuntu.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_cf_agent_ubuntu.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/agents/wazuh_cf_agent_ubuntu.sh
               mode: '000700'
               owner: root
               group: root
@@ -1611,7 +1654,7 @@ Resources:
               group: root
             /tmp/wazuh_agent_rhel.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/wazuh_agent_rhel.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/agents/wazuh_agent_rhel.sh
               mode: '000700'
               owner: root
               group: root

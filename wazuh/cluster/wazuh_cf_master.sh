@@ -21,8 +21,13 @@ splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^KibanaUsername:' | cut -d'
 splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^KibanaPassword:' | cut -d' ' -f2)
 splunk_ip=$(cat /tmp/wazuh_cf_settings | grep '^SplunkIP:' | cut -d' ' -f2)
 WindowsPublicIp=$(cat /tmp/wazuh_cf_settings | grep '^WindowsPublicIp:' | cut -d' ' -f2)
+VirusTotalKey=$(cat /tmp/wazuh_cf_settings | grep '^VirusTotalKey:' | cut -d' ' -f2)
+AwsSecretKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsSecretKey:' | cut -d' ' -f2)
+AwsAccessKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsAccessKey:' | cut -d' ' -f2)
+SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 
 echo "Added env vars." >> /tmp/log
+
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -59,7 +64,7 @@ EOF
 yum -y install wazuh-manager
 chkconfig --add wazuh-manager
 manager_config="/var/ossec/etc/ossec.conf"
-
+local_rules="/var/ossec/etc/rules/local_rules.xml"
 # Enable registration service (only for master node)
 /var/ossec/bin/ossec-control enable auth
 
@@ -74,6 +79,7 @@ python iplist-to-cdblist.py /var/ossec/etc/lists/alienvault_reputation.ipset /va
 # Delete ipset and python script
 rm -rf /var/ossec/etc/lists/alienvault_reputation.ipset
 rm -rf /var/ossec/etc/lists/iplist-to-cdblist.py
+/var/ossec/bin/ossec-makelists
 
 echo "Updated CDB list ,added Windows agent IP." >> /tmp/log
 
@@ -140,12 +146,220 @@ sed -i '/<rootcheck>/,/<\/rootcheck>/d' ${manager_config}
 sed -i '/<wodle name="open-scap">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<wodle name="cis-cat">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<wodle name="osquery">/,/<\/wodle>/d' ${manager_config}
+sed -i '/<ruleset>/,/<\/ruleset>/d' ${manager_config}
 sed -i '/<wodle name="syscollector">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<syscheck>/,/<\/syscheck>/d' ${manager_config}
+sed -i '/<wodle name="vulnerability-detector">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<localfile>/,/<\/localfile>/d' ${manager_config}
 sed -i '/<!--.*-->/d' ${manager_config}
 sed -i '/<!--/,/-->/d' ${manager_config}
 sed -i '/^$/d' ${manager_config}
+
+# Add ruleset and lists
+cat >> ${manager_config} << EOF
+<ossec_config>
+  <ruleset>
+    <!-- Default ruleset -->
+    <decoder_dir>ruleset/decoders</decoder_dir>
+    <rule_dir>ruleset/rules</rule_dir>
+    <rule_exclude>0215-policy_rules.xml</rule_exclude>
+    <list>etc/lists/audit-keys</list>
+    <list>etc/lists/amazon/aws-eventnames</list>
+    <list>etc/lists/security-eventchannel</list>
+    <list>etc/lists/blacklist-alienvault</list>
+    <!-- User-defined ruleset -->
+    <decoder_dir>etc/decoders</decoder_dir>
+    <rule_dir>etc/rules</rule_dir>
+  </ruleset>
+</ossec_config>
+EOF
+
+# Use case: Open-SCAP configuration
+
+# Install dependencies
+yum install openscap-scanner
+
+# Configure ossec.conf
+cat >> ${manager_config} << EOF
+<ossec_config>
+  <wodle name="open-scap">
+    <disabled>no</disabled>
+    <timeout>1800</timeout>
+    <interval>1d</interval>
+    <scan-on-start>yes</scan-on-start>
+    <content type="xccdf" path="ssg-rhel-7-ds.xml">
+      <profile>xccdf_org.ssgproject.content_profile_pci-dss</profile>
+      <profile>xccdf_org.ssgproject.content_profile_common</profile>
+    </content>
+    <content type="xccdf" path="cve-redhat-7-ds.xml"/>
+  </wodle>
+</ossec_config>
+EOF
+
+# Add VirusTotal integration if key already set
+if [ "x${VirusTotalKey}" != "x" ]; then
+cat >> ${manager_config} << EOF
+<ossec_config>
+  <integration>
+      <name>virustotal</name>
+      <api_key>${VirusTotalKey}</api_key>
+      <rule_id>100200</rule_id>
+      <alert_format>json</alert_format>
+  </integration>
+</ossec_config>
+EOF
+fi
+
+cat >> ${local_rules} << EOF
+<group name="syscheck,">
+  <rule id="100200" level="7">
+    <if_sid>550,553,554</if_sid>
+    <field name="file">^/tmp</field>
+    <description>File modified or created in /tmp directory.</description>
+  </rule>
+</group>
+<group name="ossec,">
+  <rule id="100050" level="0">
+    <if_sid>530</if_sid>
+    <match>^ossec: output: 'process list'</match>
+    <description>List of running processes.</description>
+    <group>process_monitor,</group>
+  </rule>
+  <rule id="100051" level="7" ignore="900">
+    <if_sid>100050</if_sid>
+    <match>nc -l</match>
+    <description>Netcat listening for incoming connections.</description>
+    <group>process_monitor,</group>
+  </rule>
+</group>
+<group name="attack,">
+  <rule id="100100" level="10">
+    <if_group>web|attack|attacks</if_group>
+    <list field="srcip" lookup="address_match_key">etc/lists/blacklist-alienvault</list>
+    <description>IP address found in AlienVault reputation database.</description>
+  </rule>
+</group>
+EOF
+
+# Slack integration
+if [ "x${SlackHook}" != "x" ]; then
+cat >> ${manager_config} << EOF
+<ossec_config>
+  <integration>
+    <name>slack</name>
+    <hook_url>${SlackHook}</hook_url>
+    <level>10</level>
+    <alert_format>json</alert_format>
+  </integration>
+</ossec_config>
+EOF
+fi
+
+# AWS integration if key already set
+if [ "x${AwsAccessKey}" != "x" ]; then
+cat >> ${manager_config} << EOF
+<ossec_config>
+  <wodle name="aws-s3">
+    <disabled>no</disabled>
+    <remove_from_bucket>no</remove_from_bucket>
+    <interval>30m</interval>
+    <run_on_start>yes</run_on_start>
+    <skip_on_error>no</skip_on_error>
+    <bucket type="cloudtrail">
+      <name>wazuh-cloudtrail</name>
+      <access_key>${AwsAccessKey}</access_key>
+      <secret_key>${AwsSecretKey}</secret_key>
+      <only_logs_after>2019-MAR-24</only_logs_after>
+    </bucket>
+    <bucket type="guardduty">
+      <name>wazuh-aws-wodle</name>
+      <path>guardduty</path>
+      <access_key>${AwsAccessKey}</access_key>
+      <secret_key>${AwsSecretKey}</secret_key>
+      <only_logs_after>2019-MAR-24</only_logs_after>
+    </bucket>
+    <bucket type="custom">
+      <name>wazuh-aws-wodle</name>
+      <path>macie</path>
+      <access_key>${AwsAccessKey}</access_key>
+      <secret_key>${AwsSecretKey}</secret_key>
+      <only_logs_after>2019-MAR-24</only_logs_after>
+    </bucket>
+    <bucket type="vpcflow">
+      <name>wazuh-aws-wodle</name>
+      <path>vpc</path>
+      <access_key>XXXX</access_key>
+      <secret_key>XXXX</secret_key>
+      <only_logs_after>2019-MAR-24</only_logs_after>
+    </bucket>
+    <service type="inspector">
+      <access_key>XXXX</access_key>
+      <secret_key>XXXX</secret_key>
+    </service>
+  </wodle>
+</ossec_config>
+EOF
+fi
+
+# Audit rules
+cat >> /etc/audit/rules.d/audit.rules << EOF
+-a exit,always -F euid=1002 -F arch=b32 -S execve -k audit-wazuh-c
+-a exit,always -F euid=1002 -F arch=b64 -S execve -k audit-wazuh-c
+-a exit,always -F euid=1003 -F arch=b32 -S execve -k audit-wazuh-c
+-a exit,always -F euid=1003 -F arch=b64 -S execve -k audit-wazuh-c
+EOF
+
+auditctl -R /etc/audit/rules.d/audit.rules
+
+# Localfiles
+cat >> ${manager_config} << EOF
+<ossec_config>
+  <localfile>
+    <log_format>full_command</log_format>
+    <alias>process list</alias>
+    <command>ps -e -o pid,uname,command</command>
+    <frequency>30</frequency>
+  </localfile>
+  <command>
+    <name>firewall-drop</name>
+    <executable>firewall-drop.sh</executable>
+    <expect>srcip</expect>
+    <timeout_allowed>yes</timeout_allowed>
+  </command>
+
+  <active-response>
+    <command>firewall-drop</command>
+    <location>local</location>
+    <rules_id>100111</rules_id> 
+    <timeout>60</timeout> 
+  </active-response>
+</ossec_config>
+EOF
+
+# Vuln detector
+cat >> ${manager_config} << EOF
+<ossec_config>
+  <wodle name="vulnerability-detector">
+    <disabled>no</disabled>
+    <interval>12m</interval>
+    <ignore_time>6h</ignore_time>
+    <run_on_start>yes</run_on_start>
+    <feed name="ubuntu-18">
+      <disabled>yes</disabled>
+      <update_interval>1h</update_interval>
+    </feed>
+    <feed name="redhat">
+      <disabled>yes</disabled>
+      <update_from_year>2010</update_from_year>
+      <update_interval>1h</update_interval>
+    </feed>
+    <feed name="debian-9">
+      <disabled>yes</disabled>
+      <update_interval>1h</update_interval>
+    </feed>
+  </wodle>
+</ossec_config>
+EOF
 
 # Restart wazuh-manager
 service wazuh-manager restart
