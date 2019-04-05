@@ -349,19 +349,19 @@ Parameters:
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Only alphanumeric characters
   AwsSecretKey:
-    Description: Secret key for AWS integration
+    Description: (Optional) Secret key for AWS integration
     Type: String
 
   AwsAccessKey:
-    Description: Access key for AWS integration
+    Description: (Optional) Access key for AWS integration
     Type: String
 
   VirusTotalKey:
-    Description: Key for VirusTotal integration
+    Description: (Optional) Key for VirusTotal integration
     Type: String
 
   SlackHook:
-    Description: Webhook for Slack integration
+    Description: (Optional) Webhook for Slack integration
     Type: String
 
   SSLCertificateARN:
