@@ -349,36 +349,20 @@ Parameters:
     ConstraintDescription: Only alphanumeric characters
   AwsSecretKey:
     Description: Secret key for AWS integration
-    NoEcho: 'True'
     Type: String
-    MinLength: '1'
-    MaxLength: '48'
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Only alphanumeric characters
+
   AwsAccessKey:
     Description: Access key for AWS integration
-    NoEcho: 'True'
     Type: String
-    MinLength: '1'
-    MaxLength: '48'
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Only alphanumeric characters
+
   VirusTotalKey:
     Description: Key for VirusTotal integration
-    NoEcho: 'True'
     Type: String
-    MinLength: '1'
-    MaxLength: '48'
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Only alphanumeric characters
+
   SlackHook:
     Description: Webhook for Slack integration
-    NoEcho: 'True'
     Type: String
-    MinLength: '1'
-    MaxLength: '48'
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Only alphanumeric characters
+
   SSLCertificateARN:
     Description: 'Optional. Used for HTTPS access to WUI. Existent certificate, identified by its Amazon Resource Name (ARN).'
     Type: String
