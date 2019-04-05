@@ -28,7 +28,6 @@ SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 
 echo "Added env vars." >> /tmp/log
 
-
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root"
@@ -66,7 +65,8 @@ chkconfig --add wazuh-manager
 manager_config="/var/ossec/etc/ossec.conf"
 local_rules="/var/ossec/etc/rules/local_rules.xml"
 # Enable registration service (only for master node)
-/var/ossec/bin/ossec-control enable auth
+
+echo "Installed wazuh manager package" >> /tmp/log
 
 ### Use case 1: IP reputation
 
@@ -179,7 +179,7 @@ EOF
 # Install dependencies
 yum install openscap-scanner
 
-# Configure ossec.conf
+# Configure wodles
 cat >> ${manager_config} << EOF
 <ossec_config>
   <wodle name="open-scap">

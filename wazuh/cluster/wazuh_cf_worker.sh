@@ -2,17 +2,20 @@
 # Install Wazuh worker instance using Cloudformation template
 # Support for Amazon Linux
 touch /tmp/log
-echo "Starting process." > /tmp/log
+echo "Starting process." >> /tmp/log
 
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
 elastic_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f1)
 wazuh_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f2)
 wazuh_server_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhServerPort:' | cut -d' ' -f2)
-wazuh_registration_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhRegistrationPort:' | cut -d' ' -f2)
 wazuh_cluster_key=$(cat /tmp/wazuh_cf_settings | grep '^WazuhClusterKey:' | cut -d' ' -f2)
 wazuh_master_ip=$(cat /tmp/wazuh_cf_settings | grep '^WazuhMasterIP:' | cut -d' ' -f2)
 elb_logstash=$(cat /tmp/wazuh_cf_settings | grep '^ElbLogstashDNS:' | cut -d' ' -f2)
+VirusTotalKey=$(cat /tmp/wazuh_cf_settings | grep '^VirusTotalKey:' | cut -d' ' -f2)
+AwsSecretKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsSecretKey:' | cut -d' ' -f2)
+AwsAccessKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsAccessKey:' | cut -d' ' -f2)
+SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -26,12 +29,11 @@ echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
 usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
 sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
 service sshd restart
-echo "Added user  ${ssh_username}." > /tmp/log
-
-# Adding Wazuh repository
+echo "Created SSH user." >> /tmp/log
 
 # Adding Wazuh repository
 echo -e '[wazuh_pre_release]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_pre.repo
+
 # Configuring Elastic repository
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
 elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
@@ -50,22 +52,20 @@ EOF
 yum -y install wazuh-manager
 chkconfig --add wazuh-manager
 manager_config="/var/ossec/etc/ossec.conf"
-echo "Installed wazuh master" > /tmp/log
+# Install dependencies
+yum install openscap-scanner
 
-# Enable registration service (only for master node)
-/var/ossec/bin/ossec-control enable auth
+echo "Installed wazuh manager package" >> /tmp/log
 
 # Change manager protocol to tcp, to be used by Amazon ELB
 sed -i "s/<protocol>udp<\/protocol>/<protocol>tcp<\/protocol>/" ${manager_config}
 
-# Set manager ports for registration and agents communication
-sed -i "s/<port>1515<\/port>/<port>${wazuh_registration_port}<\/port>/" ${manager_config}
+# Set manager ports for agents communication
 sed -i "s/<port>1514<\/port>/<port>${wazuh_server_port}<\/port>/" ${manager_config}
-echo "Sed commands" > /tmp/log
 
 # Installing Python Cryptography module for the cluster
 pip install cryptography
-echo "Installed cryptography with pip" > /tmp/log
+echo "Installed cryptography with pip" >> /tmp/log
 
 # Configuring cluster section
 sed -i '/<cluster>/,/<\/cluster>/d' ${manager_config}
@@ -93,14 +93,189 @@ sed -i '/<rootcheck>/,/<\/rootcheck>/d' ${manager_config}
 sed -i '/<wodle name="open-scap">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<wodle name="cis-cat">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<wodle name="osquery">/,/<\/wodle>/d' ${manager_config}
+sed -i '/<ruleset>/,/<\/ruleset>/d' ${manager_config}
+sed -i '/<auth>/,/<\/auth>/d' ${manager_config}
 sed -i '/<wodle name="syscollector">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<syscheck>/,/<\/syscheck>/d' ${manager_config}
+sed -i '/<wodle name="vulnerability-detector">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<localfile>/,/<\/localfile>/d' ${manager_config}
-sed -i '/<auth>/,/<\/auth>/d' ${manager_config}
 sed -i '/<!--.*-->/d' ${manager_config}
 sed -i '/<!--/,/-->/d' ${manager_config}
 sed -i '/^$/d' ${manager_config}
-echo "Cluster configuration" > /tmp/log
+
+
+# Add ruleset and lists
+cat >> ${manager_config} << EOF
+<ossec_config>
+  <ruleset>
+    <!-- Default ruleset -->
+    <decoder_dir>ruleset/decoders</decoder_dir>
+    <rule_dir>ruleset/rules</rule_dir>
+    <rule_exclude>0215-policy_rules.xml</rule_exclude>
+    <list>etc/lists/audit-keys</list>
+    <list>etc/lists/amazon/aws-eventnames</list>
+    <list>etc/lists/security-eventchannel</list>
+    <list>etc/lists/blacklist-alienvault</list>
+    <!-- User-defined ruleset -->
+    <decoder_dir>etc/decoders</decoder_dir>
+    <rule_dir>etc/rules</rule_dir>
+  </ruleset>
+</ossec_config>
+EOF
+
+cat >> ${manager_config} << EOF
+<ossec_config>
+  <wodle name="open-scap">
+    <disabled>no</disabled>
+    <timeout>1800</timeout>
+    <interval>1d</interval>
+    <scan-on-start>yes</scan-on-start>
+    <content type="xccdf" path="ssg-rhel-7-ds.xml">
+      <profile>xccdf_org.ssgproject.content_profile_pci-dss</profile>
+      <profile>xccdf_org.ssgproject.content_profile_common</profile>
+    </content>
+    <content type="xccdf" path="cve-redhat-7-ds.xml"/>
+  </wodle>
+</ossec_config>
+EOF
+
+# Add VirusTotal integration if key already set
+if [ "x${VirusTotalKey}" != "x" ]; then
+cat >> ${manager_config} << EOF
+<ossec_config>
+  <integration>
+      <name>virustotal</name>
+      <api_key>${VirusTotalKey}</api_key>
+      <rule_id>100200</rule_id>
+      <alert_format>json</alert_format>
+  </integration>
+</ossec_config>
+EOF
+fi
+
+
+# Slack integration
+if [ "x${SlackHook}" != "x" ]; then
+cat >> ${manager_config} << EOF
+<ossec_config>
+  <integration>
+    <name>slack</name>
+    <hook_url>${SlackHook}</hook_url>
+    <level>10</level>
+    <alert_format>json</alert_format>
+  </integration>
+</ossec_config>
+EOF
+fi
+
+# AWS integration if key already set
+if [ "x${AwsAccessKey}" != "x" ]; then
+cat >> ${manager_config} << EOF
+<ossec_config>
+  <wodle name="aws-s3">
+    <disabled>no</disabled>
+    <remove_from_bucket>no</remove_from_bucket>
+    <interval>30m</interval>
+    <run_on_start>yes</run_on_start>
+    <skip_on_error>no</skip_on_error>
+    <bucket type="cloudtrail">
+      <name>wazuh-cloudtrail</name>
+      <access_key>${AwsAccessKey}</access_key>
+      <secret_key>${AwsSecretKey}</secret_key>
+      <only_logs_after>2019-MAR-24</only_logs_after>
+    </bucket>
+    <bucket type="guardduty">
+      <name>wazuh-aws-wodle</name>
+      <path>guardduty</path>
+      <access_key>${AwsAccessKey}</access_key>
+      <secret_key>${AwsSecretKey}</secret_key>
+      <only_logs_after>2019-MAR-24</only_logs_after>
+    </bucket>
+    <bucket type="custom">
+      <name>wazuh-aws-wodle</name>
+      <path>macie</path>
+      <access_key>${AwsAccessKey}</access_key>
+      <secret_key>${AwsSecretKey}</secret_key>
+      <only_logs_after>2019-MAR-24</only_logs_after>
+    </bucket>
+    <bucket type="vpcflow">
+      <name>wazuh-aws-wodle</name>
+      <path>vpc</path>
+      <access_key>XXXX</access_key>
+      <secret_key>XXXX</secret_key>
+      <only_logs_after>2019-MAR-24</only_logs_after>
+    </bucket>
+    <service type="inspector">
+      <access_key>XXXX</access_key>
+      <secret_key>XXXX</secret_key>
+    </service>
+  </wodle>
+</ossec_config>
+EOF
+fi
+
+# Audit rules
+cat >> /etc/audit/rules.d/audit.rules << EOF
+-a exit,always -F euid=1002 -F arch=b32 -S execve -k audit-wazuh-c
+-a exit,always -F euid=1002 -F arch=b64 -S execve -k audit-wazuh-c
+-a exit,always -F euid=1003 -F arch=b32 -S execve -k audit-wazuh-c
+-a exit,always -F euid=1003 -F arch=b64 -S execve -k audit-wazuh-c
+EOF
+
+auditctl -R /etc/audit/rules.d/audit.rules
+
+# Localfiles
+cat >> ${manager_config} << EOF
+<ossec_config>
+  <localfile>
+    <log_format>full_command</log_format>
+    <alias>process list</alias>
+    <command>ps -e -o pid,uname,command</command>
+    <frequency>30</frequency>
+  </localfile>
+  <command>
+    <name>firewall-drop</name>
+    <executable>firewall-drop.sh</executable>
+    <expect>srcip</expect>
+    <timeout_allowed>yes</timeout_allowed>
+  </command>
+
+  <active-response>
+    <command>firewall-drop</command>
+    <location>local</location>
+    <rules_id>100111</rules_id> 
+    <timeout>60</timeout> 
+  </active-response>
+</ossec_config>
+EOF
+
+# Vuln detector
+cat >> ${manager_config} << EOF
+<ossec_config>
+  <wodle name="vulnerability-detector">
+    <disabled>no</disabled>
+    <interval>12m</interval>
+    <ignore_time>6h</ignore_time>
+    <run_on_start>yes</run_on_start>
+    <feed name="ubuntu-18">
+      <disabled>yes</disabled>
+      <update_interval>1h</update_interval>
+    </feed>
+    <feed name="redhat">
+      <disabled>yes</disabled>
+      <update_from_year>2010</update_from_year>
+      <update_interval>1h</update_interval>
+    </feed>
+    <feed name="debian-9">
+      <disabled>yes</disabled>
+      <update_interval>1h</update_interval>
+    </feed>
+  </wodle>
+</ossec_config>
+EOF
+
+
+echo "Cluster configuration" >> /tmp/log
 
 # Restart wazuh-manager
 service wazuh-manager restart
@@ -108,11 +283,11 @@ service wazuh-manager restart
 # Installing Filebeat
 yum -y install filebeat
 chkconfig --add filebeat
-echo "Installed Filebeat" > /tmp/log
+echo "Installed Filebeat" >> /tmp/log
 
 # Configuring Filebeat
 curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/filebeat/filebeat.yml
 sed -i "s/YOUR_ELASTIC_SERVER_IP/${elb_logstash}/" /etc/filebeat/filebeat.yml
 service filebeat start
-echo "Started Filebeat" > /tmp/log
-echo "Done" > /tmp/log
+echo "Started Filebeat" >> /tmp/log
+echo "Done" >> /tmp/log
