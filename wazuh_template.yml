@@ -52,6 +52,11 @@ Metadata:
     ParameterGroups:
       -
         Label:
+          default: "Environment type"
+        Parameters:
+          - EnvironmentType
+      -
+        Label:
           default: "AWS environment"
         Parameters:
           - AvailabilityZone
@@ -163,6 +168,11 @@ Parameters:
       - t2.medium
       - t2.large
       - m5.large
+  EnvironmentType:
+    AllowedValues:
+      - production
+      - staging
+      - devel    
     ConstraintDescription: Must contain valid instance type
     Default: t2.medium
     Description: Type of EC2 instance for Wazuh instance
@@ -1100,6 +1110,7 @@ Resources:
                 AwsAccessKey: ${AwsAccessKey}
                 VirusTotalKey: ${VirusTotalKey}
                 SlackHook: ${SlackHook}
+                EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
               group: root
@@ -1184,6 +1195,7 @@ Resources:
                 AwsAccessKey: ${AwsAccessKey}
                 VirusTotalKey: ${VirusTotalKey}
                 SlackHook: ${SlackHook}
+                EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
               group: root
@@ -1261,6 +1273,7 @@ Resources:
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
                 ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
                 AgentName: Amazon
+                EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
               group: root
@@ -1338,6 +1351,7 @@ Resources:
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
                 ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
                 AgentName: Centos
+                EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
               group: root
@@ -1464,6 +1478,7 @@ Resources:
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
                 ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
                 AgentName: Debian
+                EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
               group: root
@@ -1553,6 +1568,7 @@ Resources:
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
                 ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
                 AgentName: Ubuntu
+                EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
               group: root
@@ -1636,6 +1652,7 @@ Resources:
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
                 ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
                 AgentName: RHEL7
+                EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
               group: root
