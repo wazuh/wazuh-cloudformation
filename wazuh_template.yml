@@ -168,14 +168,18 @@ Parameters:
       - t2.medium
       - t2.large
       - m5.large
+    ConstraintDescription: Must contain valid instance type
+    Default: t2.medium
+    Description: Type of EC2 instance for Wazuh instance
+    Type: String
   EnvironmentType:
     AllowedValues:
       - production
       - staging
       - devel    
     ConstraintDescription: Must contain valid instance type
-    Default: t2.medium
-    Description: Type of EC2 instance for Wazuh instance
+    Default: staging
+    Description: Select a stage
     Type: String
   AgentInstanceType:
     AllowedValues:
