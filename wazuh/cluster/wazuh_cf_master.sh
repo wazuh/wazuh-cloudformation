@@ -177,7 +177,7 @@ EOF
 # Use case: Open-SCAP configuration
 
 # Install dependencies
-yum install openscap-scanner
+yum -y install openscap-scanner
 
 # Configure wodles
 cat >> ${manager_config} << EOF
@@ -457,7 +457,7 @@ echo "Done with Splunk." >> /tmp/log
 sleep 360
 
 # Write RHEL7 shared config
-redhat_conf = '/var/ossec/etc/shared/redhat/agent.conf'
+redhat_conf='/var/ossec/etc/shared/redhat/agent.conf'
 sed -i '/<agent_config>/,/<\/agent_config>/d' ${redhat_conf}
 cat >> ${redhat_conf} << EOF
 <agent_config>
@@ -601,7 +601,7 @@ cat >> ${redhat_conf} << EOF
 EOF
 
 # Write Windows shared config
-windows_conf = '/var/ossec/etc/shared/windows/agent.conf'
+windows_conf='/var/ossec/etc/shared/windows/agent.conf'
 sed -i '/<agent_config>/,/<\/agent_config>/d' ${windows_conf}
 cat >> ${windows_conf} << EOF
 <agent_config>
@@ -633,7 +633,7 @@ cat >> ${windows_conf} << EOF
 EOF
 
 # Write apache shared config
-apache_conf = '/var/ossec/etc/shared/apache/agent.conf'
+apache_conf='/var/ossec/etc/shared/apache/agent.conf'
 sed -i '/<agent_config>/,/<\/agent_config>/d' ${apache_conf}
 cat >> ${apache_conf} << EOF
 <agent_config>
@@ -650,7 +650,7 @@ cat >> ${apache_conf} << EOF
 EOF
 
 # Write mysql shared config
-mysql_conf = '/var/ossec/etc/shared/mysql/agent.conf'
+mysql_conf='/var/ossec/etc/shared/mysql/agent.conf'
 sed -i '/<agent_config>/,/<\/agent_config>/d' ${mysql_conf}
 cat >> ${mysql_conf} << EOF
 <agent_config>
