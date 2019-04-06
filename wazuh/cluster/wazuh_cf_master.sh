@@ -163,13 +163,10 @@ cat >> ${manager_config} << EOF
 EOF
 
 # Disabling agent components and cleaning configuration file
-sed -i '/<rootcheck>/,/<\/rootcheck>/d' ${manager_config}
 sed -i '/<wodle name="open-scap">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<wodle name="cis-cat">/,/<\/wodle>/d' ${manager_config}
-sed -i '/<wodle name="osquery">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<ruleset>/,/<\/ruleset>/d' ${manager_config}
 sed -i '/<wodle name="syscollector">/,/<\/wodle>/d' ${manager_config}
-sed -i '/<syscheck>/,/<\/syscheck>/d' ${manager_config}
 sed -i '/<wodle name="vulnerability-detector">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<localfile>/,/<\/localfile>/d' ${manager_config}
 sed -i '/<!--.*-->/d' ${manager_config}
@@ -366,16 +363,16 @@ cat >> ${manager_config} << EOF
     <ignore_time>6h</ignore_time>
     <run_on_start>yes</run_on_start>
     <feed name="ubuntu-18">
-      <disabled>yes</disabled>
+      <disabled>no</disabled>
       <update_interval>1h</update_interval>
     </feed>
     <feed name="redhat">
-      <disabled>yes</disabled>
+      <disabled>no</disabled>
       <update_from_year>2010</update_from_year>
       <update_interval>1h</update_interval>
     </feed>
     <feed name="debian-9">
-      <disabled>yes</disabled>
+      <disabled>no</disabled>
       <update_interval>1h</update_interval>
     </feed>
   </wodle>
@@ -482,6 +479,13 @@ redhat_conf='/var/ossec/etc/shared/redhat/agent.conf'
 sed -i '/<agent_config>/,/<\/agent_config>/d' ${redhat_conf}
 cat >> ${redhat_conf} << EOF
 <agent_config>
+<wodle name="docker-listener">
+  <interval>10m</interval>
+  <attempts>5</attempts>
+  <run_on_start>yes</run_on_start>
+  <disabled>no</disabled>
+</wodle>
+
 	<syscheck>
 		<disabled>no</disabled>
 		<frequency>43200</frequency>
@@ -676,13 +680,13 @@ sed -i '/<agent_config>/,/<\/agent_config>/d' ${mysql_conf}
 cat >> ${mysql_conf} << EOF
 <agent_config>
 	<syscheck>
-		<directories check_all="yes" report_changes="yes" whodata="yes" tags="visa" recursion_level="2" restrict=".conf$">/mysql</directories>
+		<directories check_all="yes" report_changes="yes" whodata="yes" tags="visa" recursion_level="2" restrict=".conf$">/var/lib/mysql</directories>
 	</syscheck>
 </agent_config>
 EOF
 
 # Attach agents to groups
-rhel_id = /var/ossec/bin/manage_agents -l | grep RHEL | cut -d':' -f2 | cut -d ',' -f1
+rhel_id=`/var/ossec/bin/manage_agents -l | grep RHEL | cut -d':' -f2 | cut -d ',' -f1`
 #windows_id = /var/ossec/bin/manage_agents -l | grep Windows | cut -d':' -f2 | cut -d ',' -f1
 
 /var/ossec/bin/agent_groups -a -g redhat -i ${rhel_id} -q

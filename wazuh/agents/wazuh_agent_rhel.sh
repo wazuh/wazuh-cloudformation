@@ -41,6 +41,7 @@ yum install -y http://mirror.centos.org/centos/7/extras/x86_64/Packages/containe
 
 # install Docker
 yum install -y docker-ce
+service docker start
 
 ### Use case 2: Web server
 yum install httpd -y
@@ -51,6 +52,9 @@ wget https://repo.mysql.com//mysql80-community-release-el7-2.noarch.rpm
 yum localinstall mysql80-community-release-el7-2.noarch.rpm -y
 yum install mysql -y
 yum install mysql-server -y
+systemctl restart mysqld
+mkdir /mysql
+touch /mysql/mysql.conf
 
 ### Use case 4: Netcat
 yum install nc -y
@@ -112,7 +116,7 @@ sed -i "s/<port>1514<\/port>/<port>${wazuh_server_port}<\/port>/" ${manager_conf
 # Setting password for agents registration
 echo "${wazuh_registration_password}" > /var/ossec/etc/authd.pass
 echo "Set Wazuh password registration." >> /tmp/log
-
+echo 'logcollector.remote_commands=1' >>  /var/ossec/etc/local_internal_options.conf
 # Register agent using authd
 /var/ossec/bin/agent-auth -m ${master_ip} -A ${agent_name}
 sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' ${manager_config}

@@ -114,14 +114,11 @@ service wazuh-manager restart
 sleep 60
 
 # Disabling agent components and cleaning configuration file
-sed -i '/<rootcheck>/,/<\/rootcheck>/d' ${manager_config}
 sed -i '/<wodle name="open-scap">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<wodle name="cis-cat">/,/<\/wodle>/d' ${manager_config}
-sed -i '/<wodle name="osquery">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<ruleset>/,/<\/ruleset>/d' ${manager_config}
 sed -i '/<auth>/,/<\/auth>/d' ${manager_config}
 sed -i '/<wodle name="syscollector">/,/<\/wodle>/d' ${manager_config}
-sed -i '/<syscheck>/,/<\/syscheck>/d' ${manager_config}
 sed -i '/<wodle name="vulnerability-detector">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<localfile>/,/<\/localfile>/d' ${manager_config}
 sed -i '/<!--.*-->/d' ${manager_config}
@@ -283,16 +280,16 @@ cat >> ${manager_config} << EOF
     <ignore_time>6h</ignore_time>
     <run_on_start>yes</run_on_start>
     <feed name="ubuntu-18">
-      <disabled>yes</disabled>
+      <disabled>no</disabled>
       <update_interval>1h</update_interval>
     </feed>
     <feed name="redhat">
-      <disabled>yes</disabled>
+      <disabled>no</disabled>
       <update_from_year>2010</update_from_year>
       <update_interval>1h</update_interval>
     </feed>
     <feed name="debian-9">
-      <disabled>yes</disabled>
+      <disabled>no</disabled>
       <update_interval>1h</update_interval>
     </feed>
   </wodle>
