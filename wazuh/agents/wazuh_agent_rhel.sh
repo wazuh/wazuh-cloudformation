@@ -125,6 +125,9 @@ echo "Registered Wazuh agent." >> /tmp/log
 # Enable integrator
 /var/ossec/bin/ossec-control enable integrator
 
+# Installing pip docker dependency
+pip install docker
+
 # Restarting services
 /var/ossec/bin/ossec-control restart
 systemctl restart suricata
