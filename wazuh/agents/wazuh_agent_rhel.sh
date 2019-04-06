@@ -76,6 +76,7 @@ make
 # Install Osquery
 yum install -y https://pkg.osquery.io/rpm/osquery-3.3.2-1.linux.x86_64.rpm
 /etc/init.d/osqueryd restart
+cp /usr/share/osquery/osquery.example.conf /etc/osquery/osquery.conf
 
 # Adding Wazuh repository
 if [[ ${EnvironmentType} == 'staging' ]]
