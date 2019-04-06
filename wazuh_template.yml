@@ -819,7 +819,7 @@ Resources:
     Type: 'AWS::AutoScaling::AutoScalingGroup'
     Properties:
       VPCZoneIdentifier:
-        - !Ref SubnetElasticsearch
+        - !Ref SubnetWazuh
       HealthCheckGracePeriod: '600'
       HealthCheckType: EC2
       LaunchConfigurationName: !Ref ElasticLaunchConfiguration

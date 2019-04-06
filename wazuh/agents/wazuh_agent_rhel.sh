@@ -30,8 +30,7 @@ sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/s
 service sshd restart
 
 # Install dependencies
-yum install wget git -y
-
+yum install wget git python-requests -y
 ### Use case 1: Docker
 
 # Add Docker-ce repo
@@ -118,6 +117,9 @@ echo "Set Wazuh password registration." >> /tmp/log
 /var/ossec/bin/agent-auth -m ${master_ip} -A ${agent_name}
 sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' ${manager_config}
 echo "Registered Wazuh agent." >> /tmp/log
+
+# Enable integrator
+/var/ossec/bin/ossec-control enable integrator
 
 # Restarting services
 /var/ossec/bin/ossec-control restart
