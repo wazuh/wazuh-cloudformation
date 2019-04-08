@@ -60,7 +60,7 @@ touch /mysql/mysql.conf
 yum install nc -y
 
 ### Use case 5: OpenSCAP
-yum install openscap -y
+yum install openscap-scanner -y
 
 ### Use case 6: Suricata
 # Install Suricata
