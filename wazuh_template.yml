@@ -1442,6 +1442,28 @@ Resources:
       Tags:
         - Key: Name
           Value: Windows
+      UserData:
+        Fn::Base64: !Sub |
+          <powershell>
+          $master_ip=${WazuhMasterInstance.PublicIp}
+
+          $url = "https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/warehouse/branches/3.9/windows/wazuh-agent-3.9.0-0.3911.20190404T083111.branch39.commit399ee96.msi" 
+          $path = "C:\\Users\\Administrator\\Desktop\\wazuh-agent-3.8.2-1.msi" 
+
+          if(!(Split-Path -parent $path) -or !(Test-Path -pathType Container (Split-Path -parent $path))) { 
+            $targetFile = Join-Path $pwd (Split-Path -leaf $path) 
+          } 
+
+          (New-Object Net.WebClient).DownloadFile($url, $path) 
+
+          try {
+            Start-Process -FilePath "C:\\Users\\vagrant\\Desktop\\wazuh-agent-3.8.2-1.msi" -Wait -ArgumentList ADDRESS="$master_ip",AUTHD_SERVER="$master_ip",AGENT_NAME="Win"
+          } catch {
+            $_.Exception.Message
+            "Error installing Wazuh agent"
+            Exit
+          }
+          </powershell>
     DependsOn: GatewayToInternet
   WindowsEth0: 
     Type: AWS::EC2::NetworkInterface
