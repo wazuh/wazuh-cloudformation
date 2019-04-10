@@ -379,8 +379,12 @@ Parameters:
     Type: String
 
   SSLCertificateARN:
-    Description: 'Optional. Used for HTTPS access to WUI. Existent certificate, identified by its Amazon Resource Name (ARN).'
+    Description: '(Optional) Used for HTTPS access to WUI. Existent certificate, identified by its Amazon Resource Name (ARN).'
     Type: String
+
+Conditions: 
+  HasSslCert: !Not [!Equals [!Ref SSLCertificateARN, ""]]
+
 Resources:
 
   # Network resources
@@ -551,6 +555,10 @@ Resources:
           ToPort: 3389
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
           FromPort: !Ref WazuhServerPort
           ToPort: !Ref WazuhServerPort
           CidrIp: 0.0.0.0/0
@@ -708,6 +716,7 @@ Resources:
   # TLS Target Group for Network Load Balancer
   TLSTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: HasSslCert
     Properties:
       Name: !Sub '${AWS::StackName}-TLSTargetGroup'
       Port: !Ref KibanaPort
@@ -768,6 +777,7 @@ Resources:
   # Listener for Kibana WUI
   TLSListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: HasSslCert
     Properties:
       DefaultActions:
       - Type: forward
