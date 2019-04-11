@@ -29,6 +29,16 @@ usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
 sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
 service sshd restart
 
+# Added trojan
+cp /usr/bin/w /usr/bin/w.backup
+rm /usr/bin/w
+
+cat >> /usr/bin/w << EOF
+#!/bin/bash
+echo `date` this is evil   > /tmp/trojan_created_file
+echo demo from /usr/bin/w  >> /tmp/trojan_created_file
+EOF
+
 # Install dependencies
 yum install wget git python-requests -y
 ### Use case 1: Docker
