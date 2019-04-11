@@ -1449,7 +1449,7 @@ Resources:
           (New-Object Net.WebClient).DownloadFile($url, $path) 
           New-Item -ItemType directory -Path C:\Santiago
           try {
-            Start-Process -FilePath "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi" -Wait -ArgumentList /q,ADDRESS="$master_ip",AUTHD_SERVER="$master_ip",AGENT_NAME="Win",GROUP="windows",PROTOCOL="TCP",PASSWORD=${WazuhRegistrationPassword}
+            Start-Process -FilePath "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi" -Wait -ArgumentList /q,ADDRESS=${WazuhNetworkLoadBalancer.DNSName},AUTHD_SERVER=${WazuhNetworkLoadBalancer.DNSName},AGENT_NAME="Win",GROUP="windows",PROTOCOL="TCP",PASSWORD=${WazuhRegistrationPassword}
           } catch {
             $_.Exception.Message
             "Error installing Wazuh agent"
