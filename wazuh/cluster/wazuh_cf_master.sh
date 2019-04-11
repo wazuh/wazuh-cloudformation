@@ -358,7 +358,7 @@ cat >> ${manager_config} << EOF
   <active-response>
     <command>firewall-drop</command>
     <location>local</location>
-    <rules_id>100111</rules_id> 
+    <rules_id>100100</rules_id> 
     <timeout>60</timeout> 
   </active-response>
 </ossec_config>
