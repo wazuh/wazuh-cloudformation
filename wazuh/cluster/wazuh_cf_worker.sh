@@ -236,15 +236,25 @@ cat >> ${manager_config} << EOF
 EOF
 fi
 
+UID=$(id -u `whoami`)
+
 # Audit rules
 cat >> /etc/audit/rules.d/audit.rules << EOF
+-a exit,always -F euid=0 -F arch=b32 -S execve -k audit-wazuh-c
+-a exit,always -F euid=0 -F arch=b64 -S execve -k audit-wazuh-c
+-a exit,always -F euid=1003 -F arch=b32 -S execve -k audit-wazuh-c
+-a exit,always -F euid=1003 -F arch=b64 -S execve -k audit-wazuh-c
 -a exit,always -F euid=1002 -F arch=b32 -S execve -k audit-wazuh-c
 -a exit,always -F euid=1002 -F arch=b64 -S execve -k audit-wazuh-c
 -a exit,always -F euid=1003 -F arch=b32 -S execve -k audit-wazuh-c
 -a exit,always -F euid=1003 -F arch=b64 -S execve -k audit-wazuh-c
+-a exit,always -F euid=${UID} -F arch=b32 -S execve -k audit-wazuh-c
+-a exit,always -F euid=${UID} -F arch=b64 -S execve -k audit-wazuh-c
 EOF
 
+auditctl -D
 auditctl -R /etc/audit/rules.d/audit.rules
+systemctl restart audit
 
 # Localfiles
 cat >> ${manager_config} << EOF
