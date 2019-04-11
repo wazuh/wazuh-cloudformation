@@ -1449,17 +1449,10 @@ Resources:
           (New-Object Net.WebClient).DownloadFile($url, $path) 
           New-Item -ItemType directory -Path C:\Santiago
           try {
-            Start-Process -FilePath "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi" -Wait -ArgumentList /q ADDRESS="$master_ip",AUTHD_SERVER="$master_ip",AGENT_NAME="Win"
+            Start-Process -FilePath "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi" -Wait -ArgumentList /q,ADDRESS="$master_ip",AUTHD_SERVER="$master_ip",AGENT_NAME="Win",GROUP="windows",PROTOCOL="TCP",PASSWORD=${WazuhRegistrationPassword}
           } catch {
             $_.Exception.Message
             "Error installing Wazuh agent"
-            Exit
-          }
-          try {
-            $text = ${WazuhRegistrationPassword} | Out-File $text -FilePath C:\\Users\\Administrator\\Desktop\\authd.pass
-          } catch {
-            $_.Exception.Message
-            "Error adding authd password"
             Exit
           }
           </powershell>
