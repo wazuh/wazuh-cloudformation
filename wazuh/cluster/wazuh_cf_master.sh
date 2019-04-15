@@ -306,13 +306,13 @@ cat >> ${manager_config} << EOF
     <bucket type="vpcflow">
       <name>wazuh-aws-wodle</name>
       <path>vpc</path>
-      <access_key>XXXX</access_key>
-      <secret_key>XXXX</secret_key>
+      <access_key>${AwsAccessKey}</access_key>
+      <secret_key>${AwsSecretKey}</secret_key>
       <only_logs_after>2019-MAR-24</only_logs_after>
     </bucket>
     <service type="inspector">
-      <access_key>XXXX</access_key>
-      <secret_key>XXXX</secret_key>
+      <access_key>${AwsAccessKey}</access_key>
+      <secret_key>${AwsSecretKey}</secret_key>
     </service>
   </wodle>
 </ossec_config>
