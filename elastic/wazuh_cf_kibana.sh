@@ -33,14 +33,8 @@ usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
 sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
 service sshd restart
 
-usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
-sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
-service sshd restart
-echo "Started SSH service." >> /tmp/log
-
-# Downloading and installing JRE
-yum install -y java-1.8.0-openjdk
-echo "Installed JAVA." >> /tmp/log
+# Install Java 8 OpenJDK
+yum -y install java-1.8.0-openjdk
 
 # Configuring Elastic repository
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch

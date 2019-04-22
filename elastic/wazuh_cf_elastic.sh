@@ -32,12 +32,8 @@ echo "Started SSH service." >> /tmp/log
 mkdir /mnt/ephemeral
 echo "Created /mnt/ephemeral folder." >> /tmp/log
 
-# Downloading and installing JRE
-yum install -y java-1.8.0-openjdk
-echo "Downloaded JAVA." >> /tmp/log
-
-yum -y localinstall ${jre_rpm} && rm -f ${jre_rpm}
-echo "Installed JAVA." >> /tmp/log
+# Install Java 8 OpenJDK
+yum -y install java-1.8.0-openjdk
 
 # Configuring Elastic repository
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
