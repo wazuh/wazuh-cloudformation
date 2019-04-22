@@ -31,12 +31,8 @@ usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
 sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
 service sshd restart
 
-# Downloading and installing JRE
-url_jre="https://download.oracle.com/otn-pub/java/jdk/8u202-b08/1961070e4c9b4e26a04e7f5a083f551e/jre-8u202-linux-x64.rpm"
-jre_rpm="/tmp/jre-8-linux-x64.rpm"
-curl -Lo ${jre_rpm} --header "Cookie: oraclelicense=accept-securebackup-cookie" ${url_jre}
-rpm -qlp ${jre_rpm} > /dev/null 2>&1 || $(echo "Unable to download JRE. Exiting." && exit 1)
-yum -y localinstall ${jre_rpm} && rm -f ${jre_rpm}
+# Install Java 8 OpenJDK
+yum -y install java-1.8.0-openjdk
 
 # Configuring Elastic repository
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
