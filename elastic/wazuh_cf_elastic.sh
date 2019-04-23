@@ -17,7 +17,7 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 # Creating SSH user
-adduser ${ssh_username}
+if ! id -u ${ssh_username} > /dev/null 2>&1; then adduser ${ssh_username}; fi
 echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
 usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
 sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
@@ -29,7 +29,10 @@ mkfs -t ext4 /dev/nvme0n1
 mount /dev/nvme0n1 /mnt/ephemeral
 echo "/dev/nvme0n1 /mnt/ephemeral ext4 defaults,nofail 0 2" | tee -a /etc/fstab
 
-# Install Java 8 OpenJDK
+# Uninstall OpenJDK 1.7 if exists
+if rpm -q java-1.7.0-openjdk > /dev/null; then yum -y remove java-1.7.0-openjdk; fi
+
+# Install OpenJDK 1.8
 yum -y install java-1.8.0-openjdk
 
 # Configuring Elastic repository
