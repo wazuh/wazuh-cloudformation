@@ -19,7 +19,7 @@ fi
 echo "Running as root." >> /tmp/log
 
 # Creating SSH user
-adduser ${ssh_username}
+if ! id -u ${ssh_username} > /dev/null 2>&1; then adduser ${ssh_username}; fi
 echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
 usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
 echo "Created SSH user." >> /tmp/log
@@ -32,7 +32,10 @@ echo "Started SSH service." >> /tmp/log
 mkdir /mnt/ephemeral
 echo "Created /mnt/ephemeral folder." >> /tmp/log
 
-# Install Java 8 OpenJDK
+# Uninstall OpenJDK 1.7 if exists
+if rpm -q java-1.7.0-openjdk > /dev/null; then yum -y remove java-1.7.0-openjdk; fi
+
+# Install OpenJDK 1.8
 yum -y install java-1.8.0-openjdk
 
 # Configuring Elastic repository
