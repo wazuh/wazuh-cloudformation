@@ -33,10 +33,7 @@ mkdir /mnt/ephemeral
 echo "Created /mnt/ephemeral folder." >> /tmp/log
 
 # Downloading and installing JRE
-url_jre="https://download.oracle.com/otn-pub/java/jdk/8u202-b08/1961070e4c9b4e26a04e7f5a083f551e/jre-8u202-linux-x64.rpm"
-jre_rpm="/tmp/jre-8-linux-x64.rpm"
-curl -Lo ${jre_rpm} --header "Cookie: oraclelicense=accept-securebackup-cookie" ${url_jre}
-rpm -qlp ${jre_rpm} > /dev/null 2>&1 || $(echo "Unable to download JRE. Exiting." && exit 1)
+yum install -y java-1.8.0-openjdk
 echo "Downloaded JAVA." >> /tmp/log
 
 yum -y localinstall ${jre_rpm} && rm -f ${jre_rpm}
