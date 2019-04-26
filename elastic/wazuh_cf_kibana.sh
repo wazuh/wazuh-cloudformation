@@ -184,6 +184,13 @@ api_config="/tmp/api_config.json"
 api_time=$(($(date +%s%N)/1000000))
 wazuh_api_password_base64=`echo -n ${wazuh_api_password} | base64`
 
+# Enabling extensions
+sed -i "s/#extensions.docker    : false/extensions.docker : true/" /usr/share/kibana/plugins/wazuh/config.yml
+sed -i "s/#extensions.aws    : false/extensions.aws : true/" /usr/share/kibana/plugins/wazuh/config.yml
+sed -i "s/#extensions.osquery    : false/extensions.osquery : true/" /usr/share/kibana/plugins/wazuh/config.yml
+sed -i "s/#extensions.oscap    : false/extensions.oscap : true/" /usr/share/kibana/plugins/wazuh/config.yml
+sed -i "s/#extensions.virustotal    : false/extensions.virustotal : true/" /usr/share/kibana/plugins/wazuh/config.yml
+
 cat > ${api_config} << EOF
 {
   "api_user": "${wazuh_api_user}",
