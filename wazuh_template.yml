@@ -1447,7 +1447,7 @@ Resources:
           
           $master_ip=${WazuhNetworkLoadBalancer.DNSName}
 
-          $url = "https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/windows/wazuh-agent-3.9.0-1.msi" 
+          $url = "https://packages.wazuh.com/3.x/windows/wazuh-agent-3.8.2-1.msi" 
           $path = "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi" 
 
           if(!(Split-Path -parent $path) -or !(Test-Path -pathType Container (Split-Path -parent $path))) { 
