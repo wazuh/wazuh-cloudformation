@@ -200,3 +200,10 @@ pip install docker
 systemctl restart suricata
 
 echo "Restarted Wazuh agent." >> /tmp/log
+
+# Executing docker commands
+docker pull nginx
+docker run -d -P --name nginx_container nginx
+docker exec -ti nginx_container cat /etc/passwd
+docker stop nginx_container
+docker rm nginx_container
