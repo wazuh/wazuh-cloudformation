@@ -1,20 +1,24 @@
 AWSTemplateFormatVersion: 2010-09-09
 
-
 Mappings:
   RegionMap:
     us-east-1:
       HVM64: ami-0ff8a91507f77f867
     us-east-2:
-      HVM64: ami-0b59bfac6be064b78	
+      HVM64: ami-0b59bfac6be064b78
     us-west-1:
-      HVM64: ami-0bdb828fd58c52235
+      HVM64: ami-0019ef04ac50be30f
+      HVMUBUNTU64: ami-06397100adf427136
+      HVMCENTOS7: ami-074e2d6769f445be5
+      HVMREDHAT7: ami-18726478
+      HVMDEBIAN: ami-0343ae47
+      HVMWINDOWS: ami-0231dfcfb04c8de06
     us-west-2:
       HVM64: ami-a0cfeed8
     ca-central-1:
       HVM64: ami-0b18956f
     eu-central-1:
-      HVM64: ami-0233214e13e500f77	
+      HVM64: ami-0233214e13e500f77
     eu-west-1:
       HVM64: ami-047bb4163c506cd98
     eu-west-2:
@@ -36,15 +40,21 @@ Mappings:
   SubnetConfig:
     WazuhVpc:
       CIDR: 10.0.0.0/16
-    SubnetElastic:
-      CIDR: 10.0.1.0/24
     SubnetWazuh:
+      CIDR: 10.0.0.0/24
+    SubnetAgents:
+      CIDR: 10.0.1.0/24
+    SubnetElasticsearch:
       CIDR: 10.0.2.0/24
-
 
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
+      -
+        Label:
+          default: "Environment type"
+        Parameters:
+          - EnvironmentType
       -
         Label:
           default: "AWS environment"
@@ -59,8 +69,20 @@ Metadata:
           - WazuhInstanceType
           - ElasticInstanceType
           - KibanaInstanceType
+          - SplunkInstanceType
           - SshUsername
           - SshPassword
+      - 
+        Label:
+          default: "Wazuh Amazon Linux agent instance type"
+        Parameters:
+          - AgentInstanceType
+          - CentosAgentInstanceType
+          - WindowsInstanceType
+          - RedHatInstanceType
+          - DebianInstanceType
+          - UbuntuInstanceType
+          
       - 
         Label:
           default: "Wazuh configuration"
@@ -81,10 +103,23 @@ Metadata:
           - KibanaPassword
       -
         Label:
-          default: "Optional: Domain names"
+          default: "Splunk configuration"
         Parameters:
-          - ParentDomainName
-          - SubDomainName
+          - SplunkUsername
+          - SplunkPassword
+      -
+        Label:
+          default: "Integration keys"
+        Parameters:
+          - AwsSecretKey
+          - AwsAccessKey
+          - VirusTotalKey
+          - SlackHook
+      -
+        Label:
+          default: "SSL Certificate"
+        Parameters:
+          - SSLCertificateARN
 
 Parameters:
 
@@ -120,36 +155,129 @@ Parameters:
       - 6.5.2_3.7.1
       - 6.5.3_3.7.2
       - 6.5.4_3.7.2
+      - 6.6.2_3.9.0
+      - 6.7.0_3.9.0
+      - 6.7.1_3.9.0
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
-    Default: 6.5.4_3.7.2
+    Default: 6.7.1_3.9.0
     Description: Elastic and Wazuh versions to be installed
     Type: String
   WazuhInstanceType:
     AllowedValues:
+      - t2.micro
+      - t2.medium
+      - t2.large
       - m5.large
-      - m5.xlarge
-      - m5.2xlarge
     ConstraintDescription: Must contain valid instance type
-    Default: m5.large
+    Default: t2.medium
     Description: Type of EC2 instance for Wazuh instance
     Type: String
+  EnvironmentType:
+    AllowedValues:
+      - production
+      - staging
+      - devel    
+    ConstraintDescription: Must contain valid instance type
+    Default: staging
+    Description: Select a stage
+    Type: String
+  AgentInstanceType:
+    AllowedValues:
+      - t2.micro
+      - t2.medium
+      - t2.large
+      - m5.large
+    ConstraintDescription: Must contain valid instance type
+    Default: t2.micro
+    Description: Type of EC2 instance for Wazuh Amazon Linux agent instance
+    Type: String
+
+  CentosAgentInstanceType:
+    AllowedValues:
+      - t2.micro
+      - t2.medium
+      - t2.large
+      - m5.large
+    ConstraintDescription: Must contain valid instance type
+    Default: t2.micro
+    Description: Type of EC2 instance for Wazuh CentOS agent instance
+    Type: String
+
+
+  RedHatInstanceType:
+    AllowedValues:
+      - t2.micro
+      - t2.medium
+      - t2.large
+      - m5.large
+    ConstraintDescription: Must contain valid instance type
+    Default: t2.micro
+    Description: Type of EC2 instance for Wazuh RedHat agent instance
+    Type: String
+
+  WindowsInstanceType:
+    AllowedValues:
+      - t2.micro
+      - t2.medium
+      - t2.large
+      - m5.large
+    ConstraintDescription: Must contain valid instance type
+    Default: t2.micro
+    Description: Type of EC2 instance for Windows Wazuh agent instance
+    Type: String
+
+  DebianInstanceType:
+    AllowedValues:
+      - t2.micro
+      - t2.medium
+      - t2.large
+      - m5.large
+    ConstraintDescription: Must contain valid instance type
+    Default: t2.micro
+    Description: Type of EC2 instance for Debian Wazuh agent instance
+    Type: String
+
+  UbuntuInstanceType:
+    AllowedValues:
+      - t2.micro
+      - t2.medium
+      - t2.large
+      - m5.large
+    ConstraintDescription: Must contain valid instance type
+    Default: t2.micro
+    Description: Type of EC2 instance for Ubuntu Wazuh agent instance
+    Type: String
+
   ElasticInstanceType:
     AllowedValues:
+      - t2.medium
+      - t2.large
       - i3.large
       - i3.xlarge
-      - i3.2xlarge
     ConstraintDescription: Must contain valid instance type
-    Default: i3.large
+    Default: t2.medium
     Description: Type of EC2 instance for Elastic instance
     Type: String
   KibanaInstanceType:
     AllowedValues:
+      - t2.medium
+      - t2.large
       - m5.large
-      - m5.xlarge
-      - m5.2xlarge
+      - r5.large
     ConstraintDescription: Must contain valid instance type
-    Default: m5.large
+    Default: t2.medium
     Description: Type of EC2 instance for Kibana instance
+    Type: String
+
+  SplunkInstanceType:
+    AllowedValues:
+      - t2.medium
+      - t2.large
+      - m5.large
+      - r5.large
+    ConstraintDescription: Must contain valid instance type
+    Default: t2.medium
+    Description: Type of EC2 instance for Splunk instance
     Type: String
 
   # Wazuh configuration
@@ -197,7 +325,6 @@ Parameters:
     MaxLength: '32'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Any alphanumeric string of 32 characters
-
   # Kibana configuration
   KibanaPort:
     Default: '443'
@@ -219,20 +346,44 @@ Parameters:
     MaxLength: '48'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Only alphanumeric characters
-
-  # Optional: Domain names
-  ParentDomainName:
-    Description: 'Optional. Public domain name, already registered with a hosted zone in Route 53 (e.g. wazuh.net).'
+  SplunkUsername:
+    Default: wazuh
+    Description: Username for Splunk access
     Type: String
-  SubDomainName:
-    Description: 'Optional. Requires ParentDomainName. Used to create DNS entries (e.g. subdomain.wazuh.net).'
+    MinLength: '1'
+    MaxLength: '16'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: Only alphanumeric characters
+  SplunkPassword:
+    Description: Password for Splunk access
+    NoEcho: 'True'
+    Type: String
+    MinLength: '1'
+    MaxLength: '48'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: Only alphanumeric characters
+  AwsSecretKey:
+    Description: (Optional) Secret key for AWS integration
     Type: String
 
+  AwsAccessKey:
+    Description: (Optional) Access key for AWS integration
+    Type: String
 
-Conditions:
-  HasZone: !Not [!Equals [!Ref ParentDomainName, '']]
-  ParentDomainSpecified: !Not [!Equals [!Ref ParentDomainName, '']]
+  VirusTotalKey:
+    Description: (Optional) Key for VirusTotal integration
+    Type: String
 
+  SlackHook:
+    Description: (Optional) Webhook for Slack integration
+    Type: String
+
+  SSLCertificateARN:
+    Description: '(Optional) Used for HTTPS access to WUI. Existent certificate, identified by its Amazon Resource Name (ARN).'
+    Type: String
+
+Conditions: 
+  HasSslCert: !Not [!Equals [!Ref SSLCertificateARN, ""]]
 
 Resources:
 
@@ -251,19 +402,6 @@ Resources:
           Value: !Ref 'AWS::StackId'
         - Key: Name
           Value: !Ref 'AWS::StackName'
-  SubnetElastic:
-    Type: 'AWS::EC2::Subnet'
-    Properties:
-      VpcId: !Ref WazuhVpc
-      CidrBlock: !FindInMap
-        - SubnetConfig
-        - SubnetElastic
-        - CIDR
-      Tags:
-        - Key: Application
-          Value: !Ref 'AWS::StackId'
-        - Key: Name
-          Value: !Sub '${AWS::StackName}-SubnetElastic'
   SubnetWazuh:
     Type: 'AWS::EC2::Subnet'
     Properties:
@@ -277,8 +415,34 @@ Resources:
           Value: !Ref 'AWS::StackId'
         - Key: Name
           Value: !Sub '${AWS::StackName}-SubnetWazuh'
+  SubnetAgents:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref WazuhVpc
+      CidrBlock: !FindInMap
+        - SubnetConfig
+        - SubnetAgents
+        - CIDR
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-SubnetAgents'
+  SubnetElasticsearch:
+      Type: 'AWS::EC2::Subnet'
+      Properties:
+        VpcId: !Ref WazuhVpc
+        CidrBlock: !FindInMap
+          - SubnetConfig
+          - SubnetElasticsearch
+          - CIDR
+        Tags:
+          - Key: Application
+            Value: !Ref 'AWS::StackId'
+          - Key: Name
+            Value: !Sub '${AWS::StackName}-SubnetElasticsearch'
 
-  # Internet access
+  # Internet access and routing
   InternetGateway:
     Type: 'AWS::EC2::InternetGateway'
     Properties:
@@ -308,17 +472,22 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
-  SubnetElasticPublicRouteTable:
-    Type: 'AWS::EC2::SubnetRouteTableAssociation'
-    Properties:
-      SubnetId: !Ref SubnetElastic
-      RouteTableId: !Ref PublicRouteTable
   SubnetWazuhPublicRouteTable:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
       SubnetId: !Ref SubnetWazuh
       RouteTableId: !Ref PublicRouteTable
-
+  SubnetElasticPublicRouteTable:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref SubnetElasticsearch
+      RouteTableId: !Ref PublicRouteTable
+  SubnetAgentsPublicRouteTable:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref SubnetAgents
+      RouteTableId: !Ref PublicRouteTable
+    
   # Instance security groups
   ElasticSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -329,10 +498,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 5000
           ToPort: 5000
@@ -383,17 +549,23 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3389
+          ToPort: 3389
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: !Ref WazuhServerPort
           ToPort: !Ref WazuhServerPort
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: !Ref WazuhRegistrationPort
           ToPort: !Ref WazuhRegistrationPort
@@ -415,7 +587,23 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-WazuhSecurityGroup'
-
+  SplunkSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Splunk security group
+      VpcId: !Ref WazuhVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 8000
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-SplunkSecurityGroup'
   # Elasticsearch load balancer
   ElbElasticSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -439,7 +627,7 @@ Resources:
       LoadBalancerName: !Sub '${AWS::StackName}-Elastic'
       Scheme: internal
       Subnets:
-        - !Ref SubnetElastic
+        - !Ref SubnetWazuh
       SecurityGroups:
         - !Ref ElbElasticSecurityGroup
       ConnectionSettings:
@@ -482,7 +670,7 @@ Resources:
       LoadBalancerName: !Sub '${AWS::StackName}-Logstash'
       Scheme: internal
       Subnets:
-        - !Ref SubnetElastic
+        - !Ref SubnetWazuh
       SecurityGroups:
         - !Ref ElbLogstashSecurityGroup
       ConnectionSettings:
@@ -498,126 +686,111 @@ Resources:
           InstancePort: '5000'
           Protocol: TCP
 
-  # Kibana load balancer
-  ElbKibanaSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
+  # Wazuh Network Load Balancer
+  WazuhNetworkLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      GroupDescription: ELB Kibana security group
-      VpcId: !Ref WazuhVpc
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: !Ref KibanaPort
-          ToPort: !Ref KibanaPort
-          CidrIp: 0.0.0.0/0
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}-ElbKibanaSecurityGroup'
-  ElbKibana:
-    Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
-    Properties:
-      LoadBalancerName: !Sub '${AWS::StackName}-Kibana'
+      Name: !Sub '${AWS::StackName}-Wazuh'
       Scheme: internet-facing
-      Subnets:
-        - !Ref SubnetElastic
-      SecurityGroups:
-        - !Ref ElbKibanaSecurityGroup
-      ConnectionSettings:
-        IdleTimeout: '1200'
-      Instances:
-        - Ref: KibanaInstance
-      HealthCheck:
-        Target: !Sub 'TCP:${KibanaPort}'
-        HealthyThreshold: '3'
-        UnhealthyThreshold: '3'
-        Interval: '60'
-        Timeout: '5'
-      Listeners:
-        - LoadBalancerPort: 22 
-          InstancePort: 22 
-          Protocol: TCP
-          InstanceProtocol: TCP
-        - LoadBalancerPort: !Ref KibanaPort
-          InstancePort: !Ref KibanaPort
-          Protocol: TCP
-          InstanceProtocol: TCP
-
-  # Wazuh server load balancer
-  ElbWazuhSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupDescription: ELB Wazuh security group
-      VpcId: !Ref WazuhVpc
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: !Ref WazuhServerPort
-          ToPort: !Ref WazuhServerPort
-          CidrIp: 0.0.0.0/0
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}-ElbWazuhSecurityGroup'
-  ElbWazuh:
-    Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
-    Properties:
-      LoadBalancerName: !Sub '${AWS::StackName}-Wazuh'
-      Scheme: internet-facing
-      Subnets:
+      Subnets: 
         - !Ref SubnetWazuh
-      SecurityGroups:
-        - !Ref ElbWazuhSecurityGroup
-      ConnectionSettings:
-        IdleTimeout: '1200'
-      Instances:
-        - Ref: WazuhMasterInstance
-        - Ref: WazuhWorkerInstance
-      HealthCheck:
-        Target: !Sub 'TCP:${WazuhServerPort}'
-        HealthyThreshold: '3'
-        UnhealthyThreshold: '3'
-        Interval: '60'
-        Timeout: '5'
-      Listeners:
-        - LoadBalancerPort: !Ref WazuhServerPort
-          InstancePort: !Ref WazuhServerPort
-          Protocol: TCP
-      ConnectionDrainingPolicy:
-        Enabled: 'true'
-        Timeout: '600'
+      Type: network
+      Tags:
+        - Key: Name
+          Value: nlbwazuh
 
-  # Domain names
-  WazuhDataRecordSet:
-    Condition: HasZone
-    Type: 'AWS::Route53::RecordSet'
+  # Wazuh registration Target Group for Network Load Balancer
+  RegistrationTG:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      HostedZoneName: !Join ['', [!Ref 'ParentDomainName', .]]
-      Name: !Join ['', [data., !Ref 'SubDomainName', ., !Ref 'ParentDomainName', .]]
-      Type: A
-      AliasTarget:
-        HostedZoneId: !GetAtt ElbWazuh.CanonicalHostedZoneNameID
-        DNSName: !GetAtt ElbWazuh.DNSName
-  WazuhRegistrationRecordSet:
-    Condition: HasZone
-    Type: 'AWS::Route53::RecordSet'
+      Name: !Sub '${AWS::StackName}-registrationTG'
+      Port: !Ref WazuhRegistrationPort
+      Protocol: TCP
+      VpcId: !Ref WazuhVpc
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 600
+      Targets:
+      - Id: !Ref WazuhMasterInstance
+        Port: !Ref WazuhRegistrationPort
+      Tags:
+        - Key: Name
+          Value: registrationTG
+
+  # TLS Target Group for Network Load Balancer
+  TLSTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: HasSslCert
     Properties:
-      HostedZoneName: !Join ['', [!Ref 'ParentDomainName', .]]
-      Name: !Join ['', [registration., !Ref 'SubDomainName', ., !Ref 'ParentDomainName', .]]
-      Type: A
-      TTL: '600'
-      ResourceRecords:
-        - !Ref WazuhMasterEIP
-  KibanaRecordSet:
-    Condition: HasZone
-    Type: 'AWS::Route53::RecordSet'
+      Name: !Sub '${AWS::StackName}-TLSTargetGroup'
+      Port: !Ref KibanaPort
+      Protocol: TCP
+      VpcId: !Ref WazuhVpc
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 600
+      Targets:
+      - Id: !Ref KibanaInstance
+        Port: !Ref KibanaPort
+      Tags:
+        - Key: Name
+          Value: TLSTargetGroup
+
+  # Wazuh registration Listener for Network Load Balancer
+  RegistrationListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
-      HostedZoneName: !Join ['', [!Ref 'ParentDomainName', .]]
-      Name: !Join ['', [!Ref 'SubDomainName', ., !Ref 'ParentDomainName', .]]
-      Type: A
-      AliasTarget:
-        HostedZoneId: !GetAtt ElbKibana.CanonicalHostedZoneNameID
-        DNSName: !GetAtt ElbKibana.DNSName
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref RegistrationTG
+      LoadBalancerArn: !Ref WazuhNetworkLoadBalancer
+      Port: !Ref WazuhRegistrationPort
+      Protocol: TCP
+  
+  # Reporting Target Group for Wazuh master and worker nodes
+  ReportingTG:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub '${AWS::StackName}-reportingTG'
+      Port: !Ref WazuhServerPort
+      Protocol: TCP
+      VpcId: !Ref WazuhVpc
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 600
+      Targets:
+      - Id: !Ref WazuhMasterInstance
+        Port: !Ref WazuhServerPort
+      - Id: !Ref WazuhWorkerInstance
+        Port: !Ref WazuhServerPort  
+      Tags:
+        - Key: Name
+          Value: reportingTG
+
+  # Reporting Listener for Network LB.
+  ReportingListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref ReportingTG
+      LoadBalancerArn: !Ref WazuhNetworkLoadBalancer
+      Port: '1514'
+      Protocol: TCP
+
+  # Listener for Kibana WUI
+  TLSListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: HasSslCert
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref TLSTargetGroup
+      LoadBalancerArn: !Ref WazuhNetworkLoadBalancer
+      Port: !Ref KibanaPort
+      Protocol: TLS
+      Certificates:
+      - CertificateArn: !Ref SSLCertificateARN
 
   # IAM role and profile
   InstanceRole:
@@ -660,7 +833,7 @@ Resources:
     Type: 'AWS::AutoScaling::AutoScalingGroup'
     Properties:
       VPCZoneIdentifier:
-        - !Ref SubnetElastic
+        - !Ref SubnetWazuh
       HealthCheckGracePeriod: '600'
       HealthCheckType: EC2
       LaunchConfigurationName: !Ref ElasticLaunchConfiguration
@@ -724,7 +897,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/master/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/elastic/wazuh_cf_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -803,7 +976,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_kibana.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/master/elastic/wazuh_cf_kibana.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/elastic/wazuh_cf_kibana.sh
               mode: '000700'
               owner: root
               group: root
@@ -825,8 +998,14 @@ Resources:
             VolumeSize: 100
             VolumeType: gp2
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref KibanaInstanceEth0
-          DeviceIndex: 0
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "KibanaSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetWazuh"
+
+
       Tags:
         - Key: Name
           Value: WazuhKibana
@@ -836,22 +1015,71 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource KibanaInstance --configsets KibanaInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Kibana --region ${AWS::Region}
     DependsOn: GatewayToInternet
-  KibanaInstanceEth0:
-    Type: AWS::EC2::NetworkInterface
+
+  # Kibana instance
+  SplunkInstance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          SplunkInstallationSet:
+            - SplunkFiles
+            - SplunkInstall
+        SplunkFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                SplunkUsername: ${SplunkUsername}
+                SplunkPassword: ${SplunkPassword}
+                WazuhApiAdminUsername: ${WazuhApiAdminUsername}
+                WazuhApiAdminPassword: ${WazuhApiAdminPassword}
+                WazuhApiPort: ${WazuhApiPort}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_splunk.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/splunk/wazuh_cf_splunk.sh
+              mode: '000700'
+              owner: root
+              group: root
+        SplunkInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_splunk.sh
     Properties:
-      SubnetId: !Ref SubnetElastic
-      GroupSet: [!Ref 'KibanaSecurityGroup']
-  KibanaEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-  KibanaEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref KibanaInstanceEth0
-      AllocationId: !GetAtt
-        - KibanaEIP
-        - AllocationId
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVM64
+      InstanceType: !Ref SplunkInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 100
+            VolumeType: gp2
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "SplunkSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetWazuh"
+      Tags:
+        - Key: Name
+          Value: Splunk
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource SplunkInstance --configsets SplunkInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Splunk --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+
 
   # Wazuh master instance
   WazuhMasterInstance:
@@ -877,12 +1105,18 @@ Resources:
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
                 ElbLogstashDNS: ${ElbLogstash.DNSName}
+                WindowsPublicIp: ${Windows.PublicIp}
+                AwsSecretKey: ${AwsSecretKey}
+                AwsAccessKey: ${AwsAccessKey}
+                VirusTotalKey: ${VirusTotalKey}
+                SlackHook: ${SlackHook}
+                EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
               group: root
             /tmp/wazuh_cf_master.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/master/wazuh/wazuh_cf_master.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/cluster/wazuh_cf_master.sh
               mode: '000700'
               owner: root
               group: root
@@ -903,9 +1137,14 @@ Resources:
           Ebs:
             VolumeSize: 200
             VolumeType: gp2
+
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref WazuhMasterInstanceEth0
-          DeviceIndex: 0
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "WazuhSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetWazuh"
       Tags:
         - Key: Name
           Value: WazuhMaster
@@ -915,7 +1154,7 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource WazuhMasterInstance --configsets WazuhInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WazuhMasterInstance --region ${AWS::Region}
     DependsOn: GatewayToInternet
-  WazuhMasterInstanceEth0:
+  WazuhMasterEth0: 
     Type: AWS::EC2::NetworkInterface
     Properties:
       SubnetId: !Ref SubnetWazuh
@@ -927,7 +1166,7 @@ Resources:
   WazuhMasterEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
-      NetworkInterfaceId: !Ref WazuhMasterInstanceEth0
+      NetworkInterfaceId: !Ref WazuhMasterEth0
       AllocationId: !GetAtt
         - WazuhMasterEIP
         - AllocationId
@@ -949,17 +1188,20 @@ Resources:
                 SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
                 WazuhServerPort: ${WazuhServerPort}
-                WazuhRegistrationPort: ${WazuhRegistrationPort}
-                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
                 ElbLogstashDNS: ${ElbLogstash.DNSName}
+                AwsSecretKey: ${AwsSecretKey}
+                AwsAccessKey: ${AwsAccessKey}
+                VirusTotalKey: ${VirusTotalKey}
+                SlackHook: ${SlackHook}
+                EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
               group: root
             /tmp/wazuh_cf_worker.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/master/wazuh/wazuh_cf_worker.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/cluster/wazuh_cf_worker.sh
               mode: '000700'
               owner: root
               group: root
@@ -981,7 +1223,7 @@ Resources:
             VolumeSize: 200
             VolumeType: gp2
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref WazuhWorkerInstanceEth0
+        - NetworkInterfaceId: !Ref WazuhWorkerEth0
           DeviceIndex: 0
       Tags:
         - Key: Name
@@ -992,7 +1234,7 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource WazuhWorkerInstance --configsets WazuhInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WazuhWorkerInstance --region ${AWS::Region}
     DependsOn: GatewayToInternet
-  WazuhWorkerInstanceEth0:
+  WazuhWorkerEth0: 
     Type: AWS::EC2::NetworkInterface
     Properties:
       SubnetId: !Ref SubnetWazuh
@@ -1004,11 +1246,502 @@ Resources:
   WazuhWorkerEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
-      NetworkInterfaceId: !Ref WazuhWorkerInstanceEth0
+      NetworkInterfaceId: !Ref WazuhWorkerEth0
       AllocationId: !GetAtt
         - WazuhWorkerEIP
         - AllocationId
 
+  # Amazon Linux agent instance and networking requirements
+  Amazon:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          AmazonInstallationSet:
+            - WazuhFiles
+            - WazuhInstall
+        WazuhFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                WazuhServerPort: ${WazuhServerPort}
+                WazuhRegistrationPort: ${WazuhRegistrationPort}
+                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
+                AgentName: Amazon
+                EnvironmentType: ${EnvironmentType}
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_agent_amazon.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/agents/wazuh_agent_amazon.sh
+              mode: '000700'
+              owner: root
+              group: root
+        WazuhInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_agent_amazon.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVM64
+      InstanceType: !Ref AgentInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref AmazonEth0
+          DeviceIndex: 0
+      Tags:
+        - Key: Name
+          Value: Amazon
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Amazon --configsets AmazonInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Amazon --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+  AmazonEth0: 
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetAgents
+      GroupSet: [!Ref 'WazuhSecurityGroup']
+  AmazonEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  AmazonEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref AmazonEth0
+      AllocationId: !GetAtt
+        - AmazonEIP
+        - AllocationId
+
+  # CentOS agent instance and networking requirements
+  Centos:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          CentosInstallationSet:
+            - WazuhFiles
+            - WazuhInstall
+        WazuhFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                WazuhServerPort: ${WazuhServerPort}
+                WazuhRegistrationPort: ${WazuhRegistrationPort}
+                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
+                AgentName: Centos
+                EnvironmentType: ${EnvironmentType}
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_agent_centos.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/agents/wazuh_agent_centos.sh
+              mode: '000700'
+              owner: root
+              group: root
+        WazuhInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_agent_centos.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVMCENTOS7
+      InstanceType: !Ref CentosAgentInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref CentosEth0
+          DeviceIndex: 0
+      Tags:
+        - Key: Name
+          Value: Centos
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          echo 'Starting...' > /tmp/cflog.log
+          yum -y --enablerepo=extras install epel-release
+          yum install python-daemon pystache -y
+          yum install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.amzn1.noarch.rpm -y
+          yum -y update
+          sleep 10
+          cp /usr/local/lib/python2.7/site-packages/cfnbootstrap/ /usr/lib/python2.7/site-packages/ -R
+          echo 'Copied' > /tmp/checkpoint.log
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Centos --configsets CentosInstallationSet --region ${AWS::Region} 2> /tmp/cfnerror.log
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Centos --region ${AWS::Region} 2> /tmp/cfnerror.log
+          echo 'Exiting...' >> /tmp/cflog.log
+    DependsOn: GatewayToInternet
+  CentosEth0: 
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetAgents
+      GroupSet: [!Ref 'WazuhSecurityGroup']
+  CentosEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  CentosEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref CentosEth0
+      AllocationId: !GetAtt
+        - CentosEIP
+        - AllocationId
+
+  # Windows agent instance and networking requirements
+  Windows:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVMWINDOWS
+      InstanceType: !Ref WindowsInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref WindowsEth0
+          DeviceIndex: 0
+      Tags:
+        - Key: Name
+          Value: Windows
+      UserData:
+        Fn::Base64: !Sub |
+          <powershell>
+          $Password = (convertto-securestring -asplaintext ${SshPassword} -force)
+          New-LocalUser "wazuh" -Password $Password -FullName "wazuh" -Description "Wazuh user for remote desktop"
+          Add-LocalGroupMember -Group "Remote Desktop Users" -Member "wazuh"
+          
+          $master_ip=${WazuhNetworkLoadBalancer.DNSName}
+
+          $url = "https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/windows/wazuh-agent-3.9.0-1.msi" 
+          $path = "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi" 
+
+          if(!(Split-Path -parent $path) -or !(Test-Path -pathType Container (Split-Path -parent $path))) { 
+            $targetFile = Join-Path $pwd (Split-Path -leaf $path) 
+          } 
+
+          (New-Object Net.WebClient).DownloadFile($url, $path) 
+          New-Item -ItemType directory -Path C:\Santiago
+          try {
+            Start-Process -FilePath "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi" -Wait -ArgumentList /q,ADDRESS=${WazuhNetworkLoadBalancer.DNSName},AUTHD_SERVER=${WazuhNetworkLoadBalancer.DNSName},AGENT_NAME="Win",GROUP="windows",PROTOCOL="TCP",PASSWORD=${WazuhRegistrationPassword}
+          } catch {
+            $_.Exception.Message
+            "Error installing Wazuh agent"
+            Exit
+          }
+          </powershell>
+    DependsOn: GatewayToInternet
+  WindowsEth0: 
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetAgents
+      GroupSet: [!Ref 'WazuhSecurityGroup']
+  WindowsEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  WindowsEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref WindowsEth0
+      AllocationId: !GetAtt
+        - WindowsEIP
+        - AllocationId
+
+  # Debian agent instance and networking requirements
+  Debian:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          DebianInstallationSet:
+            - WazuhFiles
+            - WazuhInstall
+        WazuhFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                WazuhServerPort: ${WazuhServerPort}
+                WazuhRegistrationPort: ${WazuhRegistrationPort}
+                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
+                AgentName: Debian
+                EnvironmentType: ${EnvironmentType}
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_agent_debian.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/agents/wazuh_cf_agent_debian.sh
+              mode: '000700'
+              owner: root
+              group: root
+        WazuhInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_agent_debian.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVMDEBIAN
+      InstanceType: !Ref DebianInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref DebianEth0
+          DeviceIndex: 0
+      Tags:
+        - Key: Name
+          Value: Debian
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          echo 'Starting...' > /tmp/cflog.log
+          # the current sources seems to be down, so we gotta change them as a workaround
+          rm -rf /etc/apt/sources.list
+          echo 'deb http://deb.debian.org/debian jessie main' > /etc/apt/sources.list
+          echo 'deb-src http://deb.debian.org/debian jessie main' >> /etc/apt/sources.list
+          apt update
+          apt-get -y install python-setuptools curl 
+          mkdir aws-cfn-bootstrap-latest
+          curl https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz | tar xz -C aws-cfn-bootstrap-latest --strip-components 1
+          easy_install aws-cfn-bootstrap-latest
+          echo 'Copied' > /tmp/checkpoint.log
+          /usr/local/bin/cfn-init --stack ${AWS::StackName} --resource Debian --configsets DebianInstallationSet --region ${AWS::Region} 2> /tmp/cfnerror.log
+          /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Debian --region ${AWS::Region} 2> /tmp/cfnerror.log
+          echo 'Exiting...' >> /tmp/cflog.log
+    DependsOn: GatewayToInternet
+  DebianEth0: 
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetAgents
+      GroupSet: [!Ref 'WazuhSecurityGroup']
+  DebianEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  DebianEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref DebianEth0
+      AllocationId: !GetAtt
+        - DebianEIP
+        - AllocationId
+
+  # Ubuntu agent instance and networking requirements
+  Ubuntu:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          UbuntuInstallationSet:
+            - WazuhFiles
+            - WazuhInstall
+        WazuhFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                WazuhServerPort: ${WazuhServerPort}
+                WazuhRegistrationPort: ${WazuhRegistrationPort}
+                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
+                AgentName: Ubuntu
+                EnvironmentType: ${EnvironmentType}
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_agent_ubuntu.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/agents/wazuh_cf_agent_ubuntu.sh
+              mode: '000700'
+              owner: root
+              group: root
+        WazuhInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_agent_ubuntu.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVMUBUNTU64
+      InstanceType: !Ref UbuntuInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref UbuntuEth0
+          DeviceIndex: 0
+      Tags:
+        - Key: Name
+          Value: Ubuntu
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          echo 'Starting...' > /tmp/cflog.log
+          apt update
+          apt-get -y install python-setuptools curl python-pip
+          pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+          echo 'Copied' > /tmp/checkpoint.log
+          /usr/local/bin/cfn-init --stack ${AWS::StackName} --resource Ubuntu --configsets UbuntuInstallationSet --region ${AWS::Region} 2> /tmp/cfnerror.log
+          /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Ubuntu --region ${AWS::Region} 2> /tmp/cfnerror.log
+          echo 'Exiting...' >> /tmp/cflog.log
+    DependsOn: GatewayToInternet
+  UbuntuEth0: 
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetAgents
+      GroupSet: [!Ref 'WazuhSecurityGroup']
+  UbuntuEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  UbuntuEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref UbuntuEth0
+      AllocationId: !GetAtt
+        - UbuntuEIP
+        - AllocationId
+
+  # RHEL7 agent instance and networking requirements
+  RHEL7:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          RHEL7InstallationSet:
+            - WazuhFiles
+            - WazuhInstall
+        WazuhFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                WazuhServerPort: ${WazuhServerPort}
+                WazuhRegistrationPort: ${WazuhRegistrationPort}
+                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
+                AgentName: RHEL7
+                EnvironmentType: ${EnvironmentType}
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_agent_rhel.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/wazuh/agents/wazuh_agent_rhel.sh
+              mode: '000700'
+              owner: root
+              group: root
+        WazuhInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_agent_rhel.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVMREDHAT7
+      InstanceType: !Ref RedHatInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref RHELEth0
+          DeviceIndex: 0
+      Tags:
+        - Key: Name
+          Value: RHEL7
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          echo 'Starting...' > /tmp/cflog.log
+          ### This is redhat 7. It supports cloud-init but Cfn packages need to be installed unlike AWS Linux. And they are installed in a different location\n,
+          # First enable EPEL\n,
+          rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+          # Now install Python Setuptools(easy_install) and Pip
+          yum -y install python-pip
+          # Now install cfn scripts
+          /bin/easy_install --script-dir /opt/aws/bin https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource RHEL7 --configsets RHEL7InstallationSet --region ${AWS::Region} 2> /tmp/cfnerror.log
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource RHEL7 --region ${AWS::Region} 2> /tmp/cfnerror.log
+          echo 'Exiting...' >> /tmp/cflog.log
+    DependsOn: GatewayToInternet
+  RHELEth0: 
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetAgents
+      GroupSet: [!Ref 'WazuhSecurityGroup']
+  RHELEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  RHELEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref RHELEth0
+      AllocationId: !GetAtt
+        - RHELEIP
+        - AllocationId
 
 Outputs:
   ElasticWazuhVersion:
@@ -1017,27 +1750,21 @@ Outputs:
   SshUsername:
     Description: SSH Username
     Value: !Ref SshUsername
-  KibanaDNS:
-    Description: The URL for the Kibana WUI and SSH access
-    Value: !If [ParentDomainSpecified, !Ref KibanaRecordSet, '']
   KibanaPort: 
     Description: Port number for Kibana WUI access
     Value: !Ref KibanaPort
   KibanaUsername:
     Description: Username for Kibana WUI
     Value: !Ref KibanaUsername
-  WazuhServerDNS:
-    Description: The DNS name for agents communication with Wazuh server
-    Value: !If [ParentDomainSpecified, !Ref WazuhDataRecordSet, '']
+  SplunkUsername:
+    Description: Username for Splunk WUI
+    Value: !Ref SplunkUsername
   WazuhServerPort:
     Description: Port number for agents communication with Wazuh server
     Value: !Ref WazuhServerPort
   WazuhRegistrationPort:
     Description: Port number for agents registration with Wazuh server
     Value: !Ref WazuhRegistrationPort
-  WazuhRegistrationDNS:
-    Description: The DNS name for agents registration with Wazuh server
-    Value: !If [ParentDomainSpecified, !Ref WazuhRegistrationRecordSet, '']
   WazuhApiPort:
     Description: Port number used by Wazuh API
     Value: !Ref WazuhApiPort
@@ -1050,9 +1777,15 @@ Outputs:
   WazuhInstanceType:
     Description: Wazuh servers instance type
     Value: !Ref WazuhInstanceType
+  AgentInstanceType:
+    Description: Amazon Linux Wazuh agent instance type
+    Value: !Ref AgentInstanceType
   ElasticInstanceType:
     Description: Elasticsearch data nodes instance type
     Value: !Ref ElasticInstanceType
   KibanaInstanceType:
     Description: Kibana server instance type
     Value: !Ref KibanaInstanceType
+  SplunkInstanceType:
+    Description: Splunk server instance type
+    Value: !Ref SplunkInstanceType

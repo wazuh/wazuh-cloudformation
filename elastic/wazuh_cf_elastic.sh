@@ -1,33 +1,36 @@
 #!/bin/bash
 # Install Elastic data node using Cloudformation template
 # Support for Amazon Linux
-
-set -exf
-
+touch /tmp/log
+echo "Starting process." > /tmp/log
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
 elastic_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f1)
 wazuh_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f2)
-eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet addr:' | cut -d: -f2  | cut -d' ' -f1)
+eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*//' | cut -d' ' -f2)
+echo "Added env vars." >> /tmp/log
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root"
-   exit 1
+    echo "NOT running as root. Exiting" >> /tmp/log
+    echo "This script must be run as root"
+    exit 1
 fi
+echo "Running as root." >> /tmp/log
 
 # Creating SSH user
 if ! id -u ${ssh_username} > /dev/null 2>&1; then adduser ${ssh_username}; fi
 echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
 usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
+echo "Created SSH user." >> /tmp/log
+
 sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
 service sshd restart
+echo "Started SSH service." >> /tmp/log
 
 # Mounting ephemeral partition
 mkdir /mnt/ephemeral
-mkfs -t ext4 /dev/nvme0n1
-mount /dev/nvme0n1 /mnt/ephemeral
-echo "/dev/nvme0n1 /mnt/ephemeral ext4 defaults,nofail 0 2" | tee -a /etc/fstab
+echo "Created /mnt/ephemeral folder." >> /tmp/log
 
 # Uninstall OpenJDK 1.7 if exists
 if rpm -q java-1.7.0-openjdk > /dev/null; then yum -y remove java-1.7.0-openjdk; fi
@@ -48,28 +51,36 @@ enabled=1
 autorefresh=1
 type=rpm-md
 EOF
+echo "Added Elasticsearch repo." >> /tmp/log
 
 # Installing Elasticsearch
 yum -y install elasticsearch-${elastic_version}
 chkconfig --add elasticsearch
+echo "Installed Elasticsearch." >> /tmp/log
 
 # Installing Elasticsearch plugin for EC2
 /usr/share/elasticsearch/bin/elasticsearch-plugin install --batch discovery-ec2
+echo "Installed EC2 plugin." >> /tmp/log
 
 # Creating data and logs directories
 mkdir -p /mnt/ephemeral/elasticsearch/lib
 mkdir -p /mnt/ephemeral/elasticsearch/log
 chown -R elasticsearch:elasticsearch /mnt/ephemeral/elasticsearch
+echo "Created volumes in ephemeral." >> /tmp/log
 
 # Configuration file created by AWS Cloudformation template
 # Because of it we set the right owner/group for the file
 mv -f /tmp/wazuh_cf_elasticsearch.yml /etc/elasticsearch/elasticsearch.yml
+echo "mv -f /tmp/wazuh_cf_elasticsearch.yml /etc/elasticsearch/elasticsearch.yml" >> /tmp/log
+
 chown elasticsearch:elasticsearch /etc/elasticsearch/elasticsearch.yml
+echo "Setting permissions." >> /tmp/log
 
 # Calculating RAM for Elasticsearch
 ram_gb=$(free -g | awk '/^Mem:/{print $2}')
 ram=$(( ${ram_gb} / 2 ))
 if [ $ram -eq "0" ]; then ram=1; fi
+echo "Setting RAM." >> /tmp/log
 
 # Configuring jvm.options
 cat > /etc/elasticsearch/jvm.options << EOF
@@ -104,25 +115,38 @@ cat > /etc/elasticsearch/jvm.options << EOF
 9-:-Xlog:gc*,gc+age=trace,safepoint:file=/var/log/elasticsearch/gc.log:utctime,pid,tags:filecount=32,filesize=64m
 9-:-Djava.locale.providers=COMPAT
 EOF
+echo "Setting JVM options." >> /tmp/log
+
+mkdir -p /etc/systemd/system/elasticsearch.service.d/
+echo '[Service]' > /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
+echo 'LimitMEMLOCK=infinity' >> /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
+
 
 # Allowing unlimited memory allocation
 echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
 echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
+echo "Setting memory lock options." >> /tmp/log
 
+systemctl daemon-reload
 # Starting Elasticsearch
+echo "daemon-reload." >> /tmp/log
+
 service elasticsearch start
+echo "starting service." >> /tmp/log
 
 #Installing Logstash
 yum -y install logstash-${elastic_version}
+echo "Installed logstash." >> /tmp/log
 
 #Wazuh configuration for Logstash
-curl -so /etc/logstash/conf.d/01-wazuh.conf "https://raw.githubusercontent.com/wazuh/wazuh/v${wazuh_version}/extensions/logstash/01-wazuh-remote.conf"
+curl -so /etc/logstash/conf.d/01-wazuh.conf "https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/logstash/01-wazuh-remote.conf"
 sed -i "s/localhost:9200/${eth0_ip}:9200/" /etc/logstash/conf.d/01-wazuh.conf
 
 # Creating data and logs directories
 mkdir -p /mnt/ephemeral/logstash/lib
 mkdir -p /mnt/ephemeral/logstash/log
 chown -R logstash:logstash /mnt/ephemeral/logstash
+echo "Options and volumes for logstash." >> /tmp/log
 
 # Configuring logstash.yml
 cat > /etc/logstash/logstash.yml << 'EOF'
@@ -153,7 +177,8 @@ cat > /etc/logstash/jvm.options << EOF
 EOF
 
 # Starting Logstash
-initctl start logstash
+service logstash restart
+echo "Started logstash." >> /tmp/log
 
 # Disable repositories
 sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
