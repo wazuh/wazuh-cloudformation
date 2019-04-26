@@ -196,7 +196,7 @@ echo "Registered Wazuh agent." >> /tmp/log
 pip install docker
 
 # Restarting services
-/var/ossec/bin/ossec-control restart
+systemctl restart wazuh-agent
 systemctl restart suricata
 
 echo "Restarted Wazuh agent." >> /tmp/log

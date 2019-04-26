@@ -72,5 +72,5 @@ sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' ${manager_config}
 echo "Registered Wazuh agent." >> /tmp/log
 
 # Restart wazuh-manager
-/var/ossec/bin/ossec-control restart
+systemctl restart wazuh-agent
 echo "Restarted Wazuh agent." >> /tmp/log
