@@ -15,6 +15,8 @@ This repository includes the template and scripts to set up an environment that 
 * Logstash and Elasticsearch nodes seat behind internal load balancers
 * Wazuh servers seat behind an internet-facing load balancer for agents to communicate with the cluster
 * Kibana server seats behind an internet facing load balancer, that optionally loads an SSL Certificate for HTTPS
+* A Splunk Indexer instance with a Splunk app for Wazuh installed on it.
+* Six Wazuh agents installed on different operating systems: Red Hat 7, CentOS 7, Ubuntu, Debian, Amazon Linux and Windows.
 
 ## Elasticsearch cluster configuration
 
@@ -25,6 +27,8 @@ Elasticsearch instance types can be chosen from:
 * i3.large
 * i3.xlarge
 * i3.2xlarge
+* t2.large
+* t2.medium
 
 These instance types are recommended due to Elasticsearch disk requirements. Ephemeral disks are used for data storage.
 
@@ -41,6 +45,9 @@ Kibana instance types can be chosen from:
 * m5.large
 * m5.xlarge
 * m5.2xlarge
+* t2.large
+* t2.medium
+* r5.large
 
 These instance types are recommended due to Kibana and Elasticsearch memory requirements.
 
@@ -61,6 +68,9 @@ Wazuh instance types can be chosen from:
 * m5.large
 * m5.xlarge
 * m5.2xlarge
+* t2.micro
+* t2.medium
+* t2.large
 
 These instance types are recommended for the managers, as they provide enough memory for Wazuh components.
 
