@@ -1441,6 +1441,10 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           <powershell>
+          $Password = (convertto-securestring -asplaintext ${SshPassword} -force)
+          New-LocalUser "wazuh" -Password $Password -FullName "wazuh" -Description "Wazuh user for remote desktop"
+          Add-LocalGroupMember -Group "Remote Desktop Users" -Member "wazuh"
+          
           $master_ip=${WazuhNetworkLoadBalancer.DNSName}
 
           $url = "https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/windows/wazuh-agent-3.9.0-1.msi" 
