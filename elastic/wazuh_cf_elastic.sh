@@ -2,13 +2,11 @@
 # Install Elastic data node using Cloudformation template
 # Support for Amazon Linux
 
-set -exf
-
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
 elastic_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f1)
 wazuh_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f2)
-eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet addr:' | cut -d: -f2  | cut -d' ' -f1)
+eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*//' | cut -d' ' -f2)
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -25,9 +23,6 @@ service sshd restart
 
 # Mounting ephemeral partition
 mkdir /mnt/ephemeral
-mkfs -t ext4 /dev/nvme0n1
-mount /dev/nvme0n1 /mnt/ephemeral
-echo "/dev/nvme0n1 /mnt/ephemeral ext4 defaults,nofail 0 2" | tee -a /etc/fstab
 
 # Uninstall OpenJDK 1.7 if exists
 if rpm -q java-1.7.0-openjdk > /dev/null; then yum -y remove java-1.7.0-openjdk; fi
@@ -105,6 +100,12 @@ cat > /etc/elasticsearch/jvm.options << EOF
 9-:-Djava.locale.providers=COMPAT
 EOF
 
+mkdir -p /etc/systemd/system/elasticsearch.service.d/
+echo '[Service]' > /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
+echo 'LimitMEMLOCK=infinity' >> /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
+
+systemctl daemon-reload
+
 # Allowing unlimited memory allocation
 echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
 echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
@@ -115,8 +116,9 @@ service elasticsearch start
 #Installing Logstash
 yum -y install logstash-${elastic_version}
 
+
 #Wazuh configuration for Logstash
-curl -so /etc/logstash/conf.d/01-wazuh.conf "https://raw.githubusercontent.com/wazuh/wazuh/v${wazuh_version}/extensions/logstash/01-wazuh-remote.conf"
+curl -so /etc/logstash/conf.d/01-wazuh.conf "https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/logstash/01-wazuh-remote.conf"
 sed -i "s/localhost:9200/${eth0_ip}:9200/" /etc/logstash/conf.d/01-wazuh.conf
 
 # Creating data and logs directories
@@ -153,7 +155,7 @@ cat > /etc/logstash/jvm.options << EOF
 EOF
 
 # Starting Logstash
-initctl start logstash
+service logstash restart
 
 # Disable repositories
 sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo

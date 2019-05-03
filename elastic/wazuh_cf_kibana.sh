@@ -2,8 +2,6 @@
 # Install Kibana instance using Cloudformation template
 # Support for Amazon Linux
 
-set -exf
-
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
 elastic_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f1)
@@ -12,7 +10,7 @@ wazuh_major=`echo ${wazuh_version} | cut -d'.' -f 1`
 kibana_port=$(cat /tmp/wazuh_cf_settings | grep '^KibanaPort:' | cut -d' ' -f2)
 kibana_username=$(cat /tmp/wazuh_cf_settings | grep '^KibanaUsername:' | cut -d' ' -f2)
 kibana_password=$(cat /tmp/wazuh_cf_settings | grep '^KibanaPassword:' | cut -d' ' -f2)
-eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet addr:' | cut -d: -f2  | cut -d' ' -f1)
+eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*//' | cut -d' ' -f2)
 wazuh_master_ip=$(cat /tmp/wazuh_cf_settings | grep '^WazuhMasterIP:' | cut -d' ' -f2)
 wazuh_api_user=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminUsername:' | cut -d' ' -f2)
 wazuh_api_password=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminPassword:' | cut -d' ' -f2)
@@ -101,21 +99,25 @@ cat > /etc/elasticsearch/jvm.options << EOF
 9-:-Djava.locale.providers=COMPAT
 EOF
 
+mkdir -p /etc/systemd/system/elasticsearch.service.d/
+echo '[Service]' > /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
+echo 'LimitMEMLOCK=infinity' >> /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
+
 # Allowing unlimited memory allocation
 echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
 echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
+
+systemctl daemon-reload
+url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/elasticsearch/wazuh-elastic6-template-alerts.json"
 
 # Starting Elasticsearch
 service elasticsearch start
 sleep 60
 
 # Loading and tuning Wazuh alerts template
-url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v${wazuh_version}/extensions/elasticsearch/wazuh-elastic6-template-alerts.json"
+url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/elasticsearch/wazuh-elastic6-template-alerts.json"
 alerts_template="/tmp/wazuh-elastic6-template-alerts.json"
 curl -Lo ${alerts_template} ${url_alerts_template}
-sed -i 's/"index.refresh_interval": "5s"/"index.refresh_interval": "5s",/' ${alerts_template}
-sed -i '/"index.refresh_interval": "5s",/ a\    "index.number_of_shards": 2,' ${alerts_template}
-sed -i '/"index.number_of_shards": 2,/ a\    "index.number_of_replicas": 1' ${alerts_template}
 curl -XPUT "http://${eth0_ip}:9200/_template/wazuh" -H 'Content-Type: application/json' -d@${alerts_template}
 curl -XDELETE "http://${eth0_ip}:9200/wazuh-alerts-*"
 
@@ -152,7 +154,7 @@ NODE_OPTIONS="--max-old-space-size=4096"
 EOF
 
 # Installing Wazuh plugin for Kibana
-plugin_url="https://packages.wazuh.com/wazuhapp/wazuhapp-${wazuh_version}_${elastic_version}.zip"
+plugin_url="https://packages.wazuh.com/wazuhapp/wazuhapp-3.9.0_6.7.1.zip"
 NODE_OPTIONS="--max-old-space-size=4096" /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
 cat >> /usr/share/kibana/plugins/wazuh/config.yml << 'EOF'
 wazuh.shards: 1
@@ -197,7 +199,7 @@ default_index="/tmp/default_index.json"
 cat > ${default_index} << EOF
 {
   "changes": {
-    "defaultIndex": "wazuh-alerts-${wazuh_major}.x-*"
+    "defaultIndex": "wazuh-alerts-3.x-*"
   }
 }
 EOF
@@ -216,9 +218,10 @@ curl -POST "http://localhost:5601/api/telemetry/v1/optIn" -H "Content-Type: appl
 sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
 
 # Install Nginx ang generate certificates
-yum -y install nginx httpd-tools
+sudo amazon-linux-extras install nginx1.12
 mkdir -p /etc/ssl/certs /etc/ssl/private
 openssl req -x509 -batch -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/kibana.key -out /etc/ssl/certs/kibana.pem
+yum install httpd-tools-2.4.33-2.amzn2.0.2.x86_64 -y
 
 # Configure Nginx
 htpasswd -b -c /etc/nginx/conf.d/kibana.htpasswd ${kibana_username} ${kibana_password}
@@ -240,4 +243,4 @@ server {
 EOF
 
 # Starting Nginx
-service nginx start
+service nginx restart
