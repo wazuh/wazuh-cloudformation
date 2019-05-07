@@ -164,7 +164,7 @@ EOF
 echo "/etc/default/kibana completed" >> /tmp/log
 
 # Installing Wazuh plugin for Kibana
-plugin_url="https://packages.wazuh.com/wazuhapp/wazuhapp-3.8.2_6.7.0.zip"
+plugin_url="https://packages-dev.wazuh.com/staging/app/kibana/wazuhapp-3.9.0_7.0.0-rc1.zip"
 /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
 cat >> /usr/share/kibana/plugins/wazuh/config.yml << 'EOF'
 wazuh.shards: 1
