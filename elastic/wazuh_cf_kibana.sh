@@ -126,8 +126,8 @@ sleep 60
 echo "Started service." >> /tmp/log
 
 # Loading and tuning Wazuh alerts template
-url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/elasticsearch/wazuh-elastic6-template-alerts.json"
-alerts_template="/tmp/wazuh-elastic6-template-alerts.json"
+url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/elasticsearch/wazuh-elastic7-template-alerts.json"
+alerts_template="/tmp/wazuh-elastic7-template-alerts.json"
 curl -Lo ${alerts_template} ${url_alerts_template}
 curl -XPUT "http://${eth0_ip}:9200/_template/wazuh" -H 'Content-Type: application/json' -d@${alerts_template}
 curl -XDELETE "http://${eth0_ip}:9200/wazuh-alerts-*"
@@ -165,7 +165,7 @@ echo "/etc/default/kibana completed" >> /tmp/log
 
 # Installing Wazuh plugin for Kibana
 plugin_url="https://packages.wazuh.com/wazuhapp/wazuhapp-3.8.2_6.7.0.zip"
-NODE_OPTIONS="--max-old-space-size=4096" /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
+/usr/share/kibana/bin/kibana-plugin install ${plugin_url}
 cat >> /usr/share/kibana/plugins/wazuh/config.yml << 'EOF'
 wazuh.shards: 1
 wazuh.replicas: 1
@@ -204,7 +204,7 @@ cat > ${api_config} << EOF
 }
 EOF
 
-curl -s -XPUT "http://${eth0_ip}:9200/.wazuh/wazuh-configuration/${api_time}" -H 'Content-Type: application/json' -d@${api_config}
+curl -s -XPUT "http://${eth0_ip}:9200/.wazuh/${api_time}" -H 'Content-Type: application/json' -d@${api_config}
 rm -f ${api_config}
 echo "Configured API" >> /tmp/log
 
