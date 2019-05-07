@@ -140,7 +140,7 @@ echo "Kibana installed." >> /tmp/log
 
 # Configuring kibana.yml
 cat > /etc/kibana/kibana.yml << EOF
-elasticsearch.url: "http://${eth0_ip}:9200"
+elasticsearch.hosts: ["http://${eth0_ip}:9200"]
 server.port: 5601
 server.host: "localhost"
 server.ssl.enabled: false
