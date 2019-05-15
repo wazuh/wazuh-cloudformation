@@ -78,7 +78,7 @@ yum -y install suricata
 
 yum -y install audit
 
-UID=$(id -u `whoami`)
+UID=$(id -u wazuh)
 
 # Audit rules
 cat >> /etc/audit/rules.d/audit.rules << EOF
