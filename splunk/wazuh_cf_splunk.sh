@@ -36,8 +36,8 @@ echo "USERNAME = admin" >> /opt/splunk/etc/system/local/user-seed.conf
 echo "PASSWORD = changeme" >> /opt/splunk/etc/system/local/user-seed.conf
 
 # fetching configuration files
-curl -so /opt/splunk/etc/system/local/inputs.conf https://raw.githubusercontent.com/wazuh/wazuh/3.8/extensions/splunk/peer-inputs.conf &> /dev/null
-curl -so /opt/splunk/etc/system/local/indexes.conf https://raw.githubusercontent.com/wazuh/wazuh/3.8/extensions/splunk/peer-indexes.conf &> /dev/null
+curl -so /opt/splunk/etc/system/local/inputs.conf https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/splunk/peer-inputs.conf &> /dev/null
+curl -so /opt/splunk/etc/system/local/indexes.conf https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/splunk/peer-indexes.conf &> /dev/null
 
 # clone app
 git clone -b 3.9-alpha --single-branch git://github.com/wazuh/wazuh-splunk.git &> /dev/null

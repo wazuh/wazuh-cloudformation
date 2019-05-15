@@ -158,8 +158,9 @@ Parameters:
       - 6.6.2_3.9.0
       - 6.7.0_3.9.0
       - 6.7.1_3.9.0
+      - 6.7.2_3.9.0
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
-    Default: 6.7.1_3.9.0
+    Default: 6.7.2_3.9.0
     Description: Elastic and Wazuh versions to be installed
     Type: String
   WazuhInstanceType:
@@ -1455,7 +1456,7 @@ Resources:
           
           $master_ip=${WazuhNetworkLoadBalancer.DNSName}
 
-          $url = "https://packages.wazuh.com/3.x/windows/wazuh-agent-3.8.2-1.msi" 
+          $url = "https://packages.wazuh.com/3.x/windows/wazuh-agent-3.9.0-1.msi" 
           $path = "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi" 
 
           if(!(Split-Path -parent $path) -or !(Test-Path -pathType Container (Split-Path -parent $path))) { 
