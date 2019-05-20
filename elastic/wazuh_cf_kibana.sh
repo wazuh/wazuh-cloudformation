@@ -164,7 +164,21 @@ EOF
 echo "/etc/default/kibana completed" >> /tmp/log
 
 # Installing Wazuh plugin for Kibana
+
+if [[ ${EnvironmentType} == 'staging' ]]
+then
+	# Adding Wazuh pre_release repository
+  plugin_url="https://packages-dev.wazuh.com/pre-release/app/kibana/wazuhapp-3.9.1_6.7.2.zip"
+elif [[ ${EnvironmentType} == 'production' ]]
+then
 plugin_url="https://packages.wazuh.com/wazuhapp/wazuhapp-3.9.0_6.7.2.zip"
+elif [[ ${EnvironmentType} == 'devel' ]]
+then
+plugin_url="https://packages-dev.wazuh.com/pre-release/app/kibana/wazuhapp-3.9.1_6.7.2.zip"
+else
+	echo 'no repo' >> /tmp/stage
+fi
+
 NODE_OPTIONS="--max-old-space-size=4096" /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
 cat >> /usr/share/kibana/plugins/wazuh/config.yml << 'EOF'
 wazuh.shards: 1

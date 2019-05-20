@@ -40,7 +40,7 @@ curl -so /opt/splunk/etc/system/local/inputs.conf https://raw.githubusercontent.
 curl -so /opt/splunk/etc/system/local/indexes.conf https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/splunk/peer-indexes.conf &> /dev/null
 
 # clone app
-git clone -b 3.9-alpha --single-branch git://github.com/wazuh/wazuh-splunk.git &> /dev/null
+git clone -b 3.9 --single-branch git://github.com/wazuh/wazuh-splunk.git &> /dev/null
 
 # install app
 cp -R ./wazuh-splunk/SplunkAppForWazuh/ /opt/splunk/etc/apps/
