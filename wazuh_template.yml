@@ -962,6 +962,7 @@ Resources:
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
                 ElbElasticDNS: ${ElbElastic.DNSName}
                 ElbLogstashDNS: ${ElbLogstash.DNSName}
+                EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
               group: root
