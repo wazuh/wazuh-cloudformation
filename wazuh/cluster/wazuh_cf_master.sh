@@ -95,7 +95,7 @@ wget https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/alienvaul
 wget https://wazuh.com/resources/iplist-to-cdblist.py -O /var/ossec/etc/lists/iplist-to-cdblist.py
 # Add Windows public IP to the list
 echo ${WindowsPublicIp} >> /var/ossec/etc/lists/alienvault_reputation.ipset
-python /var/ossec/etc/lists/iplist-to-cdblist.py /var/ossec/etc/lists/alienvault_reputation.ipset /var/ossec/etc/lists/blacklist-alienvault
+python /var/ossec/etc/lists/iplist-to-cdblist.py /var/ossec/etc/lists/alienvault_reputation.ipset /var/ossec/etc/lists/blacklist-alienvault.cdb
 
 # Delete ipset and python script
 rm -rf /var/ossec/etc/lists/alienvault_reputation.ipset
@@ -424,7 +424,7 @@ chkconfig --add filebeat
 echo "Installed Filebeat." >> /tmp/log
 
 # Configuring Filebeat
-curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/filebeat/filebeat.yml
+curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/v3.9.0/extensions/filebeat/filebeat.yml
 sed -i "s/YOUR_ELASTIC_SERVER_IP/${elb_logstash}/" /etc/filebeat/filebeat.yml
 service filebeat restart
 echo "Restarted Filebeat." >> /tmp/log
