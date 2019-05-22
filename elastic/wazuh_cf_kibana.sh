@@ -330,7 +330,7 @@ echo "Restarted NGINX..." >> /tmp/log
 main(){
     check_root
     create_ssh_user
-    if [[ `echo $elastic_version | cut -d'.' -f1` -ge 7 ]]; then
+    if [[ `echo $elastic_version | cut -d'.' -f1` -lt 7 ]]; then
         install_java
     fi
     import_elk_repo
