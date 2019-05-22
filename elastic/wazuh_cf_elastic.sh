@@ -64,6 +64,8 @@ echo "Added Elasticsearch repo." >> /tmp/deploy.log
 }
 
 install_elasticsearch(){
+    echo "Installing Elasticsearch." >> /tmp/deploy.log
+
     # Installing Elasticsearch
     yum -y install elasticsearch-${elastic_version}
     chkconfig --add elasticsearch
