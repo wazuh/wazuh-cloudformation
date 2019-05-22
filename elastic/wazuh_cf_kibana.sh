@@ -8,7 +8,6 @@ ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
 elastic_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f1)
 wazuh_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f2)
-wazuh_major=`echo ${wazuh_version} | cut -d'.' -f 1`
 kibana_port=$(cat /tmp/wazuh_cf_settings | grep '^KibanaPort:' | cut -d' ' -f2)
 kibana_username=$(cat /tmp/wazuh_cf_settings | grep '^KibanaUsername:' | cut -d' ' -f2)
 kibana_password=$(cat /tmp/wazuh_cf_settings | grep '^KibanaPassword:' | cut -d' ' -f2)
@@ -17,6 +16,8 @@ wazuh_master_ip=$(cat /tmp/wazuh_cf_settings | grep '^WazuhMasterIP:' | cut -d' 
 wazuh_api_user=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminUsername:' | cut -d' ' -f2)
 wazuh_api_password=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminPassword:' | cut -d' ' -f2)
 wazuh_api_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiPort:' | cut -d' ' -f2)
+EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
+
 echo "Added env vars." >> /tmp/log
 
 # Check if running as root
@@ -74,48 +75,6 @@ ram=$(( ${ram_gb} / 2 ))
 if [ $ram -eq "0" ]; then ram=1; fi
 echo "RAM parameters." >> /tmp/log
 
-# Configuring jvm.options
-cat > /etc/elasticsearch/jvm.options << EOF
--Xms${ram}g
--Xmx${ram}g
--XX:+UseConcMarkSweepGC
--XX:CMSInitiatingOccupancyFraction=75
--XX:+UseCMSInitiatingOccupancyOnly
--XX:+AlwaysPreTouch
--Xss1m
--Djava.awt.headless=true
--Dfile.encoding=UTF-8
--Djna.nosys=true
--XX:-OmitStackTraceInFastThrow
--Dio.netty.noUnsafe=true
--Dio.netty.noKeySetOptimization=true
--Dio.netty.recycler.maxCapacityPerThread=0
--Dlog4j.shutdownHookEnabled=false
--Dlog4j2.disable.jmx=true
--Djava.io.tmpdir=\${ES_TMPDIR}
--XX:+HeapDumpOnOutOfMemoryError
--XX:HeapDumpPath=/var/lib/elasticsearch
--XX:ErrorFile=/var/log/elasticsearch/hs_err_pid%p.log
-8:-XX:+PrintGCDetails
-8:-XX:+PrintGCDateStamps
-8:-XX:+PrintTenuringDistribution
-8:-XX:+PrintGCApplicationStoppedTime
-8:-Xloggc:/var/log/elasticsearch/gc.log
-8:-XX:+UseGCLogFileRotation
-8:-XX:NumberOfGCLogFiles=32
-8:-XX:GCLogFileSize=64m
-9-:-Xlog:gc*,gc+age=trace,safepoint:file=/var/log/elasticsearch/gc.log:utctime,pid,tags:filecount=32,filesize=64m
-9-:-Djava.locale.providers=COMPAT
-EOF
-
-mkdir -p /etc/systemd/system/elasticsearch.service.d/
-echo '[Service]' > /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
-echo 'LimitMEMLOCK=infinity' >> /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
-
-# Allowing unlimited memory allocation
-echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
-echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
-echo "Setting memory lock options." >> /tmp/log
 
 systemctl daemon-reload
 echo "daemon-reload." >> /tmp/log
@@ -126,8 +85,12 @@ sleep 60
 echo "Started service." >> /tmp/log
 
 # Loading and tuning Wazuh alerts template
-url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/elasticsearch/wazuh-elastic7-template-alerts.json"
-alerts_template="/tmp/wazuh-elastic7-template-alerts.json"
+wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
+wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
+wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
+
+url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/$elastic_major_version.x/wazuh-template.json"
+alerts_template="/tmp/wazuh-template.json"
 curl -Lo ${alerts_template} ${url_alerts_template}
 curl -XPUT "http://${eth0_ip}:9200/_template/wazuh" -H 'Content-Type: application/json' -d@${alerts_template}
 curl -XDELETE "http://${eth0_ip}:9200/wazuh-alerts-*"
@@ -164,8 +127,22 @@ EOF
 echo "/etc/default/kibana completed" >> /tmp/log
 
 # Installing Wazuh plugin for Kibana
-plugin_url="https://packages-dev.wazuh.com/staging/app/kibana/wazuhapp-3.9.0_7.0.0-rc1.zip"
-/usr/share/kibana/bin/kibana-plugin install ${plugin_url}
+
+if [[ ${EnvironmentType} == 'staging' ]]
+then
+	# Adding Wazuh pre_release repository
+  plugin_url="https://packages-dev.wazuh.com/pre-release/app/kibana/wazuhapp-3.9.1_6.7.2.zip"
+elif [[ ${EnvironmentType} == 'production' ]]
+then
+plugin_url="https://packages.wazuh.com/wazuhapp/wazuhapp-3.9.0_6.7.2.zip"
+elif [[ ${EnvironmentType} == 'devel' ]]
+then
+plugin_url="https://packages-dev.wazuh.com/pre-release/app/kibana/wazuhapp-3.9.1_6.7.2.zip"
+else
+	echo 'no repo' >> /tmp/stage
+fi
+
+NODE_OPTIONS="--max-old-space-size=4096" /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
 cat >> /usr/share/kibana/plugins/wazuh/config.yml << 'EOF'
 wazuh.shards: 1
 wazuh.replicas: 1
