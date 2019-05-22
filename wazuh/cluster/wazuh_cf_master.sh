@@ -424,7 +424,7 @@ chkconfig --add filebeat
 echo "Installed Filebeat." >> /tmp/log
 
 # Configuring Filebeat
-curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/filebeat/filebeat-7.yml
+curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/v3.9.0/extensions/filebeat/filebeat.yml
 sed -i "s/YOUR_ELASTIC_SERVER_IP/${elb_logstash}/" /etc/filebeat/filebeat.yml
 service filebeat restart
 echo "Restarted Filebeat." >> /tmp/log
