@@ -1,5 +1,8 @@
 #!/bin/bash
 # Install Elastic data node using Cloudformation template
+
+set -e
+
 touch /tmp/deploy.log
 
 read_vars(){
@@ -45,6 +48,7 @@ install_java(){
 import_elk_repo(){
 # Configuring Elastic repository
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
+
 elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
 cat > /etc/yum.repos.d/elastic.repo << EOF
 [elasticsearch-${elastic_major_version}.x]
