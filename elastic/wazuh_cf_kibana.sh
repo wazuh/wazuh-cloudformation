@@ -245,10 +245,25 @@ cat > ${api_config} << EOF
   }
 }
 EOF
-curl -s -XPUT "http://${eth0_ip}:9200/.wazuh/${api_time}" -H 'Content-Type: application/json' -d@${api_config}
+
+if [[ `echo $elastic_version | cut -d'.' -f1` -lt 7 ]]; then
+  echo "Loading Wazuh API to an Elasticsearch < v7 cluster"
+  CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "http://${eth0_ip}:9200/.wazuh/wazuh_configuration/${api_time}"
+  if [ "x$CONFIG_CODE" != "x200" ]; then
+    curl -s -XPUT "http://${eth0_ip}:9200/.wazuh/wazuh_configuration/${api_time}" -H 'Content-Type: application/json' -d@${api_config}
+    echo "Loaded Wazuh API to an Elasticsearch < v7 cluster"
+  fi
+else
+  echo "Loading Wazuh API to an Elasticsearch >=v7 cluster"
+  CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "http://${eth0_ip}:9200/.wazuh/_doc/${api_time}"
+  if [ "x$CONFIG_CODE" != "x200" ]; then
+    curl -s -XPUT "http://${eth0_ip}:9200/.wazuh/_doc/${api_time}" -H 'Content-Type: application/json' -d@${api_config}
+    echo "Loaded Wazuh API to an Elasticsearch >=v7 cluster"
+  fi
+fi
+
 rm -f ${api_config}
 echo "Configured API" >> /tmp/log
-
 }
 
 start_kibana(){

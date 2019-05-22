@@ -11,9 +11,13 @@ ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2
 elastic_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f1)
 wazuh_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f2)
 eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*//' | cut -d' ' -f2)
+elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
+wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
+wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
+wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
+
 echo "Added env vars." >> /tmp/deploy.log
 echo "eth0_ip: $eth0_ip" >> /tmp/deploy.log
-
 
 check_root(){
     # Check if running as root
@@ -48,7 +52,6 @@ import_elk_repo(){
 # Configuring Elastic repository
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
 
-elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
 cat > /etc/yum.repos.d/elastic.repo << EOF
 [elasticsearch-${elastic_major_version}.x]
 name=Elasticsearch repository for ${elastic_major_version}.x packages
@@ -84,6 +87,10 @@ echo "Created volumes in ephemeral." >> /tmp/log
 
 mv -f /tmp/wazuh_cf_elasticsearch.yml /etc/elasticsearch/elasticsearch.yml
 echo "mv -f /tmp/wazuh_cf_elasticsearch.yml /etc/elasticsearch/elasticsearch.yml" >> /tmp/deploy.log
+# If ELK 7, remove the discovery.zen.minimum_master_nodes option
+if [[ `echo $elastic_version | cut -d'.' -f1` -lt 7 ]]; then
+    sed -i '/discovery.zen.minimum_master_nodes/d' /etc/elasticsearch/elasticsearch.yml
+fi
 chown elasticsearch:elasticsearch /etc/elasticsearch/elasticsearch.yml
 
 # Calculating RAM for Elasticsearch
@@ -148,10 +155,7 @@ start_elasticsearch(){
 }
 
 add_logstash(){
-wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
-wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
-wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
-#Installing Logstash
+
 yum -y install logstash-${elastic_version}
 echo "Installed logstash." >> /tmp/deploy.log
 
