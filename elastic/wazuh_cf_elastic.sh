@@ -5,16 +5,15 @@ set -e
 
 touch /tmp/deploy.log
 
-read_vars(){
-    echo "Elasticsearch: Starting process." > /tmp/deploy.log
-    ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
-    ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
-    elastic_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f1)
-    wazuh_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f2)
-    eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*//' | cut -d' ' -f2)
-    echo "Added env vars." >> /tmp/deploy.log
-    echo "eth0_ip: $eth0_ip" >> /tmp/deploy.log
-}
+echo "Elasticsearch: Starting process." > /tmp/deploy.log
+ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
+ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
+elastic_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f1)
+wazuh_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f2)
+eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*//' | cut -d' ' -f2)
+echo "Added env vars." >> /tmp/deploy.log
+echo "eth0_ip: $eth0_ip" >> /tmp/deploy.log
+
 
 check_root(){
     # Check if running as root
@@ -142,7 +141,6 @@ disable_elk_repos(){
 
 main(){
     check_root
-    read_vars
     create_ssh_user
     if [[ `echo $elastic_version | cut -d'.' -f1` -ge 7 ]]; then
         install_java
