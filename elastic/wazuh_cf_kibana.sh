@@ -88,6 +88,8 @@ echo "Started service." >> /tmp/log
 wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
 wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
 wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
+elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
+elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
 
 url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/$elastic_major_version.x/wazuh-template.json"
 alerts_template="/tmp/wazuh-template.json"
@@ -128,16 +130,23 @@ echo "/etc/default/kibana completed" >> /tmp/log
 
 # Installing Wazuh plugin for Kibana
 
+wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
+wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
+wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
+
+elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
+elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
+
 if [[ ${EnvironmentType} == 'staging' ]]
 then
 	# Adding Wazuh pre_release repository
-  plugin_url="https://packages-dev.wazuh.com/pre-release/app/kibana/wazuhapp-3.9.1_6.7.2.zip"
+plugin_url="https://packages-dev.wazuh.com/pre-release/app/kibana/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
 elif [[ ${EnvironmentType} == 'production' ]]
 then
-plugin_url="https://packages.wazuh.com/wazuhapp/wazuhapp-3.9.0_6.7.2.zip"
+plugin_url="https://packages.wazuh.com/wazuhapp/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
 elif [[ ${EnvironmentType} == 'devel' ]]
 then
-plugin_url="https://packages-dev.wazuh.com/pre-release/app/kibana/wazuhapp-3.9.1_6.7.2.zip"
+plugin_url="https://packages-dev.wazuh.com/pre-release/app/kibana/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
 else
 	echo 'no repo' >> /tmp/stage
 fi

@@ -318,8 +318,19 @@ chkconfig --add filebeat
 echo "Installed Filebeat" >> /tmp/log
 
 # Configuring Filebeat
-curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/v3.9.0/extensions/filebeat/filebeat.yml
-sed -i "s/YOUR_ELASTIC_SERVER_IP/${elb_logstash}/" /etc/filebeat/filebeat.yml
+wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
+wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
+wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
+elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
+elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
+
+if [[ $elastic_major_version -eq 7 ]]; then
+curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/filebeat/7.x/filebeat.yml
+elif [[ $elastic_major_version -eq 6 ]] && [[ $wazuh_major -eq 3 ]] && [[ $wazuh_minor -eq 9 ]] && [[ $wazuh_patch -eq 1 ]]; then
+curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/filebeat/6.x/filebeat.yml
+elif [[ $elastic_major_version -le 6 ]] && [[ $wazuh_major -le 3 ]] && [[ $wazuh_minor -lt 9 ]]; then
+curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/filebeat/filebeat.yml
+fised -i "s/YOUR_ELASTIC_SERVER_IP/${elb_logstash}/" /etc/filebeat/filebeat.yml
 service filebeat start
 echo "Started Filebeat" >> /tmp/log
 echo "Done" >> /tmp/log
