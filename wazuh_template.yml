@@ -1182,6 +1182,7 @@ Resources:
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
                 ElbLogstashDNS: ${ElbLogstash.DNSName}
+                ElbElasticDNS: ${ElbElastic.DNSName}
                 WindowsPublicIp: ${Windows.PublicIp}
                 AwsSecretKey: ${AwsSecretKey}
                 AwsAccessKey: ${AwsAccessKey}
@@ -1268,6 +1269,7 @@ Resources:
                 WazuhClusterKey: ${WazuhClusterKey}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
                 ElbLogstashDNS: ${ElbLogstash.DNSName}
+                ElbElasticDNS: ${ElbElastic.DNSName}
                 AwsSecretKey: ${AwsSecretKey}
                 AwsAccessKey: ${AwsAccessKey}
                 VirusTotalKey: ${VirusTotalKey}

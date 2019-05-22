@@ -159,7 +159,12 @@ start_elasticsearch(){
 
 load_template(){
 
-url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/$elastic_major_version.x/wazuh-template.json"
+if [[ $elastic_major_version -eq 7 ]] || [[ $wazuh_major -eq 3 ]] && [[ $wazuh_minor -eq 9 ]] && [[ $wazuh_patch -eq 1 ]]; then
+  url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/$elastic_major_version.x/wazuh-template.json"
+else
+  url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/wazuh-template.json"
+fi
+
 alerts_template="/tmp/wazuh-template.json"
 curl -Lo ${alerts_template} ${url_alerts_template}
 curl -XPUT "http://${eth0_ip}:9200/_template/wazuh" -H 'Content-Type: application/json' -d@${alerts_template}
@@ -220,7 +225,11 @@ get_plugin_url(){
 
 install_plugin(){
   echo "Installing app" >> /tmp/log
-  NODE_OPTIONS="--max-old-space-size=4096" /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
+  if [[ `echo $elastic_version | cut -d'.' -f1` -lt 7 ]]; then
+    NODE_OPTIONS="--max-old-space-size=4096" /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
+  else
+    /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
+  fi
   echo "App installed!" >> /tmp/log
 }
 
