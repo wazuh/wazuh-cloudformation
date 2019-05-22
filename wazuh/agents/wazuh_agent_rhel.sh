@@ -78,25 +78,17 @@ yum -y install suricata
 
 yum -y install audit
 
-UID=$(id -u `whoami`)
+uid=$(id -u wazuh)
 
 # Audit rules
 cat >> /etc/audit/rules.d/audit.rules << EOF
--a exit,always -F euid=0 -F arch=b32 -S execve -k audit-wazuh-c
--a exit,always -F euid=0 -F arch=b64 -S execve -k audit-wazuh-c
--a exit,always -F euid=1003 -F arch=b32 -S execve -k audit-wazuh-c
--a exit,always -F euid=1003 -F arch=b64 -S execve -k audit-wazuh-c
--a exit,always -F euid=1002 -F arch=b32 -S execve -k audit-wazuh-c
--a exit,always -F euid=1002 -F arch=b64 -S execve -k audit-wazuh-c
--a exit,always -F euid=1003 -F arch=b32 -S execve -k audit-wazuh-c
--a exit,always -F euid=1003 -F arch=b64 -S execve -k audit-wazuh-c
--a exit,always -F euid=${UID} -F arch=b32 -S execve -k audit-wazuh-c
--a exit,always -F euid=${UID} -F arch=b64 -S execve -k audit-wazuh-c
+-a exit,always -F euid=${uid} -F arch=b32 -S execve -k audit-wazuh-c
+-a exit,always -F euid=${uid} -F arch=b64 -S execve -k audit-wazuh-c
 EOF
 
 auditctl -D
 auditctl -R /etc/audit/rules.d/audit.rules
-systemctl restart audit
+service auditd restart
 
 ### Use case 7: Diamorphine
 yum install "kernel-devel-uname-r == $(uname -r)" -y
