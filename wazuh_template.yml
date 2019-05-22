@@ -454,7 +454,7 @@ Parameters:
     Type: String
 
   SSLCertificateARN:
-    Description: '(Optional) Used for HTTPS access to WUI. Existent certificate, identified by its Amazon Resource Name (ARN).'
+    Description: 'Used for HTTPS access to WUI. Existent certificate, identified by its Amazon Resource Name (ARN).'
     Type: String
 
 Conditions: 
