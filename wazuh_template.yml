@@ -966,9 +966,7 @@ Resources:
                 discovery.ec2.groups: ${ElasticSecurityGroup}
                 discovery.ec2.host_type: private_ip
                 discovery.ec2.endpoint: ec2.${AWS::Region}.amazonaws.com
-                node.master: true
-                node.ingest: true
-                node.data: true
+                cluster.initial_master_nodes: "${ElbElastic.DNSName}"
               mode: '000644'
               owner: root
               group: root
@@ -1028,7 +1026,7 @@ Resources:
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                ElbElasticDNS: ${ElbElastic.DNSName}
+                ElbElasticDNS: ${N}
                 ElbLogstashDNS: ${ElbLogstash.DNSName}
                 EnvironmentType: ${EnvironmentType}
               mode: '000600'
@@ -1183,7 +1181,7 @@ Resources:
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
                 ElbLogstashDNS: ${ElbLogstash.DNSName}
-                ElbElasticDNS: ${ElbElastic.DNSName}
+                ElbElasticDNS: ${N}
                 WindowsPublicIp: ${Windows.PublicIp}
                 AwsSecretKey: ${AwsSecretKey}
                 AwsAccessKey: ${AwsAccessKey}
@@ -1270,7 +1268,7 @@ Resources:
                 WazuhClusterKey: ${WazuhClusterKey}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
                 ElbLogstashDNS: ${ElbLogstash.DNSName}
-                ElbElasticDNS: ${ElbElastic.DNSName}
+                ElbElasticDNS: ${N}
                 AwsSecretKey: ${AwsSecretKey}
                 AwsAccessKey: ${AwsAccessKey}
                 VirusTotalKey: ${VirusTotalKey}
