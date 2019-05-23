@@ -254,19 +254,17 @@ cat > ${api_config} << EOF
 EOF
 
 if [[ `echo $elastic_version | cut -d'.' -f1` -lt 7 ]]; then
-  echo "Loading Wazuh API to an Elasticsearch < v7 cluster"
-  CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "http://${eth0_ip}:9200/.wazuh/wazuh_configuration/${api_time}"
-  if [ "x$CONFIG_CODE" != "x200" ]; then
-    curl -s -XPUT "http://${eth0_ip}:9200/.wazuh/wazuh_configuration/${api_time}" -H 'Content-Type: application/json' -d@${api_config}
-    echo "Loaded Wazuh API to an Elasticsearch < v7 cluster"
-  fi
+CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "http://${eth0_ip}:9200/.wazuh/wazuh_configuration/${api_time}")
+if [ "x$CONFIG_CODE" != "x200" ]; then
+curl -s -XPUT "http://${eth0_ip}:9200/.wazuh/wazuh_configuration/${api_time}" -H 'Content-Type: application/json' -d@${api_config}
+echo "Loaded Wazuh API to an Elasticsearch < v7 cluster"
+fi
 else
-  echo "Loading Wazuh API to an Elasticsearch >=v7 cluster"
-  CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "http://${eth0_ip}:9200/.wazuh/_doc/${api_time}"
-  if [ "x$CONFIG_CODE" != "x200" ]; then
-    curl -s -XPUT "http://${eth0_ip}:9200/.wazuh/_doc/${api_time}" -H 'Content-Type: application/json' -d@${api_config}
-    echo "Loaded Wazuh API to an Elasticsearch >=v7 cluster"
-  fi
+echo "Loading Wazuh API to an Elasticsearch >=v7 cluster"
+CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "http://${eth0_ip}:9200/.wazuh/_doc/${api_time}")
+if [ "x$CONFIG_CODE" != "x200" ]; then
+curl -s -XPUT "http://${eth0_ip}:9200/.wazuh/_doc/${api_time}" -H 'Content-Type: application/json' -d@${api_config}
+fi
 fi
 
 rm -f ${api_config}
@@ -349,25 +347,25 @@ echo "Restarted NGINX..." >> /tmp/log
 }
 
 main(){
-    check_root
-    create_ssh_user
-    if [[ `echo $elastic_version | cut -d'.' -f1` -lt 7 ]]; then
-        install_java
-    fi
-    import_elk_repo
-    install_elasticsearch
-    configuring_elasticsearch
-    start_elasticsearch
-    load_template
-    install_kibana
-    configure_kibana
-    get_plugin_url
-    install_plugin
-    add_api
-    start_kibana
-    index_pattern
-    kibana_optional_configs
-    add_nginx
+  check_root
+  create_ssh_user
+  if [[ `echo $elastic_version | cut -d'.' -f1` -lt 7 ]]; then
+      install_java
+  fi
+  import_elk_repo
+  install_elasticsearch
+  configuring_elasticsearch
+  start_elasticsearch
+  load_template
+  install_kibana
+  configure_kibana
+  get_plugin_url
+  install_plugin
+  add_api
+  start_kibana
+  index_pattern
+  kibana_optional_configs
+  add_nginx
 }
 
 main
