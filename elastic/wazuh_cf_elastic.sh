@@ -93,6 +93,8 @@ if [[ `echo $elastic_version | cut -d'.' -f1` -lt 7 ]]; then
 fi
 chown elasticsearch:elasticsearch /etc/elasticsearch/elasticsearch.yml
 
+echo "cluster.initial_master_nodes: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
+
 # Calculating RAM for Elasticsearch
 ram_gb=$(free -g | awk '/^Mem:/{print $2}')
 ram=$(( ${ram_gb} / 2 ))
