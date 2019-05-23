@@ -1,9 +1,8 @@
 #!/bin/bash
 # Install Kibana instance using Cloudformation template
 # Support for Amazon Linux
-touch /tmp/log
-echo "Starting process." > /tmp/log
 
+echo "Starting process." >> /tmp/log
 
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
@@ -22,11 +21,11 @@ wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
 wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
 wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
 elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
-
 elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
 elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
 
 check_root(){
+    echo "Checking root." >> /tmp/deploy.log
     # Check if running as root
     if [[ $EUID -ne 0 ]]; then
         echo "NOT running as root. Exiting" >> /tmp/deploy.log
@@ -42,7 +41,6 @@ create_ssh_user(){
     echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
     usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
     echo "Created SSH user." >> /tmp/deploy.log
-
     sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
     service sshd restart
     echo "Started SSH service." >> /tmp/deploy.log

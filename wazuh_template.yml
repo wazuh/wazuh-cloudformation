@@ -967,6 +967,9 @@ Resources:
                 discovery.ec2.groups: ${ElasticSecurityGroup}
                 discovery.ec2.host_type: private_ip
                 discovery.ec2.endpoint: ec2.${AWS::Region}.amazonaws.com
+                node.master: true
+                node.ingest: true
+                node.data: true
               mode: '000644'
               owner: root
               group: root
