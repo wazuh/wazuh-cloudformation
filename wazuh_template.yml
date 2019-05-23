@@ -913,7 +913,7 @@ Resources:
       HealthCheckType: EC2
       LaunchConfigurationName: !Ref ElasticLaunchConfiguration
       MinSize: '3'
-      MaxSize: '6'
+      MaxSize: '4'
       DesiredCapacity: '3'
       LoadBalancerNames:
         - !Ref ElbElastic
