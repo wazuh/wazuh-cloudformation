@@ -748,8 +748,6 @@ Resources:
               SshPassword: ${SshPassword}
               Elastic_Wazuh: ${ElasticWazuhVersion}
               NodeName: 3
-              First: ${ElasticMasterB.PrivateIp}
-              Second: ${ElasticMasterC.PrivateIp}
             mode: '000600'
             owner: root
             group: root
@@ -777,6 +775,7 @@ Resources:
             VolumeSize: 100
             VolumeType: gp2
       NetworkInterfaces:
+        - PrivateIpAddress: "10.0.0.10"
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
           GroupSet: 
@@ -792,6 +791,8 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticMasterA --configsets ElasticInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticMasterA --region ${AWS::Region}
     DependsOn: GatewayToInternet
+  
+  
   ElasticMasterB:
     Type: AWS::EC2::Instance
     Metadata:
@@ -806,9 +807,7 @@ Resources:
               SshUsername: ${SshUsername}
               SshPassword: ${SshPassword}
               Elastic_Wazuh: ${ElasticWazuhVersion}
-              Second: ${ElasticMasterA.PrivateIp}
               NodeName: 1
-              First: ${ElasticMasterC.PrivateIp}
             mode: '000600'
             owner: root
             group: root
@@ -836,6 +835,7 @@ Resources:
             VolumeSize: 100
             VolumeType: gp2
       NetworkInterfaces:
+        - PrivateIpAddress: "10.0.0.20"
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
           GroupSet: 
@@ -866,9 +866,7 @@ Resources:
               SshUsername: ${SshUsername}
               SshPassword: ${SshPassword}
               Elastic_Wazuh: ${ElasticWazuhVersion}
-              Second: ${ElasticMasterA.PrivateIp}
               NodeName: 2
-              First: ${ElasticMasterB.PrivateIp}
             mode: '000600'
             owner: root
             group: root
@@ -896,6 +894,7 @@ Resources:
             VolumeSize: 100
             VolumeType: gp2
       NetworkInterfaces:
+        - PrivateIpAddress: "10.0.0.30"
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
           GroupSet: 

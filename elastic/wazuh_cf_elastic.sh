@@ -15,8 +15,6 @@ elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
 wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
 wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
 wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
-master_b=$(cat /tmp/wazuh_cf_settings | grep '^First:' | cut -d' ' -f2)
-master_c=$(cat /tmp/wazuh_cf_settings | grep '^Second:' | cut -d' ' -f2)
 node_name=$(cat /tmp/wazuh_cf_settings | grep '^NodeName:' | cut -d' ' -f2)
 
 echo "Added env vars." >> /tmp/deploy.log
@@ -86,15 +84,15 @@ chown -R elasticsearch:elasticsearch /mnt/ephemeral/elasticsearch
 echo "Created volumes in ephemeral." >> /tmp/log
 
 cat > /etc/elasticsearch/elasticsearch.yml << EOF
-cluster.name: "${node_name}"
+cluster.name: "node-$node_name"
 node.name: "es-node-1"
 node.master: true
 path.data: /var/lib/elasticsearch
 path.logs: /var/log/elasticsearch
 cluster.initial_master_nodes: 
-  - "${eth0_ip}"
-  - "${master_b}"
-  - "${master_c}"
+  - "10.0.0.10"
+  - "10.0.0.20"
+  - "10.0.0.30"
 EOF
 
 echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
