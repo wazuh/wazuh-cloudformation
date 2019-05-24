@@ -733,7 +733,7 @@ Resources:
           Value: ElasticTG
 
   # Wazuh registration Listener for Network Load Balancer
-ElasticMasterA:
+  ElasticMasterA:
     Type: AWS::EC2::Instance
     Metadata:
       'AWS::CloudFormation::Init':
@@ -741,17 +741,15 @@ ElasticMasterA:
           KibanaInstallationSet:
             - Elasticfiles
             - ElasticInstall
-                ElasticFiles:
         Elasticfiles:
           /tmp/wazuh_cf_settings:
             content: !Sub |
               SshUsername: ${SshUsername}
               SshPassword: ${SshPassword}
               Elastic_Wazuh: ${ElasticWazuhVersion}
-              MasterA: ${ElasticMasterA.PrivateIp}
               NodeName: 3
-              MasterB: ${ElasticMasterB.PrivateIp}
-              MasterC: ${ElasticMasterC.PrivateIp}
+              First: ${ElasticMasterB.PrivateIp}
+              Second: ${ElasticMasterC.PrivateIp}
             mode: '000600'
             owner: root
             group: root
@@ -770,7 +768,7 @@ ElasticMasterA:
         - "RegionMap"
         - Ref: "AWS::Region"
         - HVM64
-      InstanceType: !Ref ElasticMasterAType
+      InstanceType: !Ref ElasticInstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
       BlockDeviceMappings:
@@ -802,17 +800,15 @@ ElasticMasterA:
           KibanaInstallationSet:
             - Elasticfiles
             - ElasticInstall
-                ElasticFiles:
         Elasticfiles:
           /tmp/wazuh_cf_settings:
             content: !Sub |
               SshUsername: ${SshUsername}
               SshPassword: ${SshPassword}
               Elastic_Wazuh: ${ElasticWazuhVersion}
-              MasterA: ${ElasticMasterA.PrivateIp}
+              Second: ${ElasticMasterA.PrivateIp}
               NodeName: 1
-              MasterB: ${ElasticMasterB.PrivateIp}
-              MasterC: ${ElasticMasterC.PrivateIp}
+              First: ${ElasticMasterC.PrivateIp}
             mode: '000600'
             owner: root
             group: root
@@ -831,7 +827,7 @@ ElasticMasterA:
         - "RegionMap"
         - Ref: "AWS::Region"
         - HVM64
-      InstanceType: !Ref ElasticMasterBType
+      InstanceType: !Ref ElasticInstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
       BlockDeviceMappings:
@@ -856,7 +852,7 @@ ElasticMasterA:
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticMasterB --region ${AWS::Region}
     DependsOn: GatewayToInternet
 
-  ElasticMasterB:
+  ElasticMasterC:
     Type: AWS::EC2::Instance
     Metadata:
       'AWS::CloudFormation::Init':
@@ -864,17 +860,15 @@ ElasticMasterA:
           KibanaInstallationSet:
             - Elasticfiles
             - ElasticInstall
-                ElasticFiles:
         Elasticfiles:
           /tmp/wazuh_cf_settings:
             content: !Sub |
               SshUsername: ${SshUsername}
               SshPassword: ${SshPassword}
               Elastic_Wazuh: ${ElasticWazuhVersion}
-              MasterA: ${ElasticMasterA.PrivateIp}
+              Second: ${ElasticMasterA.PrivateIp}
               NodeName: 2
-              MasterB: ${ElasticMasterB.PrivateIp}
-              MasterC: ${ElasticMasterC.PrivateIp}
+              First: ${ElasticMasterB.PrivateIp}
             mode: '000600'
             owner: root
             group: root
@@ -893,7 +887,7 @@ ElasticMasterA:
         - "RegionMap"
         - Ref: "AWS::Region"
         - HVM64
-      InstanceType: !Ref ElasticMasterBType
+      InstanceType: !Ref ElasticInstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
       BlockDeviceMappings:
@@ -910,12 +904,12 @@ ElasticMasterA:
             Ref: "SubnetWazuh"
       Tags:
         - Key: Name
-          Value: ElasticMasterB
+          Value: ElasticMasterC
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticMasterB --configsets ElasticInstallationSet --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticMasterB --region ${AWS::Region}
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticMasterC --configsets ElasticInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticMasterC --region ${AWS::Region}
     DependsOn: GatewayToInternet
 
   # Wazuh Network Load Balancer
@@ -1083,7 +1077,7 @@ ElasticMasterA:
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                ElbElasticDNS: ${ElbElastic.DNSName}
+                ElbElasticDNS: ${ElasticNetworkBalancer.DNSName}
                 EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
@@ -1235,7 +1229,7 @@ ElasticMasterA:
                 WazuhRegistrationPort: ${WazuhRegistrationPort}
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
-                ElbElasticDNS: ${ElbElastic.DNSName}
+                ElbElasticDNS: ${ElasticNetworkBalancer.DNSName}
                 WindowsPublicIp: ${Windows.PublicIp}
                 AwsSecretKey: ${AwsSecretKey}
                 AwsAccessKey: ${AwsAccessKey}
@@ -1321,7 +1315,7 @@ ElasticMasterA:
                 WazuhServerPort: ${WazuhServerPort}
                 WazuhClusterKey: ${WazuhClusterKey}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                ElbElasticDNS: ${ElbElastic.DNSName}
+                ElbElasticDNS: ${ElasticNetworkBalancer.DNSName}
                 AwsSecretKey: ${AwsSecretKey}
                 AwsAccessKey: ${AwsAccessKey}
                 VirusTotalKey: ${VirusTotalKey}
