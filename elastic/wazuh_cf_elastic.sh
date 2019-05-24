@@ -92,58 +92,6 @@ if [[ `echo $elastic_version | cut -d'.' -f1` -lt 7 ]]; then
     sed -i '/discovery.zen.minimum_master_nodes/d' /etc/elasticsearch/elasticsearch.yml
 fi
 chown elasticsearch:elasticsearch /etc/elasticsearch/elasticsearch.yml
-
-# Calculating RAM for Elasticsearch
-ram_gb=$(free -g | awk '/^Mem:/{print $2}')
-ram=$(( ${ram_gb} / 2 ))
-if [ $ram -eq "0" ]; then ram=1; fi
-echo "Setting RAM." >> /tmp/log
-
-# Configuring jvm.options
-cat > /etc/elasticsearch/jvm.options << EOF
--Xms${ram}g
--Xmx${ram}g
--XX:+UseConcMarkSweepGC
--XX:CMSInitiatingOccupancyFraction=75
--XX:+UseCMSInitiatingOccupancyOnly
--XX:+AlwaysPreTouch
--Xss1m
--Djava.awt.headless=true
--Dfile.encoding=UTF-8
--Djna.nosys=true
--XX:-OmitStackTraceInFastThrow
--Dio.netty.noUnsafe=true
--Dio.netty.noKeySetOptimization=true
--Dio.netty.recycler.maxCapacityPerThread=0
--Dlog4j.shutdownHookEnabled=false
--Dlog4j2.disable.jmx=true
--Djava.io.tmpdir=\${ES_TMPDIR}
--XX:+HeapDumpOnOutOfMemoryError
--XX:HeapDumpPath=/var/lib/elasticsearch
--XX:ErrorFile=/var/log/elasticsearch/hs_err_pid%p.log
-8:-XX:+PrintGCDetails
-8:-XX:+PrintGCDateStamps
-8:-XX:+PrintTenuringDistribution
-8:-XX:+PrintGCApplicationStoppedTime
-8:-Xloggc:/var/log/elasticsearch/gc.log
-8:-XX:+UseGCLogFileRotation
-8:-XX:NumberOfGCLogFiles=32
-8:-XX:GCLogFileSize=64m
-9-:-Xlog:gc*,gc+age=trace,safepoint:file=/var/log/elasticsearch/gc.log:utctime,pid,tags:filecount=32,filesize=64m
-9-:-Djava.locale.providers=COMPAT
-EOF
-echo "Setting JVM options." >> /tmp/log
-
-mkdir -p /etc/systemd/system/elasticsearch.service.d/
-echo '[Service]' > /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
-echo 'LimitMEMLOCK=infinity' >> /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
-
-
-# Allowing unlimited memory allocation
-echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
-echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
-echo "Setting memory lock options." >> /tmp/log
-echo "Setting permissions." >> /tmp/deploy.log
 }
 
 start_elasticsearch(){
