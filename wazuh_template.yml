@@ -775,13 +775,13 @@ Resources:
             VolumeSize: 100
             VolumeType: gp2
       NetworkInterfaces:
-        - PrivateIpAddress: "10.0.0.10"
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
           GroupSet: 
             - Ref: "ElasticSecurityGroup"
           SubnetId: 
             Ref: "SubnetWazuh"
+          PrivateIpAddress: "1"
       Tags:
         - Key: Name
           Value: ElasticMasterA
@@ -835,13 +835,13 @@ Resources:
             VolumeSize: 100
             VolumeType: gp2
       NetworkInterfaces:
-        - PrivateIpAddress: "10.0.0.20"
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
           GroupSet: 
             - Ref: "ElasticSecurityGroup"
           SubnetId: 
             Ref: "SubnetWazuh"
+          PrivateIpAddress: "10.0.0.10"
       Tags:
         - Key: Name
           Value: ElasticMasterB
@@ -894,13 +894,13 @@ Resources:
             VolumeSize: 100
             VolumeType: gp2
       NetworkInterfaces:
-        - PrivateIpAddress: "10.0.0.30"
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
           GroupSet: 
             - Ref: "ElasticSecurityGroup"
           SubnetId: 
             Ref: "SubnetWazuh"
+          PrivateIpAddress: "10.0.0.30"
       Tags:
         - Key: Name
           Value: ElasticMasterC
