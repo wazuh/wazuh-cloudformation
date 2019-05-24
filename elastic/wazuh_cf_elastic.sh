@@ -90,9 +90,9 @@ node.master: true
 path.data: /var/lib/elasticsearch
 path.logs: /var/log/elasticsearch
 cluster.initial_master_nodes: 
-  - "10.0.0.10"
-  - "10.0.0.20"
-  - "10.0.0.30"
+  - "10.0.0.123"
+  - "10.0.0.124"
+  - "10.0.0.125"
 EOF
 
 echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml

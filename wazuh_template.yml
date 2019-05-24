@@ -781,7 +781,7 @@ Resources:
             - Ref: "ElasticSecurityGroup"
           SubnetId: 
             Ref: "SubnetWazuh"
-          PrivateIpAddress: "1"
+          PrivateIpAddress: "10.0.0.124"
       Tags:
         - Key: Name
           Value: ElasticMasterA
@@ -841,7 +841,7 @@ Resources:
             - Ref: "ElasticSecurityGroup"
           SubnetId: 
             Ref: "SubnetWazuh"
-          PrivateIpAddress: "10.0.0.10"
+          PrivateIpAddress: "10.0.0.123"
       Tags:
         - Key: Name
           Value: ElasticMasterB
@@ -900,7 +900,7 @@ Resources:
             - Ref: "ElasticSecurityGroup"
           SubnetId: 
             Ref: "SubnetWazuh"
-          PrivateIpAddress: "10.0.0.30"
+          PrivateIpAddress: "10.0.0.125"
       Tags:
         - Key: Name
           Value: ElasticMasterC
