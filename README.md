@@ -11,8 +11,6 @@ This repository includes the template and scripts to set up an environment that 
 * Wazuh managers cluster with two nodes, a master and a worker
 * An Elasticsearch cluster with a minimum of 3 data nodes, auto-scalable to a maximum of 6 nodes
 * A Kibana node that includes a local elasticsearch client node, and an Nginx for HTTP basic authentication
-* Logstash runs on the Elasticsearch data nodes and receives data from Filebeat running on the managers
-* Logstash and Elasticsearch nodes seat behind internal load balancers
 * Wazuh servers seat behind an internet-facing load balancer for agents to communicate with the cluster
 * Kibana server seats behind an internet facing load balancer, that optionally loads an SSL Certificate for HTTPS
 * A Splunk Indexer instance with a Splunk app for Wazuh installed on it.
@@ -31,8 +29,6 @@ Elasticsearch instance types can be chosen from:
 * t2.medium
 
 These instance types are recommended due to Elasticsearch disk requirements. Ephemeral disks are used for data storage.
-
-Each data node has a Logstash instance, that is used to receive data form the managers via an internal ELB load balancer. 
 
 None of these instances are directly accessible from the Internet, although they can be reached jumping through the Kibana system, that has a public SSH service.
 
@@ -78,7 +74,7 @@ The Wazuh API, running on Wazuh master node, is automatically configured to use 
 
 The Wazuh registration service (authd), running on Wazuh master node, is configured not to use source IP addresses. We assume that agents will connect through the Internet, and most likely several will use the same source IP (sitting behind a NAT). This service is configured automatically to require password authentication for new agents registration.
 
-Filebeat runs on both the Wazuh master node and the worker node, reading alerts and forwarding those to Logstash nodes via the internal load balancer.
+Filebeat runs on both the Wazuh master node and the worker node, reading alerts and forwarding those to Elasticsearch nodes via the internal load balancer.
 
 New agents can make use of the Wazuh master public Elastic IP address for registration.
 
