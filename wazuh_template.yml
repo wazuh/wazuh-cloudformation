@@ -575,13 +575,6 @@ Resources:
           ToPort: 22
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
-          FromPort: 5000
-          ToPort: 5000
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
-        - IpProtocol: tcp
           FromPort: 9200
           ToPort: 9400
           CidrIp: !FindInMap
@@ -738,7 +731,7 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Init':
         configSets:
-          KibanaInstallationSet:
+          ElasticInstallationSet:
             - Elasticfiles
             - ElasticInstall
         Elasticfiles:
@@ -792,13 +785,12 @@ Resources:
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticMasterA --region ${AWS::Region}
     DependsOn: GatewayToInternet
   
-  
   ElasticMasterB:
     Type: AWS::EC2::Instance
     Metadata:
       'AWS::CloudFormation::Init':
         configSets:
-          KibanaInstallationSet:
+          ElasticInstallationSet:
             - Elasticfiles
             - ElasticInstall
         Elasticfiles:
@@ -857,7 +849,7 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Init':
         configSets:
-          KibanaInstallationSet:
+          ElasticInstallationSet:
             - Elasticfiles
             - ElasticInstall
         Elasticfiles:
@@ -1203,7 +1195,6 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource SplunkInstance --configsets SplunkInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Splunk --region ${AWS::Region}
     DependsOn: GatewayToInternet
-
 
   # Wazuh master instance
   WazuhMasterInstance:
