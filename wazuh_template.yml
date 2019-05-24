@@ -962,6 +962,7 @@ Resources:
                 path.logs: /mnt/ephemeral/elasticsearch/log
                 bootstrap.memory_lock: true
                 network.host: _ec2_
+                discovery.seed_providers: ec2
                 discovery.zen.hosts_provider: ec2
                 discovery.ec2.groups: ${ElasticSecurityGroup}
                 discovery.ec2.host_type: private_ip
