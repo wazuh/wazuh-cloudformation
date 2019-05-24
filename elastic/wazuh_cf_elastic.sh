@@ -15,6 +15,10 @@ elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
 wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
 wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
 wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
+master_a=$(cat /tmp/wazuh_cf_settings | grep '^MasterA:' | cut -d' ' -f2)
+master_b=$(cat /tmp/wazuh_cf_settings | grep '^MasterB:' | cut -d' ' -f2)
+master_c=$(cat /tmp/wazuh_cf_settings | grep '^MasterC:' | cut -d' ' -f2)
+node_name=$(cat /tmp/wazuh_cf_settings | grep '^NodeName:' | cut -d' ' -f2)
 
 echo "Added env vars." >> /tmp/deploy.log
 echo "eth0_ip: $eth0_ip" >> /tmp/deploy.log
@@ -73,9 +77,6 @@ install_elasticsearch(){
     chkconfig --add elasticsearch
     echo "Installed Elasticsearch." >> /tmp/deploy.log
 
-    # Installing Elasticsearch plugin for EC2
-    /usr/share/elasticsearch/bin/elasticsearch-plugin install --batch discovery-ec2
-    echo "Installed EC2 plugin." >> /tmp/deploy.log
 }
 
 configuring_elasticsearch(){
@@ -85,13 +86,24 @@ mkdir -p /mnt/ephemeral/elasticsearch/log
 chown -R elasticsearch:elasticsearch /mnt/ephemeral/elasticsearch
 echo "Created volumes in ephemeral." >> /tmp/log
 
-mv -f /tmp/wazuh_cf_elasticsearch.yml /etc/elasticsearch/elasticsearch.yml
-echo "mv -f /tmp/wazuh_cf_elasticsearch.yml /etc/elasticsearch/elasticsearch.yml" >> /tmp/deploy.log
-# If ELK 7, remove the discovery.zen.minimum_master_nodes option
-if [[ `echo $elastic_version | cut -d'.' -f1` -lt 7 ]]; then
-    sed -i '/discovery.zen.minimum_master_nodes/d' /etc/elasticsearch/elasticsearch.yml
-fi
-chown elasticsearch:elasticsearch /etc/elasticsearch/elasticsearch.yml
+cat > /etc/elasticsearch/elasticsearch.yml << EOF
+cluster.name: "${node_name}"
+node.name: "es-node-1"
+node.master: true
+path.data: /var/lib/elasticsearch
+path.logs: /var/log/elasticsearch
+cluster.initial_master_nodes: 
+  - "${master_a}"
+  - "${master_b}"
+  - "${master_c}"
+EOF
+
+echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
+
+# Correct owner for Elasticsearch directories
+chown elasticsearch:elasticsearch -R /etc/elasticsearch
+chown elasticsearch:elasticsearch -R /usr/share/elasticsearch
+chown elasticsearch:elasticsearch -R /var/lib/elasticsearch
 
 # Calculating RAM for Elasticsearch
 ram_gb=$(free -g | awk '/^Mem:/{print $2}')
