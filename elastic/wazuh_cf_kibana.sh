@@ -248,14 +248,11 @@ cat > ${api_config} << EOF
 }
 EOF
 
-check_url="http://${eth0_ip}:9200/.wazuh/_doc/${api_time}"
-until curl -XGET $check_url; do
-  echo "Waiting for service ..." >> /tmp/log
-  sleep 5
-done
-
-CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "http://${eth0_ip}:9200/.wazuh/_doc/${api_time}")
-curl -s -XPUT "http://${eth0_ip}:9200/.wazuh/_doc/${api_time}" -H 'Content-Type: application/json' -d@${api_config}
+CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "http://${eth0_ip}:9200/.wazuh/_doc/${api_time}"
+if [ "x$CONFIG_CODE" != "x200" ]; then
+  curl -s -XPUT "http://${eth0_ip}:9200/.wazuh/_doc/${api_time}" -H 'Content-Type: application/json' -d@${api_config}
+  echo "Loaded Wazuh API to an Elasticsearch >=v7 cluster" >> /tmp/log
+fi
 
 rm -f ${api_config}
 echo "Configured API" >> /tmp/log
