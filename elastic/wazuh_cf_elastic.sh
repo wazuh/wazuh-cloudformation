@@ -87,8 +87,8 @@ cat > /etc/elasticsearch/elasticsearch.yml << EOF
 cluster.name: "node-$node_name"
 node.name: "es-node-1"
 node.master: true
-path.data: /var/lib/elasticsearch
-path.logs: /var/log/elasticsearch
+path.data: /mnt/ephemeral/elasticsearch/lib
+path.logs: /mnt/ephemeral/elasticsearch/log
 cluster.initial_master_nodes: 
   - "10.0.0.123"
   - "10.0.0.124"
