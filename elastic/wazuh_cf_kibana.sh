@@ -88,7 +88,7 @@ path.data: /mnt/ephemeral/elasticsearch/lib
 path.logs: /mnt/ephemeral/elasticsearch/log
 node.ingest: false
 node.data: false
-cluster.seed_hosts: 
+discovery.seed_hosts: 
   - "10.0.0.123"
   - "10.0.0.124"
   - "10.0.0.125"
