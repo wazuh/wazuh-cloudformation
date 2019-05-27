@@ -89,7 +89,7 @@ node.name: "node-$node_name"
 node.master: true
 path.data: /mnt/ephemeral/elasticsearch/lib
 path.logs: /mnt/ephemeral/elasticsearch/log
-discovery.seed_hosts: 
+cluster.initial_master_nodes: 
   - "10.0.0.123"
   - "10.0.0.124"
   - "10.0.0.125"

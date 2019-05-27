@@ -747,7 +747,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/elk-7/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/elk-7/elastic/wazuh_cf_bootstrap_elastic.sh
               mode: '000700'
               owner: root
               group: root
