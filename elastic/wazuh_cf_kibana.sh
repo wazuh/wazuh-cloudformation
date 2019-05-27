@@ -46,13 +46,6 @@ create_ssh_user(){
     echo "Started SSH service." >> /tmp/deploy.log
 }
 
-install_java(){
-    # Uninstall OpenJDK 1.7 if exists
-    if rpm -q java-1.7.0-openjdk > /dev/null; then yum -y remove java-1.7.0-openjdk; fi
-    # Install OpenJDK 1.8
-    yum -y install java-1.8.0-openjdk
-}
-
 import_elk_repo(){
 # Configuring Elastic repository
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
@@ -168,12 +161,7 @@ start_elasticsearch(){
 
 load_template(){
 
-if [[ $elastic_major_version -eq 7 ]] || [[ $wazuh_major -eq 3 ]] && [[ $wazuh_minor -eq 9 ]] && [[ $wazuh_patch -eq 1 ]]; then
-  url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/$elastic_major_version.x/wazuh-template.json"
-else
-  url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/wazuh-template.json"
-fi
-
+url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/7.x/wazuh-template.json"
 alerts_template="/tmp/wazuh-template.json"
 curl -Lo ${alerts_template} ${url_alerts_template}
 curl -XPUT "http://${eth0_ip}:9200/_template/wazuh" -H 'Content-Type: application/json' -d@${alerts_template}
@@ -234,11 +222,7 @@ get_plugin_url(){
 
 install_plugin(){
   echo "Installing app" >> /tmp/log
-  if [[ `echo $elastic_version | cut -d'.' -f1` -lt 7 ]]; then
-    NODE_OPTIONS="--max-old-space-size=4096" /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
-  else
-    /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
-  fi
+  /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
   echo "App installed!" >> /tmp/log
 }
 
@@ -264,19 +248,14 @@ cat > ${api_config} << EOF
 }
 EOF
 
-if [[ `echo $elastic_version | cut -d'.' -f1` -lt 7 ]]; then
-CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "http://${eth0_ip}:9200/.wazuh/wazuh_configuration/${api_time}")
-if [ "x$CONFIG_CODE" != "x200" ]; then
-curl -s -XPUT "http://${eth0_ip}:9200/.wazuh/wazuh_configuration/${api_time}" -H 'Content-Type: application/json' -d@${api_config}
-echo "Loaded Wazuh API to an Elasticsearch < v7 cluster"
-fi
-else
-echo "Loading Wazuh API to an Elasticsearch >=v7 cluster"
+check_url="http://${eth0_ip}:9200/.wazuh/_doc/${api_time}"
+until curl -XGET $check_url; do
+  echo "Waiting for service ..." >> /tmp/log
+  sleep 5
+done
+
 CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "http://${eth0_ip}:9200/.wazuh/_doc/${api_time}")
-if [ "x$CONFIG_CODE" != "x200" ]; then
 curl -s -XPUT "http://${eth0_ip}:9200/.wazuh/_doc/${api_time}" -H 'Content-Type: application/json' -d@${api_config}
-fi
-fi
 
 rm -f ${api_config}
 echo "Configured API" >> /tmp/log
@@ -289,7 +268,15 @@ start_kibana(){
   echo "Started Kibana" >> /tmp/log
 }
 
-index_pattern(){
+kibana_optional_configs(){
+
+  # Enabling extensions
+  sed -i "s/#extensions.docker    : false/extensions.docker : true/" /usr/share/kibana/plugins/wazuh/config.yml
+  sed -i "s/#extensions.aws    : false/extensions.aws : true/" /usr/share/kibana/plugins/wazuh/config.yml
+  sed -i "s/#extensions.osquery    : false/extensions.osquery : true/" /usr/share/kibana/plugins/wazuh/config.yml
+  sed -i "s/#extensions.oscap    : false/extensions.oscap : true/" /usr/share/kibana/plugins/wazuh/config.yml
+  sed -i "s/#extensions.virustotal    : false/extensions.virustotal : true/" /usr/share/kibana/plugins/wazuh/config.yml
+
 # Configuring default index pattern for Kibana
 default_index="/tmp/default_index.json"
 
@@ -300,16 +287,6 @@ cat > ${default_index} << EOF
   }
 }
 EOF
-}
-
-kibana_optional_configs(){
-
-  # Enabling extensions
-  sed -i "s/#extensions.docker    : false/extensions.docker : true/" /usr/share/kibana/plugins/wazuh/config.yml
-  sed -i "s/#extensions.aws    : false/extensions.aws : true/" /usr/share/kibana/plugins/wazuh/config.yml
-  sed -i "s/#extensions.osquery    : false/extensions.osquery : true/" /usr/share/kibana/plugins/wazuh/config.yml
-  sed -i "s/#extensions.oscap    : false/extensions.oscap : true/" /usr/share/kibana/plugins/wazuh/config.yml
-  sed -i "s/#extensions.virustotal    : false/extensions.virustotal : true/" /usr/share/kibana/plugins/wazuh/config.yml
 
   curl -POST "http://${eth0_ip}:5601/api/kibana/settings" -H "Content-Type: application/json" -H "kbn-xsrf: true" -d@${default_index}
   rm -f ${default_index}
@@ -360,9 +337,6 @@ echo "Restarted NGINX..." >> /tmp/log
 main(){
   check_root
   create_ssh_user
-  if [[ `echo $elastic_version | cut -d'.' -f1` -lt 7 ]]; then
-      install_java
-  fi
   import_elk_repo
   install_elasticsearch
   configuring_elasticsearch
@@ -374,7 +348,6 @@ main(){
   install_plugin
   add_api
   start_kibana
-  index_pattern
   kibana_optional_configs
   add_nginx
 }

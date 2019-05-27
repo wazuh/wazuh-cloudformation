@@ -42,13 +42,6 @@ create_ssh_user(){
     echo "Started SSH service." >> /tmp/deploy.log
 }
 
-install_java(){
-    # Uninstall OpenJDK 1.7 if exists
-    if rpm -q java-1.7.0-openjdk > /dev/null; then yum -y remove java-1.7.0-openjdk; fi
-    # Install OpenJDK 1.8
-    yum -y install java-1.8.0-openjdk
-}
-
 import_elk_repo(){
 # Configuring Elastic repository
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
@@ -163,44 +156,6 @@ start_elasticsearch(){
     echo "starting elasticsearch service." >> /tmp/deploy.log
 }
 
-add_logstash(){
-
-yum -y install logstash-${elastic_version}
-echo "Installed logstash." >> /tmp/deploy.log
-
-#Wazuh configuration for Logstash
-
-if [[ $elastic_major_version -eq 7 ]]; then
-curl -so /etc/logstash/conf.d/01-wazuh.conf "https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/logstash/7.x/01-wazuh-remote.conf"
-elif [[ $elastic_major_version -eq 6 ]] && [[ $wazuh_major -eq 3 ]] && [[ $wazuh_minor -eq 9 ]] && [[ $wazuh_patch -eq 1 ]]; then
-curl -so /etc/logstash/conf.d/01-wazuh.conf "https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/logstash/6.x/01-wazuh-remote.conf"
-elif [[ $elastic_major_version -le 6 ]] && [[ $wazuh_major -le 3 ]] && [[ $wazuh_minor -lt 9 ]]; then
-curl -so /etc/logstash/conf.d/01-wazuh.conf "https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/logstash/01-wazuh-remote.conf"
-fi
-
-sed -i "s/localhost:9200/${eth0_ip}:9200/" /etc/logstash/conf.d/01-wazuh.conf
-
-# Creating data and logs directories
-mkdir -p /mnt/ephemeral/logstash/lib
-mkdir -p /mnt/ephemeral/logstash/log
-chown -R logstash:logstash /mnt/ephemeral/logstash
-echo "Options and volumes for logstash." >> /tmp/deploy.log
-
-# Configuring logstash.yml
-cat > /etc/logstash/logstash.yml << 'EOF'
-path.data: /mnt/ephemeral/logstash/lib
-path.logs: /mnt/ephemeral/logstash/log
-path.config: /etc/logstash/conf.d/*.conf
-EOF
-
-}
-
-start_logstash(){
-    # Starting Logstash
-    service logstash restart
-    echo "Started logstash." >> /tmp/deploy.log
-}
-
 disable_elk_repos(){
     # Disable repositories
     sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
@@ -209,17 +164,10 @@ disable_elk_repos(){
 main(){
     check_root
     create_ssh_user
-    if [[ `echo $elastic_version | cut -d'.' -f1` -lt 7 ]]; then
-        install_java
-    fi
     import_elk_repo
     install_elasticsearch
     configuring_elasticsearch
     start_elasticsearch
-    if [[ `echo $elastic_version | cut -d'.' -f1` -lt 7 ]]; then
-        add_logstash
-        start_logstash
-    fi
     disable_elk_repos
 }
 
