@@ -15,7 +15,7 @@ wazuh_api_user=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminUsername:' | c
 wazuh_api_password=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminPassword:' | cut -d' ' -f2)
 wazuh_api_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiPort:' | cut -d' ' -f2)
 wazuh_cluster_key=$(cat /tmp/wazuh_cf_settings | grep '^WazuhClusterKey:' | cut -d' ' -f2)
-elb_logstash=$(cat /tmp/wazuh_cf_settings | grep '^ElbLogstashDNS:' | cut -d' ' -f2)
+elb_elastic=$(cat /tmp/wazuh_cf_settings | grep '^ElbElasticDNS:' | cut -d' ' -f2)
 eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*//' | cut -d' ' -f2)
 splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^KibanaUsername:' | cut -d' ' -f2)
 splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^KibanaPassword:' | cut -d' ' -f2)
@@ -70,9 +70,9 @@ fi
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
 elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
 cat > /etc/yum.repos.d/elastic.repo << EOF
-[elasticsearch-6.x]
-name=Elasticsearch repository for 6.x packages
-baseurl=https://artifacts.elastic.co/packages/6.x/yum
+[elasticsearch-${elastic_major_version}.x]
+name=Elasticsearch repository for ${elastic_major_version}.x packages
+baseurl=https://artifacts.elastic.co/packages/${elastic_major_version}.x/yum
 gpgcheck=1
 gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
 enabled=1
@@ -423,9 +423,19 @@ yum -y install filebeat-${elastic_version}
 chkconfig --add filebeat
 echo "Installed Filebeat." >> /tmp/log
 
+wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
+wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
+wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
+elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
+elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
+
+curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/filebeat/7.x/filebeat.yml
+
 # Configuring Filebeat
-curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/v3.9.0/extensions/filebeat/filebeat.yml
-sed -i "s/YOUR_ELASTIC_SERVER_IP/${elb_logstash}/" /etc/filebeat/filebeat.yml
+sed -i "s/YOUR_ELASTIC_SERVER_IP/${elb_elastic}/" /etc/filebeat/filebeat.yml
+curl -so /etc/filebeat/wazuh-template.json "https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/7.x/wazuh-template.json"
+chmod go-w /etc/filebeat/wazuh-template.json
+
 service filebeat restart
 echo "Restarted Filebeat." >> /tmp/log
 

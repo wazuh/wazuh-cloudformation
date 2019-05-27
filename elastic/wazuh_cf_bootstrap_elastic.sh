@@ -82,7 +82,7 @@ node.name: "node-$node_name"
 node.master: true
 path.data: /mnt/ephemeral/elasticsearch/lib
 path.logs: /mnt/ephemeral/elasticsearch/log
-discovery.seed_hosts: 
+cluster.initial_master_nodes: 
   - "10.0.0.123"
   - "10.0.0.124"
   - "10.0.0.125"
@@ -161,28 +161,12 @@ disable_elk_repos(){
     sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
 }
 
-load_template(){
-
-until curl -XGET $el_url; do
-  >&2 echo "Elastic is unavailable - sleeping"
-  sleep 5
-done
-
-url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/7.x/wazuh-template.json"
-alerts_template="/tmp/wazuh-template.json"
-curl -Lo ${alerts_template} ${url_alerts_template}
-curl -XPUT "http://${eth0_ip}:9200/_template/wazuh" -H 'Content-Type: application/json' -d@${alerts_template}
-curl -XDELETE "http://${eth0_ip}:9200/wazuh-alerts-*"
-echo "Added template." >> /tmp/log
-}
-
 main(){
     check_root
     create_ssh_user
     import_elk_repo
     install_elasticsearch
     configuring_elasticsearch
-    load_template
     start_elasticsearch
     disable_elk_repos
 }
