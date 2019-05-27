@@ -735,21 +735,22 @@ Resources:
             - Elasticfiles
             - ElasticInstall
         Elasticfiles:
-          /tmp/wazuh_cf_settings:
-            content: !Sub |
-              SshUsername: ${SshUsername}
-              SshPassword: ${SshPassword}
-              Elastic_Wazuh: ${ElasticWazuhVersion}
-              NodeName: 3
-            mode: '000600'
-            owner: root
-            group: root
-          /tmp/wazuh_cf_elastic.sh:
-            source: !Sub >-
-              https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/elk-7/elastic/wazuh_cf_elastic.sh
-            mode: '000700'
-            owner: root
-            group: root
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                NodeName: 3
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_elastic.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/elk-7/elastic/wazuh_cf_elastic.sh
+              mode: '000700'
+              owner: root
+              group: root
         ElasticInstall:
           commands:
             01_RunInstallationScript:
@@ -794,21 +795,22 @@ Resources:
             - Elasticfiles
             - ElasticInstall
         Elasticfiles:
-          /tmp/wazuh_cf_settings:
-            content: !Sub |
-              SshUsername: ${SshUsername}
-              SshPassword: ${SshPassword}
-              Elastic_Wazuh: ${ElasticWazuhVersion}
-              NodeName: 1
-            mode: '000600'
-            owner: root
-            group: root
-          /tmp/wazuh_cf_elastic.sh:
-            source: !Sub >-
-              https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/elk-7/elastic/wazuh_cf_elastic.sh
-            mode: '000700'
-            owner: root
-            group: root
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                NodeName: 1
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_elastic.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/elk-7/elastic/wazuh_cf_elastic.sh
+              mode: '000700'
+              owner: root
+              group: root
         ElasticInstall:
           commands:
             01_RunInstallationScript:
@@ -853,21 +855,22 @@ Resources:
             - Elasticfiles
             - ElasticInstall
         Elasticfiles:
-          /tmp/wazuh_cf_settings:
-            content: !Sub |
-              SshUsername: ${SshUsername}
-              SshPassword: ${SshPassword}
-              Elastic_Wazuh: ${ElasticWazuhVersion}
-              NodeName: 2
-            mode: '000600'
-            owner: root
-            group: root
-          /tmp/wazuh_cf_elastic.sh:
-            source: !Sub >-
-              https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/elk-7/elastic/wazuh_cf_elastic.sh
-            mode: '000700'
-            owner: root
-            group: root
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                NodeName: 2
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_elastic.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/elk-7/elastic/wazuh_cf_elastic.sh
+              mode: '000700'
+              owner: root
+              group: root
         ElasticInstall:
           commands:
             01_RunInstallationScript:
