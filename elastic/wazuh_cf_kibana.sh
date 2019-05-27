@@ -77,10 +77,6 @@ install_elasticsearch(){
     yum -y install elasticsearch-${elastic_version}
     chkconfig --add elasticsearch
     echo "Installed Elasticsearch." >> /tmp/deploy.log
-
-    # Installing Elasticsearch plugin for EC2
-    /usr/share/elasticsearch/bin/elasticsearch-plugin install --batch discovery-ec2
-    echo "Installed EC2 plugin." >> /tmp/deploy.log
 }
 
 configuring_elasticsearch(){
@@ -90,8 +86,23 @@ mkdir -p /mnt/ephemeral/elasticsearch/log
 chown -R elasticsearch:elasticsearch /mnt/ephemeral/elasticsearch
 echo "Created volumes in ephemeral." >> /tmp/log
 
-mv -f /tmp/wazuh_cf_elasticsearch.yml /etc/elasticsearch/elasticsearch.yml
-echo "mv -f /tmp/wazuh_cf_elasticsearch.yml /etc/elasticsearch/elasticsearch.yml" >> /tmp/deploy.log
+cat > /etc/elasticsearch/elasticsearch.yml << EOF
+cluster.name: "wazuh_elastic"
+node.name: "node-kibana"
+node.master: false
+bootstrap.memory_lock: true
+path.data: /mnt/ephemeral/elasticsearch/lib
+path.logs: /mnt/ephemeral/elasticsearch/log
+node.ingest: false
+node.data: false
+cluster.initial_master_nodes: 
+  - "10.0.0.123"
+  - "10.0.0.124"
+  - "10.0.0.125"
+EOF
+
+echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
+
 chown elasticsearch:elasticsearch /etc/elasticsearch/elasticsearch.yml
 
 # Calculating RAM for Elasticsearch

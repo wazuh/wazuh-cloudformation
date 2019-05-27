@@ -84,8 +84,8 @@ chown -R elasticsearch:elasticsearch /mnt/ephemeral/elasticsearch
 echo "Created volumes in ephemeral." >> /tmp/log
 
 cat > /etc/elasticsearch/elasticsearch.yml << EOF
-cluster.name: "node-$node_name"
-node.name: "es-node-1"
+cluster.name: "wazuh_elastic"
+node.name: "node-$node_name"
 node.master: true
 path.data: /mnt/ephemeral/elasticsearch/lib
 path.logs: /mnt/ephemeral/elasticsearch/log
