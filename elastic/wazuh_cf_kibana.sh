@@ -159,16 +159,6 @@ start_elasticsearch(){
     echo "starting elasticsearch service." >> /tmp/deploy.log
 }
 
-load_template(){
-
-url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/7.x/wazuh-template.json"
-alerts_template="/tmp/wazuh-template.json"
-curl -Lo ${alerts_template} ${url_alerts_template}
-curl -XPUT "http://${eth0_ip}:9200/_template/wazuh" -H 'Content-Type: application/json' -d@${alerts_template}
-curl -XDELETE "http://${eth0_ip}:9200/wazuh-alerts-*"
-echo "Added template." >> /tmp/log
-}
-
 install_kibana(){
 # Installing Kibana
 yum -y install kibana-${elastic_version}
@@ -338,7 +328,6 @@ main(){
   install_elasticsearch
   configuring_elasticsearch
   start_elasticsearch
-  load_template
   install_kibana
   configure_kibana
   get_plugin_url
