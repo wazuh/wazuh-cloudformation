@@ -783,7 +783,7 @@ Resources:
             - Ref: "ElasticSecurityGroup"
           SubnetId: 
             Ref: "SubnetElasticsearch"
-          PrivateIpAddress: "10.0.0.124"
+          PrivateIpAddress: "10.0.2.124"
       Tags:
         - Key: Name
           Value: ElasticBootstrap
@@ -843,7 +843,7 @@ Resources:
             - Ref: "ElasticSecurityGroup"
           SubnetId: 
             Ref: "SubnetElasticsearch"
-          PrivateIpAddress: "10.0.0.123"
+          PrivateIpAddress: "10.0.2.123"
       Tags:
         - Key: Name
           Value: ElasticMasterB
@@ -903,7 +903,7 @@ Resources:
             - Ref: "ElasticSecurityGroup"
           SubnetId: 
             Ref: "SubnetElasticsearch"
-          PrivateIpAddress: "10.0.0.125"
+          PrivateIpAddress: "10.0.2.125"
       Tags:
         - Key: Name
           Value: ElasticMasterC

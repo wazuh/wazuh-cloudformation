@@ -83,9 +83,9 @@ node.master: true
 path.data: /mnt/ephemeral/elasticsearch/lib
 path.logs: /mnt/ephemeral/elasticsearch/log
 cluster.initial_master_nodes: 
-  - "10.0.0.123"
-  - "10.0.0.124"
-  - "10.0.0.125"
+  - "10.0.2.123"
+  - "10.0.2.124"
+  - "10.0.2.125"
 EOF
 
 echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml

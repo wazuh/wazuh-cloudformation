@@ -89,9 +89,9 @@ path.logs: /mnt/ephemeral/elasticsearch/log
 node.ingest: false
 node.data: false
 discovery.seed_hosts: 
-  - "10.0.0.123"
-  - "10.0.0.124"
-  - "10.0.0.125"
+  - "10.0.2.123"
+  - "10.0.2.124"
+  - "10.0.2.125"
 EOF
 
 echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
