@@ -151,8 +151,8 @@ main(){
     import_elk_repo
     install_elasticsearch
     configuring_elasticsearch
-    load_template
     start_elasticsearch
+    load_template
     disable_elk_repos
 }
 
