@@ -432,7 +432,7 @@ elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
 curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/filebeat/7.x/filebeat.yml
 
 # Configuring Filebeat
-sed -i "s/YOUR_ELASTIC_SERVER_IP/${elb_elastic}/" /etc/filebeat/filebeat.yml
+sed -i "s/YOUR_ELASTIC_SERVER_IP/['10.0.2.123','10.0.2.124','10.0.2.125']/" /etc/filebeat/filebeat.yml
 curl -so /etc/filebeat/wazuh-template.json "https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/7.x/wazuh-template.json"
 chmod go-w /etc/filebeat/wazuh-template.json
 
