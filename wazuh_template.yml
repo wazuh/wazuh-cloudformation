@@ -690,48 +690,6 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-ElbElasticSecurityGroup'
-  ElasticNetworkBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Name: !Sub '${AWS::StackName}-ELK'
-      Scheme: internet-facing
-      Subnets: 
-        - !Ref SubnetElasticsearch
-      Type: network
-      Tags:
-        - Key: Name
-          Value: nlbelastic
-  # Wazuh registration Listener for Network Load Balancer
-  ElasticListenerListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-      - Type: forward
-        TargetGroupArn: !Ref ElasticTG
-      LoadBalancerArn: !Ref ElasticNetworkBalancer
-      Port: 9200
-      Protocol: TCP
-  # Wazuh registration Target Group for Network Load Balancer
-  ElasticTG:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: !Sub '${AWS::StackName}-ElasticTG'
-      Port: 9200
-      Protocol: TCP
-      VpcId: !Ref WazuhVpc
-      TargetGroupAttributes:
-        - Key: deregistration_delay.timeout_seconds
-          Value: 600
-      Targets:
-      - Id: !Ref ElasticBootstrap
-        Port: 9200
-      - Id: !Ref ElasticMasterB
-        Port: 9200
-      - Id: !Ref ElasticMasterC
-        Port: 9200
-      Tags:
-        - Key: Name
-          Value: ElasticTG
 
   # Wazuh registration Listener for Network Load Balancer
   ElasticBootstrap:
@@ -1079,7 +1037,6 @@ Resources:
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                ElbElasticDNS: ${ElasticNetworkBalancer.DNSName}
                 EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
@@ -1214,7 +1171,6 @@ Resources:
                 WazuhRegistrationPort: ${WazuhRegistrationPort}
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
-                ElbElasticDNS: ${ElasticNetworkBalancer.DNSName}
                 WindowsPublicIp: ${Windows.PublicIp}
                 AwsSecretKey: ${AwsSecretKey}
                 AwsAccessKey: ${AwsAccessKey}
@@ -1300,7 +1256,6 @@ Resources:
                 WazuhServerPort: ${WazuhServerPort}
                 WazuhClusterKey: ${WazuhClusterKey}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                ElbElasticDNS: ${ElasticNetworkBalancer.DNSName}
                 AwsSecretKey: ${AwsSecretKey}
                 AwsAccessKey: ${AwsAccessKey}
                 VirusTotalKey: ${VirusTotalKey}

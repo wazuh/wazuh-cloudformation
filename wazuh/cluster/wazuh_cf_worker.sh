@@ -331,7 +331,7 @@ curl -so /etc/filebeat/wazuh-template.json "https://raw.githubusercontent.com/wa
 # File permissions
 chmod go-w /etc/filebeat/filebeat.yml
 chmod go-w /etc/filebeat/wazuh-template.json
-sed -i "s/YOUR_ELASTIC_SERVER_IP/${elb_elasticsearch}/" /etc/filebeat/filebeat.yml
+sed -i "s/YOUR_ELASTIC_SERVER_IP/['10.0.2.123','10.0.2.124','10.0.2.125']/" /etc/filebeat/filebeat.yml
 service filebeat start
 echo "Started Filebeat" >> /tmp/log
 echo "Done" >> /tmp/log
