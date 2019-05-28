@@ -1,8 +1,6 @@
 #!/bin/bash
 # Install Elastic data node using Cloudformation template
 
-set -e
-
 touch /tmp/deploy.log
 
 echo "Elasticsearch: Starting process." > /tmp/deploy.log
