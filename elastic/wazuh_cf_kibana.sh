@@ -305,8 +305,8 @@ main(){
   get_plugin_url
   install_plugin
   add_api
-  start_kibana
   kibana_optional_configs
+  start_kibana
   add_nginx
 }
 
