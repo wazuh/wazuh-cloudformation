@@ -1,8 +1,6 @@
 #!/bin/bash
 # Install Elastic data node using Cloudformation template
 
-set -e
-
 touch /tmp/deploy.log
 
 echo "Elasticsearch: Starting process." > /tmp/deploy.log
@@ -134,7 +132,7 @@ disable_elk_repos(){
 }
 
 load_template(){
-
+echo "Loading template..." >> /tmp/log
 until curl -XGET $el_url; do
   >&2 echo "Elastic is unavailable - sleeping"
   sleep 5
