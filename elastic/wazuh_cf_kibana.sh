@@ -222,7 +222,7 @@ echo "Configured API" >> /tmp/log
 
 start_kibana(){
   # Starting Kibana
-  service kibana start
+  systemctl restart kibana
   sleep 60
   echo "Started Kibana" >> /tmp/log
 }
@@ -304,8 +304,8 @@ main(){
   configure_kibana
   get_plugin_url
   install_plugin
-  add_api
   start_kibana
+  add_api
   kibana_optional_configs
   add_nginx
 }
