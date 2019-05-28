@@ -563,7 +563,7 @@ Resources:
       SubnetId: !Ref SubnetAgents
       RouteTableId: !Ref PublicRouteTable
     
-  # Instance security groups
+  # Security groups
   ElasticSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -672,6 +672,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-SplunkSecurityGroup'
+  
   # Elasticsearch load balancer
   ElbElasticSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -689,20 +690,27 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-ElbElasticSecurityGroup'
-
-# Wazuh Network Load Balancer
   ElasticNetworkBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Name: !Sub '${AWS::StackName}-ELK'
       Scheme: internet-facing
       Subnets: 
-        - !Ref SubnetWazuh
+        - !Ref SubnetElasticsearch
       Type: network
       Tags:
         - Key: Name
           Value: nlbelastic
-
+  # Wazuh registration Listener for Network Load Balancer
+  ElasticListenerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref ElasticTG
+      LoadBalancerArn: !Ref ElasticNetworkBalancer
+      Port: 9200
+      Protocol: TCP
   # Wazuh registration Target Group for Network Load Balancer
   ElasticTG:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -715,7 +723,7 @@ Resources:
         - Key: deregistration_delay.timeout_seconds
           Value: 600
       Targets:
-      - Id: !Ref ElasticMasterA
+      - Id: !Ref ElasticBootstrap
         Port: 9200
       - Id: !Ref ElasticMasterB
         Port: 9200
@@ -726,7 +734,7 @@ Resources:
           Value: ElasticTG
 
   # Wazuh registration Listener for Network Load Balancer
-  ElasticMasterA:
+  ElasticBootstrap:
     Type: AWS::EC2::Instance
     Metadata:
       'AWS::CloudFormation::Init':
@@ -774,16 +782,16 @@ Resources:
           GroupSet: 
             - Ref: "ElasticSecurityGroup"
           SubnetId: 
-            Ref: "SubnetWazuh"
+            Ref: "SubnetElasticsearch"
           PrivateIpAddress: "10.0.0.124"
       Tags:
         - Key: Name
-          Value: ElasticMasterA
+          Value: ElasticBootstrap
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticMasterA --configsets ElasticInstallationSet --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticMasterA --region ${AWS::Region}
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticBootstrap --configsets ElasticInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticBootstrap --region ${AWS::Region}
     DependsOn: GatewayToInternet
   
   ElasticMasterB:
@@ -834,7 +842,7 @@ Resources:
           GroupSet: 
             - Ref: "ElasticSecurityGroup"
           SubnetId: 
-            Ref: "SubnetWazuh"
+            Ref: "SubnetElasticsearch"
           PrivateIpAddress: "10.0.0.123"
       Tags:
         - Key: Name
@@ -894,7 +902,7 @@ Resources:
           GroupSet: 
             - Ref: "ElasticSecurityGroup"
           SubnetId: 
-            Ref: "SubnetWazuh"
+            Ref: "SubnetElasticsearch"
           PrivateIpAddress: "10.0.0.125"
       Tags:
         - Key: Name
