@@ -99,7 +99,7 @@ echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
 chown elasticsearch:elasticsearch /etc/elasticsearch/elasticsearch.yml
 
 # Calculating RAM for Elasticsearch
-ram_gb=$(free -g | awk '/^Mem:/{print $2}')
+ram_gb=$[$(free -g | awk '/^Mem:/{print $2}')+1]
 ram=$(( ${ram_gb} / 2 ))
 if [ $ram -eq "0" ]; then ram=1; fi
 echo "Setting RAM." >> /tmp/log
