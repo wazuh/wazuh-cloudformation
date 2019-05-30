@@ -17,8 +17,8 @@ wazuh_api_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiPort:' | cut -d' ' 
 wazuh_cluster_key=$(cat /tmp/wazuh_cf_settings | grep '^WazuhClusterKey:' | cut -d' ' -f2)
 elb_elastic=$(cat /tmp/wazuh_cf_settings | grep '^ElbElasticDNS:' | cut -d' ' -f2)
 eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*//' | cut -d' ' -f2)
-splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^KibanaUsername:' | cut -d' ' -f2)
-splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^KibanaPassword:' | cut -d' ' -f2)
+splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^SplunkUsername:' | cut -d' ' -f2)
+splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^SplunkPassword:' | cut -d' ' -f2)
 splunk_ip=$(cat /tmp/wazuh_cf_settings | grep '^SplunkIP:' | cut -d' ' -f2)
 WindowsPublicIp=$(cat /tmp/wazuh_cf_settings | grep '^WindowsPublicIp:' | cut -d' ' -f2)
 VirusTotalKey=$(cat /tmp/wazuh_cf_settings | grep '^VirusTotalKey:' | cut -d' ' -f2)
@@ -465,10 +465,10 @@ sed -i "s:MANAGER_HOSTNAME:$(hostname):g" /opt/splunkforwarder/etc/system/local/
 touch /opt/splunkforwarder/etc/system/local/user-seed.conf
 
 # create credential file
-touch /opt/splunk/etc/system/local/user-seed.conf
+touch /opt/splunkforwarder/etc/system/local/user-seed.conf
 
 # add admin user
-cat > /opt/splunk/etc/system/local/user-seed.conf <<\EOF
+cat > /opt/splunkforwarder/etc/system/local/user-seed.conf <<\EOF
 [user_info]
 USERNAME = ${splunk_username}
 PASSWORD = ${splunk_password}
@@ -479,7 +479,7 @@ echo "Starting Splunk..."
 /opt/splunkforwarder/bin/splunk start --accept-license --answer-yes --auto-ports --no-prompt &> /dev/null
 
 # forward to index
-/opt/splunkforwarder/bin/splunk add forward-server ${splunk_ip}:9997 -auth admin:changeme &> /dev/null
+/opt/splunkforwarder/bin/splunk add forward-server ${splunk_ip}:9997 -auth $splunk_username:$splunk_password &> /dev/null
 
 # restart service
 /opt/splunkforwarder/bin/splunk restart &> /dev/null

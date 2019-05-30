@@ -1168,6 +1168,8 @@ Resources:
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
                 WazuhServerPort: ${WazuhServerPort}
+                SplunkUsername: ${SplunkUsername}
+                SplunkPassword: ${SplunkPassword}
                 WazuhRegistrationPort: ${WazuhRegistrationPort}
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
@@ -1252,6 +1254,8 @@ Resources:
               content: !Sub |
                 SshUsername: ${SshUsername}
                 SshPassword: ${SshPassword}
+                SplunkUsername: ${SplunkUsername}
+                SplunkPassword: ${SplunkPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
                 WazuhServerPort: ${WazuhServerPort}
                 WazuhClusterKey: ${WazuhClusterKey}

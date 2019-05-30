@@ -17,6 +17,8 @@ AwsSecretKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsSecretKey:' | cut -d' ' -f
 AwsAccessKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsAccessKey:' | cut -d' ' -f2)
 SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
+splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^SplunkUsername:' | cut -d' ' -f2)
+splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^SplunkPassword:' | cut -d' ' -f2)
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -316,6 +318,50 @@ service wazuh-manager restart
 yum -y install filebeat
 chkconfig --add filebeat
 echo "Installed Filebeat" >> /tmp/log
+
+
+# Setting up Splunk Forwarder
+yum -y install wget
+# download splunkforwarder
+echo 'Downloading Splunk Forwarder...'
+wget -O splunkforwarder-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm 'https://www.splunk.com/bin/splunk/DownloadActivityServlet?architecture=x86_64&platform=linux&version=7.2.3&product=universalforwarder&filename=splunkforwarder-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm&wget=true' &> /dev/null
+
+# install splunkforwarder
+echo 'Installing Splunk Forwarder...'
+yum install splunkforwarder-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm -y -q &> /dev/null
+
+echo "Setting up Splunk forwarder..."
+# props.conf
+curl -so /opt/splunkforwarder/etc/system/local/props.conf https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/splunk/props.conf
+
+# inputs.conf
+curl -so /opt/splunkforwarder/etc/system/local/inputs.conf https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/splunk/inputs.conf
+
+# set hostname
+sed -i "s:MANAGER_HOSTNAME:$(hostname):g" /opt/splunkforwarder/etc/system/local/inputs.conf
+
+touch /opt/splunkforwarder/etc/system/local/user-seed.conf
+
+# create credential file
+touch /opt/splunkforwarder/etc/system/local/user-seed.conf
+
+# add admin user
+cat > /opt/splunkforwarder/etc/system/local/user-seed.conf <<\EOF
+[user_info]
+USERNAME = ${splunk_username}
+PASSWORD = ${splunk_password}
+EOF
+
+echo "Starting Splunk..."
+# accept license
+/opt/splunkforwarder/bin/splunk start --accept-license --answer-yes --auto-ports --no-prompt &> /dev/null
+
+# forward to index
+/opt/splunkforwarder/bin/splunk add forward-server ${splunk_ip}:9997 -auth $splunk_username:$splunk_password &> /dev/null
+
+# restart service
+/opt/splunkforwarder/bin/splunk restart &> /dev/null
+echo "Done with Splunk." >> /tmp/log
 
 # Configuring Filebeat
 wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
