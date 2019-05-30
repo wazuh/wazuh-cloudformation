@@ -1179,6 +1179,7 @@ Resources:
                 VirusTotalKey: ${VirusTotalKey}
                 SlackHook: ${SlackHook}
                 EnvironmentType: ${EnvironmentType}
+                SplunkIp: ${SplunkInstance.PrivateIp}
               mode: '000600'
               owner: root
               group: root
@@ -1265,6 +1266,7 @@ Resources:
                 VirusTotalKey: ${VirusTotalKey}
                 SlackHook: ${SlackHook}
                 EnvironmentType: ${EnvironmentType}
+                SplunkIp: ${SplunkInstance.PrivateIp}
               mode: '000600'
               owner: root
               group: root

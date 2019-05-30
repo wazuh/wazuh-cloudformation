@@ -462,8 +462,6 @@ curl -so /opt/splunkforwarder/etc/system/local/inputs.conf https://raw.githubuse
 # set hostname
 sed -i "s:MANAGER_HOSTNAME:$(hostname):g" /opt/splunkforwarder/etc/system/local/inputs.conf
 
-touch /opt/splunkforwarder/etc/system/local/user-seed.conf
-
 # create credential file
 touch /opt/splunkforwarder/etc/system/local/user-seed.conf
 
