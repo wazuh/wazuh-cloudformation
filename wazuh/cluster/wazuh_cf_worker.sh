@@ -18,7 +18,7 @@ AwsAccessKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsAccessKey:' | cut -d' ' -f
 SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
 splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^SplunkUsername:' | cut -d' ' -f2)
-splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^SplunkPassword:' | cut -d' ' -f210.0.0.12$(cat /tmp/wazuh_cf_settings | grep '^SplunkIP:' | cut -d' ' -f2)
+splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^SplunkPassword:' | cut -d' ' -f2)
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -238,18 +238,10 @@ cat >> ${manager_config} << EOF
 EOF
 fi
 
-UID=$(id -u `whoami`)
+UID=$(id -u wazuh)
 
 # Audit rules
 cat >> /etc/audit/rules.d/audit.rules << EOF
--a exit,always -F euid=0 -F arch=b32 -S execve -k audit-wazuh-c
--a exit,always -F euid=0 -F arch=b64 -S execve -k audit-wazuh-c
--a exit,always -F euid=1003 -F arch=b32 -S execve -k audit-wazuh-c
--a exit,always -F euid=1003 -F arch=b64 -S execve -k audit-wazuh-c
--a exit,always -F euid=1002 -F arch=b32 -S execve -k audit-wazuh-c
--a exit,always -F euid=1002 -F arch=b64 -S execve -k audit-wazuh-c
--a exit,always -F euid=1003 -F arch=b32 -S execve -k audit-wazuh-c
--a exit,always -F euid=1003 -F arch=b64 -S execve -k audit-wazuh-c
 -a exit,always -F euid=${UID} -F arch=b32 -S execve -k audit-wazuh-c
 -a exit,always -F euid=${UID} -F arch=b64 -S execve -k audit-wazuh-c
 EOF
