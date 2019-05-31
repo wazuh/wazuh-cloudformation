@@ -248,7 +248,7 @@ EOF
 
 auditctl -D
 auditctl -R /etc/audit/rules.d/audit.rules
-systemctl restart audit
+service auditd restart
 
 # Localfiles
 cat >> ${manager_config} << EOF
