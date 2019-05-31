@@ -225,25 +225,25 @@ cat >> ${manager_config} << EOF
     <bucket type="vpcflow">
       <name>wazuh-aws-wodle</name>
       <path>vpc</path>
-      <access_key>XXXX</access_key>
-      <secret_key>XXXX</secret_key>
+      <access_key>${AwsAccessKey}</access_key>
+      <secret_key>${AwsSecretKey}</secret_key>
       <only_logs_after>2019-MAR-24</only_logs_after>
     </bucket>
     <service type="inspector">
-      <access_key>XXXX</access_key>
-      <secret_key>XXXX</secret_key>
+      <access_key>${AwsAccessKey}</access_key>
+      <secret_key>${AwsSecretKey}</secret_key>
     </service>
   </wodle>
 </ossec_config>
 EOF
 fi
 
-UID=$(id -u wazuh)
+the_uid=$(id -u wazuh)
 
 # Audit rules
 cat >> /etc/audit/rules.d/audit.rules << EOF
--a exit,always -F euid=${UID} -F arch=b32 -S execve -k audit-wazuh-c
--a exit,always -F euid=${UID} -F arch=b64 -S execve -k audit-wazuh-c
+-a exit,always -F euid=${the_uid} -F arch=b32 -S execve -k audit-wazuh-c
+-a exit,always -F euid=${the_uid} -F arch=b64 -S execve -k audit-wazuh-c
 EOF
 
 auditctl -D

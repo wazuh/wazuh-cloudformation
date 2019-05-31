@@ -319,12 +319,12 @@ cat >> ${manager_config} << EOF
 EOF
 fi
 
-UID=$(id -u wazuh)
+the_uid=$(id -u wazuh)
 
 # Audit rules
 cat >> /etc/audit/rules.d/audit.rules << EOF
--a exit,always -F euid=${UID} -F arch=b32 -S execve -k audit-wazuh-c
--a exit,always -F euid=${UID} -F arch=b64 -S execve -k audit-wazuh-c
+-a exit,always -F euid=${the_uid} -F arch=b32 -S execve -k audit-wazuh-c
+-a exit,always -F euid=${the_uid} -F arch=b64 -S execve -k audit-wazuh-c
 EOF
 
 auditctl -D
