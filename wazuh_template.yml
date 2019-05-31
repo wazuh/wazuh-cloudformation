@@ -1107,7 +1107,6 @@ Resources:
                 WazuhApiAdminUsername: ${WazuhApiAdminUsername}
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
-                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
                 EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
