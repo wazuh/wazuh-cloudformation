@@ -84,6 +84,8 @@ discovery.seed_hosts:
   - "10.0.2.123"
   - "10.0.2.124"
   - "10.0.2.125"
+xpack.security.enabled: true
+xpack.security.transport.ssl.enabled: true
 EOF
 
 echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
@@ -118,11 +120,38 @@ echo "Setting memory lock options." >> /tmp/log
 echo "Setting permissions." >> /tmp/deploy.log
 }
 
+set_xpack_certs(){
+    mkdir /etc/elasticsearch/certs/ca -p
+    amazon-linux-extras install epel -y
+    yum install -y sshpass
+    sleep 500
+    echo $ssh_password >> pass
+    sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/
+    rm pass -f
+    cp /home/wazuh/certs.zip .
+    unzip certs.zip
+    cp ca/ca.crt /etc/elasticsearch/certs/ca
+    cp elastic-node${node_name}/elastic-node${node_name}.crt /etc/elasticsearch/certs
+    cp elastic-node${node_name}/elastic-node${node_name}.key /etc/elasticsearch/certs
+    echo "xpack.security.transport.ssl.verification_mode: certificate" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.transport.ssl.key: /etc/elasticsearch/certs/elastic-node${node_name}.key" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.transport.ssl.certificate: /etc/elasticsearch/certs/elastic-node${node_name}.crt" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.transport.ssl.certificate_authorities: [ "/etc/elasticsearch/certs/ca/ca.crt" ]" >> /etc/elasticsearch/elasticsearch.yml
+    echo "# HTTP layer" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.http.ssl.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.http.ssl.verification_mode: certificate" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.http.ssl.key: /etc/elasticsearch/certs/elastic-node${node_name}.key" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.http.ssl.certificate: /etc/elasticsearch/certs/elastic-node${node_name}.crt" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.http.ssl.certificate_authorities: [ "/etc/elasticsearch/certs/ca/ca.crt" ]" >> /etc/elasticsearch/elasticsearch.yml
+    chown -R elasticsearch: /etc/elasticsearch/certs
+    systemctl restart elasticsearch
+}
+
 start_elasticsearch(){
     systemctl daemon-reload
     # Starting Elasticsearch
     echo "daemon-reload." >> /tmp/deploy.log
-    service elasticsearch start
+    systemctl restart elasticsearch
     echo "starting elasticsearch service." >> /tmp/deploy.log
 }
 
@@ -137,6 +166,7 @@ main(){
     import_elk_repo
     install_elasticsearch
     configuring_elasticsearch
+    set_xpack_certs
     start_elasticsearch
     disable_elk_repos
 }

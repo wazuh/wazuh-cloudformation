@@ -138,13 +138,42 @@ chkconfig --add kibana
 echo "Kibana installed." >> /tmp/log
 }
 
+kibana_certs(){
+  amazon-linux-extras install epel -y
+  yum install -y sshpass
+  sleep 500
+  echo $ssh_password >> pass
+  sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/
+  rm pass -f
+  cp /home/wazuh/certs.zip .
+  unzip certs.zip
+  mkdir /etc/kibana/certs/ca -p
+  cp ca/ca.crt /etc/kibana/certs/ca
+  cp kibana/kibana.crt /etc/kibana/certs
+  cp kibana/kibana.key /etc/kibana/certs
+  chown -R kibana: /etc/kibana/certs
+  chmod -R 770 /etc/kibana/certs
+  echo "# Elasticsearch from/to Kibana" >> /etc/kibana/kibana.yml
+  echo "elasticsearch.ssl.certificateAuthorities: ["/etc/kibana/certs/ca/ca.crt"]" >> /etc/kibana/kibana.yml
+  echo "elasticsearch.ssl.certificate: "/etc/kibana/certs/kibana.crt"" >> /etc/kibana/kibana.yml
+  echo "elasticsearch.ssl.key: "/etc/kibana/certs/kibana.key"" >> /etc/kibana/kibana.yml
+  echo "# Browser from/to Kibana" >> /etc/kibana/kibana.yml
+  echo "server.ssl.enabled: true" >> /etc/kibana/kibana.yml
+  echo "server.ssl.certificate: "/etc/kibana/certs/kibana.crt"" >> /etc/kibana/kibana.yml
+  echo "server.ssl.key: "/etc/kibana/certs/kibana.key"" >> /etc/kibana/kibana.yml
+  sed -i "s/^server.ssl.enabled: false/server.ssl.enabled: true/" /etc/kibana/kibana.yml
+}
+
 configure_kibana(){
 # Configuring kibana.yml
 cat > /etc/kibana/kibana.yml << EOF
-elasticsearch.hosts: ["http://${eth0_ip}:9200"]
+elasticsearch.hosts: ["https://$eth0_ip:9200"]
 server.port: 5601
-server.host: "localhost"
+server.host: "$eth0_ip"
 server.ssl.enabled: false
+xpack.security.enabled: true
+elasticsearch.username: "elastic"
+elasticsearch.password: "$ssh_password"
 EOF
 echo "Kibana.yml configured." >> /tmp/log
 
@@ -210,9 +239,9 @@ cat > ${api_config} << EOF
 }
 EOF
 
-CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "http://${eth0_ip}:9200/.wazuh/_doc/${api_time}")
+CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "https://${eth0_ip}:9200/.wazuh/_doc/${api_time}" -u elastic:${ssh_password} -k)
 if [ "x$CONFIG_CODE" != "x200" ]; then
-  curl -s -XPUT "http://${eth0_ip}:9200/.wazuh/_doc/${api_time}" -H 'Content-Type: application/json' -d@${api_config}
+  curl -s -XPUT "https://${eth0_ip}:9200/.wazuh/_doc/${api_time}" -u elastic:${ssh_password} -k -H 'Content-Type: application/json' -d@${api_config}
   echo "Loaded Wazuh API to an Elasticsearch >=v7 cluster" >> /tmp/log
 fi
 
@@ -248,17 +277,17 @@ cat > ${default_index} << EOF
 }
 EOF
 
-curl -POST "http://localhost:5601/api/kibana/settings" -H "Content-Type: application/json" -H "kbn-xsrf: true" -d@${default_index}
+curl -POST "https://localhost:5601/api/kibana/settings" -u elastic:${ssh_password} -k -H "Content-Type: application/json" -H "kbn-xsrf: true" -d@${default_index}
 rm -f ${default_index}
 echo "Set up default Index pattern." >> /tmp/log
 
 # Configuring Kibana TimePicker
-curl -POST "http://localhost:5601/api/kibana/settings" -H "Content-Type: application/json" -H "kbn-xsrf: true" -d \
+curl -POST "https://localhost:5601/api/kibana/settings" -u elastic:${ssh_password} -k -H "Content-Type: application/json" -H "kbn-xsrf: true" -d \
 '{"changes":{"timepicker:timeDefaults":"{\n  \"from\": \"now-24h\",\n  \"to\": \"now\",\n  \"mode\": \"quick\"}"}}'
 echo "Set up default timepicker." >> /tmp/log
 
 # Do not ask user to help providing usage statistics to Elastic
-curl -POST "http://localhost:5601/api/telemetry/v1/optIn" -H "Content-Type: application/json" -H "kbn-xsrf: true" -d '{"enabled":false}'
+curl -POST "https://localhost:5601/api/telemetry/v1/optIn" -u elastic:${ssh_password} -k -H "Content-Type: application/json" -H "kbn-xsrf: true" -d '{"enabled":false}'
 echo  "Do not ask user to help providing usage statistics to Elastic" >> /tmp/log
 
 # Disable Elastic repository
@@ -289,7 +318,7 @@ server {
     location / {
         auth_basic "Restricted";
         auth_basic_user_file /etc/nginx/conf.d/kibana.htpasswd;
-        proxy_pass http://127.0.0.1:5601/;
+        proxy_pass https://127.0.0.1:5601/;
     }
 }
 EOF
@@ -309,6 +338,7 @@ main(){
   start_elasticsearch
   install_kibana
   configure_kibana
+  kibana_certs
   get_plugin_url
   install_plugin
   start_kibana

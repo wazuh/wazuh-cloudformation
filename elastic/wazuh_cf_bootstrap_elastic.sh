@@ -14,6 +14,8 @@ wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
 wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
 wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
 node_name=$(cat /tmp/wazuh_cf_settings | grep '^NodeName:' | cut -d' ' -f2)
+master_ip=$(cat /tmp/wazuh_cf_settings | grep '^MasterIp:' | cut -d' ' -f2)
+worker_ip=$(cat /tmp/wazuh_cf_settings | grep '^WorkerIp:' | cut -d' ' -f2)
 
 echo "Added env vars." >> /tmp/deploy.log
 echo "eth0_ip: $eth0_ip" >> /tmp/deploy.log
@@ -120,15 +122,16 @@ echo "Setting permissions." >> /tmp/deploy.log
 
 load_template(){
     echo "Loading template..." >> /tmp/log
-    until curl -XGET "$eth0_ip:9200"; do
+    until curl -XGET "https://$eth0_ip:9200" -u elastic:${ssh_password}; do
     sleep 5
+    echo 'not done'
     done
 
     url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/7.x/wazuh-template.json"
     alerts_template="/tmp/wazuh-template.json"
     curl -Lo ${alerts_template} ${url_alerts_template}
-    curl -XPUT "http://${eth0_ip}:9200/_template/wazuh" -H 'Content-Type: application/json' -d@${alerts_template}
-    curl -XDELETE "http://${eth0_ip}:9200/wazuh-alerts-*"
+    curl -XPUT "https://${eth0_ip}:9200/_template/wazuh" -u elastic:${ssh_password} -H 'Content-Type: application/json' -d@${alerts_template}
+    curl -XDELETE "https://${eth0_ip}:9200/wazuh-alerts-*" -u elastic:${ssh_password}
     echo "Added template." >> /tmp/log
 }
 
@@ -138,6 +141,59 @@ start_elasticsearch(){
     echo "daemon-reload." >> /tmp/deploy.log
     service elasticsearch start
     echo "starting elasticsearch service." >> /tmp/deploy.log
+}
+
+create_bootstrap_user(){
+    echo $ssh_password | /usr/share/elasticsearch/bin/elasticsearch-keystore add -x 'bootstrap.password'
+    systemctl restart elasticsearch
+    sleep 60
+}
+
+generate_sec(){
+cat > /usr/share/elasticsearch/instances.yml << EOF
+instances:
+- name: "wazuh-manager"
+    ip:
+    - "$master_ip"
+- name: "elastic-node2"
+    ip:
+    - "10.0.2.125"
+- name: "elastic-node1"
+    ip:
+    - "10.0.2.123"
+- name: "wazuh-worker"
+    ip:
+    - "$worker_ip"
+- name: "elasticsearch"
+    ip:
+    - "$eth0_ip"
+- name: "kibana"
+    ip:
+    - "$kibana_ip"        
+EOF
+/usr/share/elasticsearch/bin/elasticsearch-certutil cert ca --pem --in /usr/share/elasticsearch/instances.yml --out /usr/share/elasticsearch/certs.zip
+cp /usr/share/elasticsearch/certs.zip /home/wazuh/
+chown wazuh:wazuh /home/wazuh/certs.zip
+cp /usr/share/elasticsearch/certs.zip .
+unzip certs.zip
+mkdir /etc/elasticsearch/certs/ca -p
+cp ca/ca.crt /etc/elasticsearch/certs/ca
+cp elasticsearch/elasticsearch.crt /etc/elasticsearch/certs
+chmod -R 770 /etc/elasticsearch/certs
+cp elasticsearch/elasticsearch.key /etc/elasticsearch/certs
+echo "xpack.security.transport.ssl.verification_mode: certificate" >> /etc/elasticsearch/elasticsearch.yml
+echo "xpack.security.transport.ssl.key: /etc/elasticsearch/certs/elasticsearch.key" >> /etc/elasticsearch/elasticsearch.yml
+echo "xpack.security.transport.ssl.certificate: /etc/elasticsearch/certs/elasticsearch.crt" >> /etc/elasticsearch/elasticsearch.yml
+echo "xpack.security.transport.ssl.certificate_authorities: [ "/etc/elasticsearch/certs/ca/ca.crt" ]" >> /etc/elasticsearch/elasticsearch.yml
+echo "# HTTP layer" >> /etc/elasticsearch/elasticsearch.yml
+echo "xpack.security.http.ssl.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
+echo "xpack.security.http.ssl.verification_mode: certificate" >> /etc/elasticsearch/elasticsearch.yml
+echo "xpack.security.http.ssl.key: /etc/elasticsearch/certs/elasticsearch.key" >> /etc/elasticsearch/elasticsearch.yml
+echo "xpack.security.http.ssl.certificate: /etc/elasticsearch/certs/elasticsearch.crt" >> /etc/elasticsearch/elasticsearch.yml
+echo "xpack.security.http.ssl.certificate_authorities: [ "/etc/elasticsearch/certs/ca/ca.crt" ]" >> /etc/elasticsearch/elasticsearch.yml
+chown -R elasticsearch: /etc/elasticsearch/certs
+systemctl restart elasticsearch
+sleep 60
 }
 
 disable_elk_repos(){
@@ -151,6 +207,8 @@ main(){
     import_elk_repo
     install_elasticsearch
     configuring_elasticsearch
+    create_bootstrap_user
+    generate_sec
     start_elasticsearch
     load_template
     disable_elk_repos
