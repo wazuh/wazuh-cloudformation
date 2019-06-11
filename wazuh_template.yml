@@ -713,7 +713,9 @@ Resources:
                 SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
                 ManagerIp: ${WazuhMasterInstance.PrivateIp}
-                WorkerIp: ${WazuhWorkerInstance.PrivateIp} 
+                WorkerIp: ${WazuhWorkerInstance.PrivateIp}
+                KibanaIp: ${KibanaInstance.PrivateIp}
+
                 NodeName: 3
               mode: '000600'
               owner: root

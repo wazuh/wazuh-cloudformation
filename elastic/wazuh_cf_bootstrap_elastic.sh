@@ -16,7 +16,7 @@ wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
 node_name=$(cat /tmp/wazuh_cf_settings | grep '^NodeName:' | cut -d' ' -f2)
 master_ip=$(cat /tmp/wazuh_cf_settings | grep '^MasterIp:' | cut -d' ' -f2)
 worker_ip=$(cat /tmp/wazuh_cf_settings | grep '^WorkerIp:' | cut -d' ' -f2)
-
+kibana_ip=$(cat /tmp/wazuh_cf_settings | grep '^KibanaIp:' | cut -d' ' -f2)
 echo "Added env vars." >> /tmp/deploy.log
 echo "eth0_ip: $eth0_ip" >> /tmp/deploy.log
 
@@ -144,9 +144,11 @@ start_elasticsearch(){
 }
 
 create_bootstrap_user(){
+    echo 'Creating elk user' >> /tmp/log
     echo $ssh_password | /usr/share/elasticsearch/bin/elasticsearch-keystore add -x 'bootstrap.password'
     systemctl restart elasticsearch
     sleep 60
+    echo 'Done' >> /tmp/log
 }
 
 generate_sec(){

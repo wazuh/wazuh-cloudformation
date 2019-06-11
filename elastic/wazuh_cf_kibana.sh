@@ -139,6 +139,7 @@ echo "Kibana installed." >> /tmp/log
 }
 
 kibana_certs(){
+  echo "certs " >> /tmp/log
   amazon-linux-extras install epel -y
   yum install -y sshpass
   sleep 500
