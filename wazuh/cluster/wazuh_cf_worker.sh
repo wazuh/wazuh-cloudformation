@@ -368,25 +368,8 @@ curl -so /etc/filebeat/wazuh-template.json "https://raw.githubusercontent.com/wa
 chmod go-w /etc/filebeat/filebeat.yml
 chmod go-w /etc/filebeat/wazuh-template.json
 sed -i "s|'http://YOUR_ELASTIC_SERVER_IP:9200'|'10.0.2.123','10.0.2.124','10.0.2.125'|" /etc/filebeat/filebeat.yml
-echo 'output.elasticsearch.username: "elastic"' >> /etc/filebeat/filebeat.yml
-echo "output.elasticsearch.password: "$ssh_password"" >> /etc/filebeat/filebeat.yml
-mkdir /etc/filebeat/certs/ca -p
 amazon-linux-extras install epel -y
 yum install -y sshpass
-sleep 500
-echo $ssh_password >> pass
-sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/
-rm pass -f
-cp /home/wazuh/certs.zip .
-unzip certs.zip
-cp ca/ca.crt /etc/filebeat/certs/ca
-cp wazuh-worker/wazuh-worker.crt /etc/filebeat/certs
-cp wazuh-worker/wazuh-worker.key /etc/filebeat/certs
-chmod 770 -R /etc/filebeat/certs
-echo 'output.elasticsearch.protocol: https' >> /etc/filebeat/filebeat.yml
-echo 'output.elasticsearch.ssl.certificate: "/etc/filebeat/certs/wazuh-worker.crt"' >> /etc/filebeat/filebeat.yml
-echo 'output.elasticsearch.ssl.key: "/etc/filebeat/certs/wazuh-worker.key"' >> /etc/filebeat/filebeat.yml
-echo 'output.elasticsearch.ssl.certificate_authorities: ["/etc/filebeat/certs/ca/ca.crt"]' >> /etc/filebeat/filebeat.yml
 service filebeat start
 echo "Started Filebeat" >> /tmp/log
 echo "Done" >> /tmp/log

@@ -704,7 +704,6 @@ Resources:
         configSets:
           ElasticInstallationSet:
             - Elasticfiles
-            - ElasticInstall
         Elasticfiles:
           files:
             /tmp/wazuh_cf_settings:
@@ -726,10 +725,6 @@ Resources:
               mode: '000700'
               owner: root
               group: root
-        ElasticInstall:
-          commands:
-            01_RunInstallationScript:
-              command: /tmp/wazuh_cf_elastic.sh
     Properties:
       ImageId: !FindInMap
         - "RegionMap"
@@ -787,10 +782,6 @@ Resources:
               mode: '000700'
               owner: root
               group: root
-        ElasticInstall:
-          commands:
-            01_RunInstallationScript:
-              command: /tmp/wazuh_cf_elastic.sh
     Properties:
       ImageId: !FindInMap
         - "RegionMap"
@@ -848,10 +839,6 @@ Resources:
               mode: '000700'
               owner: root
               group: root
-        ElasticInstall:
-          commands:
-            01_RunInstallationScript:
-              command: /tmp/wazuh_cf_elastic.sh
     Properties:
       ImageId: !FindInMap
         - "RegionMap"
@@ -1034,7 +1021,6 @@ Resources:
         configSets:
           KibanaInstallationSet:
             - KibanaFiles
-            - KibanaInstall
         KibanaFiles:
           files:
             /tmp/wazuh_cf_settings:
@@ -1059,10 +1045,6 @@ Resources:
               mode: '000700'
               owner: root
               group: root
-        KibanaInstall:
-          commands:
-            01_RunInstallationScript:
-              command: /tmp/wazuh_cf_kibana.sh
     Properties:
       ImageId: !FindInMap
         - "RegionMap"
