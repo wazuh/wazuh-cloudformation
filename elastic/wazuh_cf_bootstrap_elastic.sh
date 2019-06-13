@@ -171,7 +171,7 @@ instances:
     - "$eth0_ip"
 - name: "kibana"
     ip:
-    - "$kibana_ip"        
+    - "$kibana_ip"
 EOF
 /usr/share/elasticsearch/bin/elasticsearch-certutil cert ca --pem --in /usr/share/elasticsearch/instances.yml --out /usr/share/elasticsearch/certs.zip
 cp /usr/share/elasticsearch/certs.zip /home/wazuh/
