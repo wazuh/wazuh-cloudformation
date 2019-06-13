@@ -71,10 +71,20 @@ yum install nc vim lsof openscap-scanner -y
 
 ### Use case 6: Suricata
 # Install Suricata
+curl -O https://copr.fedorainfracloud.org/coprs/jasonish/suricata-stable/repo/epel-7/jasonish-suricata-stable-epel-7.repo
 yum -y install suricata-4.1.4
 wget https://rules.emergingthreats.net/open/suricata-4.1.4/emerging.rules.tar.gz
+tar zxvf emerging.rules.tar.gz
+rm -f /etc/suricata/suricata.yaml
+wget -O /etc/suricata/suricata.yaml http://www.branchnetconsulting.com/wazuh/suricata.yaml
 tar -xvzf emerging.rules.tar.gz && mv rules/*.rules /etc/suricata/rules
-chown suricata:suricata /etc/suricata/*.rules
+sed -i '/rule-files:/,/#only use the scada_special if you have the scada extensions compiled int/{//!d}' /etc/suricata/suricata.yaml
+sed -i '/rule-files/ a \  - "*.rule*' /etc/suricata/suricata.yaml
+chown suricata:suricata /etc/suricata/rules/*.rules
+chmod +r /etc/suricata/rules/*.rules
+systemctl daemon-reload
+systemctl enable suricata
+systemctl start suricata
 yum -y install audit
 
 uid=$(id -u wazuh)
@@ -91,7 +101,7 @@ service auditd restart
 
 ### Use case 7: Diamorphine
 yum install "kernel-devel-uname-r == $(uname -r)" -y
-yum install gcc make epel-release -y
+yum install gcc make epel-release jq -y
 git clone https://github.com/m0nad/Diamorphine
 cd Diamorphine
 make
