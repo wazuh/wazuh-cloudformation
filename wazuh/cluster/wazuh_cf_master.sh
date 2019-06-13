@@ -381,7 +381,7 @@ cat >> ${manager_config} << EOF
 EOF
 
 # Restart wazuh-manager
-service wazuh-manager restart
+systemctl restart wazuh-manager
 echo "Restarted Wazuh manager." >> /tmp/log
 
 # Installing NodeJS
@@ -406,7 +406,7 @@ sed -i "s/config.port = \"55000\";/config.port = \"${wazuh_api_port}\";/" /var/o
 echo "Setting port and SSL to Wazuh API." >> /tmp/log
 
 # Restart wazuh-api
-service wazuh-api restart
+systemctl restart wazuh-api 
 echo "Restarted Wazuh API." >> /tmp/log
 
 # Installing Filebeat
@@ -428,8 +428,26 @@ curl -so /etc/filebeat/wazuh-template.json "https://raw.githubusercontent.com/wa
 amazon-linux-extras install epel -y
 yum install -y sshpass
 chmod go-w /etc/filebeat/wazuh-template.json
-
-service filebeat restart
+echo "output.elasticsearch.username: "elastic"" >> /etc/filebeat/filebeat.yml
+echo "output.elasticsearch.password: "$ssh_password"" >> /etc/filebeat/filebeat.yml
+mkdir -p /etc/filebeat/certs/ca
+amazon-linux-extras install epel -y
+yum install -y sshpass
+sleep 500
+echo $ssh_password >> pass
+sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/
+rm pass -f
+cp /home/wazuh/certs.zip .
+unzip certs.zip
+cp ca/ca.crt /etc/filebeat/certs/ca
+cp wazuh-manager/wazuh-manager.crt /etc/filebeat/certs
+cp wazuh-manager/wazuh-manager.key /etc/filebeat/certs
+chmod 770 -R /etc/filebeat/certs
+echo "output.elasticsearch.protocol: https" >> /etc/filebeat/filebeat.yml
+echo "output.elasticsearch.ssl.certificate: "/etc/filebeat/certs/wazuh-manager.crt"" >> /etc/filebeat/filebeat.yml
+echo "output.elasticsearch.ssl.key: "/etc/filebeat/certs/wazuh-manager.key"" >> /etc/filebeat/filebeat.yml
+echo "output.elasticsearch.ssl.certificate_authorities: ["/etc/filebeat/certs/ca/ca.crt"]" >> /etc/filebeat/filebeat.yml
+systemctl restart filebeat
 echo "Restarted Filebeat." >> /tmp/log
 
 # Disable repositories
