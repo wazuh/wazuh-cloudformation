@@ -225,9 +225,8 @@ Parameters:
       - 6.7.1_3.9.0
       - 6.8.0_3.9.1
       - 7.1.0_3.9.1
-      - 7.1.1_3.9.2
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
-    Default: 7.1.1_3.9.2
+    Default: 7.1.0_3.9.1
     Description: Elastic and Wazuh versions to be installed
     Type: String
   WazuhInstanceType:
@@ -704,6 +703,7 @@ Resources:
         configSets:
           ElasticInstallationSet:
             - Elasticfiles
+            - ElasticInstall
         Elasticfiles:
           files:
             /tmp/wazuh_cf_settings:
@@ -711,10 +711,6 @@ Resources:
                 SshUsername: ${SshUsername}
                 SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
-                ManagerIp: ${WazuhMasterInstance.PrivateIp}
-                WorkerIp: ${WazuhWorkerInstance.PrivateIp}
-                KibanaIp: ${KibanaInstance.PrivateIp}
-
                 NodeName: 3
               mode: '000600'
               owner: root
@@ -725,6 +721,10 @@ Resources:
               mode: '000700'
               owner: root
               group: root
+        ElasticInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_elastic.sh
     Properties:
       ImageId: !FindInMap
         - "RegionMap"
@@ -757,7 +757,6 @@ Resources:
     DependsOn: GatewayToInternet
   
   ElasticMasterB:
-    DependsOn: ElasticBootstrap
     Type: AWS::EC2::Instance
     Metadata:
       'AWS::CloudFormation::Init':
@@ -782,6 +781,10 @@ Resources:
               mode: '000700'
               owner: root
               group: root
+        ElasticInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_elastic.sh
     Properties:
       ImageId: !FindInMap
         - "RegionMap"
@@ -814,7 +817,6 @@ Resources:
     DependsOn: GatewayToInternet
 
   ElasticMasterC:
-    DependsOn: ElasticBootstrap
     Type: AWS::EC2::Instance
     Metadata:
       'AWS::CloudFormation::Init':
@@ -839,6 +841,10 @@ Resources:
               mode: '000700'
               owner: root
               group: root
+        ElasticInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_elastic.sh
     Properties:
       ImageId: !FindInMap
         - "RegionMap"
@@ -1014,13 +1020,13 @@ Resources:
 
   # Kibana instance
   KibanaInstance:
-    DependsOn: ElasticBootstrap
     Type: AWS::EC2::Instance
     Metadata:
       'AWS::CloudFormation::Init':
         configSets:
           KibanaInstallationSet:
             - KibanaFiles
+            - KibanaInstall
         KibanaFiles:
           files:
             /tmp/wazuh_cf_settings:
@@ -1045,6 +1051,10 @@ Resources:
               mode: '000700'
               owner: root
               group: root
+        KibanaInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_kibana.sh
     Properties:
       ImageId: !FindInMap
         - "RegionMap"
@@ -1065,6 +1075,8 @@ Resources:
             - Ref: "KibanaSecurityGroup"
           SubnetId: 
             Ref: "SubnetWazuh"
+
+
       Tags:
         - Key: Name
           Value: WazuhKibana
@@ -1506,10 +1518,10 @@ Resources:
           $Password = (convertto-securestring -asplaintext ${SshPassword} -force)
           New-LocalUser "wazuh" -Password $Password -FullName "wazuh" -Description "Wazuh user for remote desktop"
           Add-LocalGroupMember -Group "Remote Desktop Users" -Member "wazuh"
-          Set-ADAccountPassword -Identity "Administrator" -Reset -NewPassword $Password
+          
           $master_ip=${WazuhNetworkLoadBalancer.DNSName}
 
-          $url = "https://packages.wazuh.com/3.x/windows/wazuh-agent-3.9.2-1.msi" 
+          $url = "https://packages.wazuh.com/3.x/windows/wazuh-agent-3.9.1-1.msi" 
           $path = "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi" 
 
           if(!(Split-Path -parent $path) -or !(Test-Path -pathType Container (Split-Path -parent $path))) { 
@@ -1523,13 +1535,6 @@ Resources:
           } catch {
             $_.Exception.Message
             "Error installing Wazuh agent"
-            Exit
-          }
-          try {
-            $Path = $env:TEMP; $Installer = "chrome_installer.exe"; Invoke-WebRequest "http://dl.google.com/chrome/install/375.126/chrome_installer.exe" -OutFile $Path\$Installer; Start-Process -FilePath $Path\$Installer -Args "/silent /install" -Verb RunAs -Wait; Remove-Item $Path\$Installer
-          } catch {
-            $_.Exception.Message
-            "Error installing Google Chrome browser"
             Exit
           }
           </powershell>
