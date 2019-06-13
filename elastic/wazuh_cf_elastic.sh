@@ -148,6 +148,10 @@ set_xpack_certs(){
 }
 
 start_elasticsearch(){
+    # Correct owner for Elasticsearch directories
+    chown elasticsearch:elasticsearch -R /etc/elasticsearch
+    chown elasticsearch:elasticsearch -R /usr/share/elasticsearch
+    chown elasticsearch:elasticsearch -R /var/lib/elasticsearch
     systemctl daemon-reload
     # Starting Elasticsearch
     echo "daemon-reload." >> /tmp/deploy.log

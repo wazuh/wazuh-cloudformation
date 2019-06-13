@@ -90,11 +90,6 @@ EOF
 
 echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
 
-# Correct owner for Elasticsearch directories
-chown elasticsearch:elasticsearch -R /etc/elasticsearch
-chown elasticsearch:elasticsearch -R /usr/share/elasticsearch
-chown elasticsearch:elasticsearch -R /var/lib/elasticsearch
-
 # Calculating RAM for Elasticsearch
 ram_gb=$[$(free -g | awk '/^Mem:/{print $2}')+1]
 ram=$(( ${ram_gb} / 2 ))
@@ -118,6 +113,11 @@ echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
 echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
 echo "Setting memory lock options." >> /tmp/log
 echo "Setting permissions." >> /tmp/deploy.log
+
+# Correct owner for Elasticsearch directories
+chown elasticsearch:elasticsearch -R /etc/elasticsearch
+chown elasticsearch:elasticsearch -R /usr/share/elasticsearch
+chown elasticsearch:elasticsearch -R /var/lib/elasticsearch
 }
 
 load_template(){
@@ -132,6 +132,10 @@ load_template(){
     curl -Lo ${alerts_template} ${url_alerts_template}
     curl -XPUT "https://${eth0_ip}:9200/_template/wazuh" -u elastic:${ssh_password} -H 'Content-Type: application/json' -d@${alerts_template}
     curl -XDELETE "https://${eth0_ip}:9200/wazuh-alerts-*" -u elastic:${ssh_password}
+    # Correct owner for Elasticsearch directories
+    chown elasticsearch:elasticsearch -R /etc/elasticsearch
+    chown elasticsearch:elasticsearch -R /usr/share/elasticsearch
+    chown elasticsearch:elasticsearch -R /var/lib/elasticsearch
     echo "Added template." >> /tmp/log
 }
 
