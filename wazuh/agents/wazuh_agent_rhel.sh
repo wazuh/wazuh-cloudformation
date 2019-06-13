@@ -67,15 +67,14 @@ mkdir /mysql
 touch /mysql/mysql.conf
 
 ### Use case 4: Netcat
-yum install nc -y
-
-### Use case 5: OpenSCAP
-yum install openscap-scanner -y
+yum install nc vim lsof openscap-scanner -y
 
 ### Use case 6: Suricata
 # Install Suricata
-yum -y install suricata
-
+yum -y install suricata-4.1.4
+wget https://rules.emergingthreats.net/open/suricata-4.1.4/emerging.rules.tar.gz
+tar -xvzf emerging.rules.tar.gz && mv rules/*.rules /etc/suricata/rules
+chown suricata:suricata /etc/suricata/*.rules
 yum -y install audit
 
 uid=$(id -u wazuh)
