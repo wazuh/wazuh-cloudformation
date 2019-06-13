@@ -63,74 +63,6 @@ EOF
 echo "Added Elasticsearch repo." >> /tmp/deploy.log
 }
 
-install_elasticsearch(){
-    echo "Installing Elasticsearch." >> /tmp/deploy.log
-
-    # Installing Elasticsearch
-    yum -y install elasticsearch-${elastic_version}
-    chkconfig --add elasticsearch
-    echo "Installed Elasticsearch." >> /tmp/deploy.log
-}
-
-configuring_elasticsearch(){
-# Creating data and logs directories
-mkdir -p /mnt/ephemeral/elasticsearch/lib
-mkdir -p /mnt/ephemeral/elasticsearch/log
-chown -R elasticsearch:elasticsearch /mnt/ephemeral/elasticsearch
-echo "Created volumes in ephemeral." >> /tmp/log
-
-cat > /etc/elasticsearch/elasticsearch.yml << EOF
-cluster.name: "wazuh_elastic"
-node.name: "node-kibana"
-node.master: false
-bootstrap.memory_lock: true
-path.data: /mnt/ephemeral/elasticsearch/lib
-path.logs: /mnt/ephemeral/elasticsearch/log
-node.ingest: false
-node.data: false
-discovery.seed_hosts: 
-  - "10.0.2.123"
-  - "10.0.2.124"
-  - "10.0.2.125"
-EOF
-
-echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
-
-chown elasticsearch:elasticsearch /etc/elasticsearch/elasticsearch.yml
-
-# Calculating RAM for Elasticsearch
-ram_gb=$[$(free -g | awk '/^Mem:/{print $2}')+1]
-ram=$(( ${ram_gb} / 2 ))
-if [ $ram -eq "0" ]; then ram=1; fi
-echo "Setting RAM." >> /tmp/log
-
-# Configuring jvm.options
-cat > /etc/elasticsearch/jvm.options << EOF
--Xms${ram}g
--Xmx${ram}g
-EOF
-echo "Setting JVM options." >> /tmp/log
-
-mkdir -p /etc/systemd/system/elasticsearch.service.d/
-echo '[Service]' > /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
-echo 'LimitMEMLOCK=infinity' >> /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
-
-
-# Allowing unlimited memory allocation
-echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
-echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
-echo "Setting memory lock options." >> /tmp/log
-echo "Setting permissions." >> /tmp/deploy.log
-}
-
-start_elasticsearch(){
-    systemctl daemon-reload
-    # Starting Elasticsearch
-    echo "daemon-reload." >> /tmp/deploy.log
-    service elasticsearch start
-    echo "starting elasticsearch service." >> /tmp/deploy.log
-}
-
 install_kibana(){
 # Installing Kibana
 yum -y install kibana-${elastic_version}
@@ -168,7 +100,7 @@ kibana_certs(){
 configure_kibana(){
 # Configuring kibana.yml
 cat > /etc/kibana/kibana.yml << EOF
-elasticsearch.hosts: ["https://$eth0_ip:9200"]
+elasticsearch.hosts: ["https://10.0.2.124:9200"]
 server.port: 5601
 server.host: "$eth0_ip"
 server.ssl.enabled: false
@@ -240,9 +172,9 @@ cat > ${api_config} << EOF
 }
 EOF
 
-CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "https://${eth0_ip}:9200/.wazuh/_doc/${api_time}" -u elastic:${ssh_password} -k)
+CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "https://10.0.2.124:9200/.wazuh/_doc/${api_time}" -u elastic:${ssh_password} -k)
 if [ "x$CONFIG_CODE" != "x200" ]; then
-  curl -s -XPUT "https://${eth0_ip}:9200/.wazuh/_doc/${api_time}" -u elastic:${ssh_password} -k -H 'Content-Type: application/json' -d@${api_config}
+  curl -s -XPUT "https://10.0.2.124:9200/.wazuh/_doc/${api_time}" -u elastic:${ssh_password} -k -H 'Content-Type: application/json' -d@${api_config}
   echo "Loaded Wazuh API to an Elasticsearch >=v7 cluster" >> /tmp/log
 fi
 
@@ -334,9 +266,6 @@ main(){
   check_root
   create_ssh_user
   import_elk_repo
-  install_elasticsearch
-  configuring_elasticsearch
-  start_elasticsearch
   install_kibana
   configure_kibana
   kibana_certs
