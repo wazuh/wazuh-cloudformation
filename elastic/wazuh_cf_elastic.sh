@@ -59,12 +59,10 @@ echo "Added Elasticsearch repo." >> /tmp/deploy.log
 
 install_elasticsearch(){
     echo "Installing Elasticsearch." >> /tmp/deploy.log
-
     # Installing Elasticsearch
     yum -y install elasticsearch-${elastic_version}
     chkconfig --add elasticsearch
     echo "Installed Elasticsearch." >> /tmp/deploy.log
-
 }
 
 configuring_elasticsearch(){
@@ -84,15 +82,9 @@ discovery.seed_hosts:
   - "10.0.2.123"
   - "10.0.2.124"
   - "10.0.2.125"
-
 EOF
 
 echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
-
-# Correct owner for Elasticsearch directories
-chown elasticsearch:elasticsearch -R /etc/elasticsearch
-chown elasticsearch:elasticsearch -R /usr/share/elasticsearch
-chown elasticsearch:elasticsearch -R /var/lib/elasticsearch
 
 # Calculating RAM for Elasticsearch
 ram_gb=$[$(free -g | awk '/^Mem:/{print $2}')+1]
@@ -116,13 +108,16 @@ echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
 echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
 echo "Setting memory lock options." >> /tmp/log
 echo "Setting permissions." >> /tmp/deploy.log
+# restarting elasticsearch after changes
+start_elasticsearch
 }
 
-set_xpack_certs(){
+set_security(){
+    # installing dependencies
     mkdir /etc/elasticsearch/certs/ca -p
     amazon-linux-extras install epel -y
     yum install -y sshpass
-    sleep 500
+    sleep 30
     echo $ssh_password >> pass
     sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/
     rm pass -f
@@ -143,8 +138,7 @@ set_xpack_certs(){
     echo "xpack.security.http.ssl.key: /etc/elasticsearch/certs/elastic-node${node_name}.key" >> /etc/elasticsearch/elasticsearch.yml
     echo "xpack.security.http.ssl.certificate: /etc/elasticsearch/certs/elastic-node${node_name}.crt" >> /etc/elasticsearch/elasticsearch.yml
     echo "xpack.security.http.ssl.certificate_authorities: [ "/etc/elasticsearch/certs/ca/ca.crt" ]" >> /etc/elasticsearch/elasticsearch.yml
-    chown -R elasticsearch: /etc/elasticsearch/certs
-    systemctl restart elasticsearch
+    chown -R elasticsearch:elasticsearch /etc/elasticsearch/certs
 }
 
 start_elasticsearch(){
@@ -170,7 +164,7 @@ main(){
     import_elk_repo
     install_elasticsearch
     configuring_elasticsearch
-    set_xpack_certs
+    set_security
     start_elasticsearch
     disable_elk_repos
 }

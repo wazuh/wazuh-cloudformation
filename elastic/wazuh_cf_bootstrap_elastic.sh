@@ -107,24 +107,19 @@ mkdir -p /etc/systemd/system/elasticsearch.service.d/
 echo '[Service]' > /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
 echo 'LimitMEMLOCK=infinity' >> /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
 
-
 # Allowing unlimited memory allocation
 echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
 echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
 echo "Setting memory lock options." >> /tmp/log
 echo "Setting permissions." >> /tmp/deploy.log
-
-# Correct owner for Elasticsearch directories
-chown elasticsearch:elasticsearch -R /etc/elasticsearch
-chown elasticsearch:elasticsearch -R /usr/share/elasticsearch
-chown elasticsearch:elasticsearch -R /var/lib/elasticsearch
+start_elasticsearch
 }
 
 load_template(){
     echo "Loading template..." >> /tmp/log
     until curl -XGET "https://$eth0_ip:9200" -u elastic:${ssh_password}; do
-    sleep 5
-    echo 'not done'
+        sleep 5
+        echo 'not done'
     done
 
     url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/7.x/wazuh-template.json"
@@ -133,17 +128,17 @@ load_template(){
     curl -XPUT "https://${eth0_ip}:9200/_template/wazuh" -u elastic:${ssh_password} -H 'Content-Type: application/json' -d@${alerts_template}
     curl -XDELETE "https://${eth0_ip}:9200/wazuh-alerts-*" -u elastic:${ssh_password}
     # Correct owner for Elasticsearch directories
-    chown elasticsearch:elasticsearch -R /etc/elasticsearch
-    chown elasticsearch:elasticsearch -R /usr/share/elasticsearch
-    chown elasticsearch:elasticsearch -R /var/lib/elasticsearch
     echo "Added template." >> /tmp/log
 }
 
 start_elasticsearch(){
+    chown elasticsearch:elasticsearch -R /etc/elasticsearch
+    chown elasticsearch:elasticsearch -R /usr/share/elasticsearch
+    chown elasticsearch:elasticsearch -R /var/lib/elasticsearch
     systemctl daemon-reload
     # Starting Elasticsearch
     echo "daemon-reload." >> /tmp/deploy.log
-    service elasticsearch start
+    systemctl elasticsearch restart
     echo "starting elasticsearch service." >> /tmp/deploy.log
 }
 
@@ -155,7 +150,7 @@ create_bootstrap_user(){
     echo 'Done' >> /tmp/log
 }
 
-generate_sec(){
+set_security(){
 cat > /usr/share/elasticsearch/instances.yml << EOF
 instances:
     - name: "wazuh-manager"
@@ -198,9 +193,8 @@ echo "xpack.security.http.ssl.verification_mode: certificate" >> /etc/elasticsea
 echo "xpack.security.http.ssl.key: /etc/elasticsearch/certs/elasticsearch.key" >> /etc/elasticsearch/elasticsearch.yml
 echo "xpack.security.http.ssl.certificate: /etc/elasticsearch/certs/elasticsearch.crt" >> /etc/elasticsearch/elasticsearch.yml
 echo "xpack.security.http.ssl.certificate_authorities: [ "/etc/elasticsearch/certs/ca/ca.crt" ]" >> /etc/elasticsearch/elasticsearch.yml
-chown -R elasticsearch: /etc/elasticsearch/certs
-systemctl restart elasticsearch
-sleep 60
+chown -R elasticsearch:elasticsearch /etc/elasticsearch/certs
+start_elasticsearch
 }
 
 disable_elk_repos(){
@@ -215,7 +209,7 @@ main(){
     install_elasticsearch
     configuring_elasticsearch
     create_bootstrap_user
-    generate_sec
+    set_security
     start_elasticsearch
     load_template
     disable_elk_repos
