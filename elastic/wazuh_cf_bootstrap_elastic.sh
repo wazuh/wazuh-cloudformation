@@ -117,16 +117,16 @@ start_elasticsearch
 
 load_template(){
     echo "Loading template..." >> /tmp/log
-    until curl -XGET "https://$eth0_ip:9200" -u elastic:${ssh_password}; do
+    until curl -XGET "https://$eth0_ip:9200" -k -u elastic:${ssh_password}; do
         sleep 5
-        echo 'not done'
+        echo "Elasticsearch not ready yet..." >> /tmp/log
     done
 
     url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/7.x/wazuh-template.json"
     alerts_template="/tmp/wazuh-template.json"
     curl -Lo ${alerts_template} ${url_alerts_template}
-    curl -XPUT "https://${eth0_ip}:9200/_template/wazuh" -u elastic:${ssh_password} -H 'Content-Type: application/json' -d@${alerts_template}
-    curl -XDELETE "https://${eth0_ip}:9200/wazuh-alerts-*" -u elastic:${ssh_password}
+    curl -XPUT "https://${eth0_ip}:9200/_template/wazuh" -k -u elastic:${ssh_password} -H 'Content-Type: application/json' -d@${alerts_template}
+    curl -XDELETE "https://${eth0_ip}:9200/wazuh-alerts-*" -k -u elastic:${ssh_password}
     # Correct owner for Elasticsearch directories
     echo "Added template." >> /tmp/log
 }

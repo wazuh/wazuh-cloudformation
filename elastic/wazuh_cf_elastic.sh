@@ -1,9 +1,9 @@
 #!/bin/bash
 # Install Elastic data node using Cloudformation template
 
-touch /tmp/deploy.log
+touch /tmp/log
 
-echo "Elasticsearch: Starting process." > /tmp/deploy.log
+echo "Elasticsearch: Starting process." > /tmp/log
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
 elastic_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f1)
@@ -15,17 +15,17 @@ wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
 wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
 node_name=$(cat /tmp/wazuh_cf_settings | grep '^NodeName:' | cut -d' ' -f2)
 
-echo "Added env vars." >> /tmp/deploy.log
-echo "eth0_ip: $eth0_ip" >> /tmp/deploy.log
+echo "Added env vars." >> /tmp/log
+echo "eth0_ip: $eth0_ip" >> /tmp/log
 
 check_root(){
     # Check if running as root
     if [[ $EUID -ne 0 ]]; then
-        echo "NOT running as root. Exiting" >> /tmp/deploy.log
+        echo "NOT running as root. Exiting" >> /tmp/log
         echo "This script must be run as root"
         exit 1
     fi
-    echo "Running as root." >> /tmp/deploy.log
+    echo "Running as root." >> /tmp/log
 }
 
 create_ssh_user(){
@@ -33,11 +33,11 @@ create_ssh_user(){
     if ! id -u ${ssh_username} > /dev/null 2>&1; then adduser ${ssh_username}; fi
     echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
     usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
-    echo "Created SSH user." >> /tmp/deploy.log
+    echo "Created SSH user." >> /tmp/log
 
     sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
     service sshd restart
-    echo "Started SSH service." >> /tmp/deploy.log
+    echo "Started SSH service." >> /tmp/log
 }
 
 import_elk_repo(){
@@ -54,15 +54,15 @@ enabled=1
 autorefresh=1
 type=rpm-md
 EOF
-echo "Added Elasticsearch repo." >> /tmp/deploy.log
+echo "Added Elasticsearch repo." >> /tmp/log
 }
 
 install_elasticsearch(){
-    echo "Installing Elasticsearch." >> /tmp/deploy.log
+    echo "Installing Elasticsearch." >> /tmp/log
     # Installing Elasticsearch
     yum -y install elasticsearch-${elastic_version}
     chkconfig --add elasticsearch
-    echo "Installed Elasticsearch." >> /tmp/deploy.log
+    echo "Installed Elasticsearch." >> /tmp/log
 }
 
 configuring_elasticsearch(){
@@ -107,22 +107,27 @@ echo 'LimitMEMLOCK=infinity' >> /etc/systemd/system/elasticsearch.service.d/elas
 echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
 echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
 echo "Setting memory lock options." >> /tmp/log
-echo "Setting permissions." >> /tmp/deploy.log
+echo "Setting permissions." >> /tmp/log
 # restarting elasticsearch after changes
 start_elasticsearch
 }
 
 set_security(){
+    echo "SET SECURITY." >> /tmp/log
     # installing dependencies
     mkdir /etc/elasticsearch/certs/ca -p
+    echo "Created certs directory." >> /tmp/log
     amazon-linux-extras install epel -y
     yum install -y sshpass
     sleep 30
+    echo "Installed sshpass." >> /tmp/log
     echo $ssh_password >> pass
     sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/
+    echo "Got certs.zip." >> /tmp/log
     rm pass -f
     cp /home/wazuh/certs.zip .
     unzip certs.zip
+    echo "Unzipped certs.zip." >> /tmp/log
     cp ca/ca.crt /etc/elasticsearch/certs/ca
     cp elastic-node${node_name}/elastic-node${node_name}.crt /etc/elasticsearch/certs
     cp elastic-node${node_name}/elastic-node${node_name}.key /etc/elasticsearch/certs
@@ -138,19 +143,22 @@ set_security(){
     echo "xpack.security.http.ssl.key: /etc/elasticsearch/certs/elastic-node${node_name}.key" >> /etc/elasticsearch/elasticsearch.yml
     echo "xpack.security.http.ssl.certificate: /etc/elasticsearch/certs/elastic-node${node_name}.crt" >> /etc/elasticsearch/elasticsearch.yml
     echo "xpack.security.http.ssl.certificate_authorities: [ "/etc/elasticsearch/certs/ca/ca.crt" ]" >> /etc/elasticsearch/elasticsearch.yml
+    echo "Configured security." >> /tmp/log
     chown -R elasticsearch:elasticsearch /etc/elasticsearch/certs
+    echo "Changed permissions certs directory." >> /tmp/log
 }
 
 start_elasticsearch(){
+    echo "start_elasticsearch." >> /tmp/log
     # Correct owner for Elasticsearch directories
     chown elasticsearch:elasticsearch -R /etc/elasticsearch
     chown elasticsearch:elasticsearch -R /usr/share/elasticsearch
     chown elasticsearch:elasticsearch -R /var/lib/elasticsearch
     systemctl daemon-reload
     # Starting Elasticsearch
-    echo "daemon-reload." >> /tmp/deploy.log
+    echo "daemon-reload." >> /tmp/log
     systemctl restart elasticsearch
-    echo "starting elasticsearch service." >> /tmp/deploy.log
+    echo "done with starting elasticsearch service." >> /tmp/log
 }
 
 disable_elk_repos(){
