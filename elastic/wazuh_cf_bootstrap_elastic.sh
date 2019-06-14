@@ -158,24 +158,24 @@ create_bootstrap_user(){
 generate_sec(){
 cat > /usr/share/elasticsearch/instances.yml << EOF
 instances:
-- name: "wazuh-manager"
-    ip:
-    - "$master_ip"
-- name: "elastic-node2"
-    ip:
-    - "10.0.2.125"
-- name: "elastic-node1"
-    ip:
-    - "10.0.2.123"
-- name: "wazuh-worker"
-    ip:
-    - "$worker_ip"
-- name: "elasticsearch"
-    ip:
-    - "$eth0_ip"
-- name: "kibana"
-    ip:
-    - "$kibana_ip"
+    - name: "wazuh-manager"
+      ip:
+        - "$master_ip"
+    - name: "wazuh-worker"
+      ip:
+        - "$worker_ip"
+    - name: "kibana"
+      ip:
+        - "$kibana_ip"
+    - name: "elastic-node2"
+      ip:
+        - "10.0.2.125"
+    - name: "elastic-node1"
+      ip:
+        - "10.0.2.123"
+    - name: "elasticsearch"
+      ip:
+        - "$eth0_ip"
 EOF
 /usr/share/elasticsearch/bin/elasticsearch-certutil cert ca --pem --in /usr/share/elasticsearch/instances.yml --out /usr/share/elasticsearch/certs.zip
 cp /usr/share/elasticsearch/certs.zip /home/wazuh/

@@ -225,8 +225,9 @@ Parameters:
       - 6.7.1_3.9.0
       - 6.8.0_3.9.1
       - 7.1.0_3.9.1
+      - 7.1.1_3.9.2
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
-    Default: 7.1.0_3.9.1
+    Default: 7.1.1_3.9.2
     Description: Elastic and Wazuh versions to be installed
     Type: String
   WazuhInstanceType:
@@ -711,6 +712,9 @@ Resources:
                 SshUsername: ${SshUsername}
                 SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
+                MasterIp: ${WazuhMasterInstance.PrivateIp}
+                WorkerIp: ${WazuhWorkerInstance.PrivateIp}
+                KibanaIp: ${KibanaInstance.PrivateIp}
                 NodeName: 3
               mode: '000600'
               owner: root
