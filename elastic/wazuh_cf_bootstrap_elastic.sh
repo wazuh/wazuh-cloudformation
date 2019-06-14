@@ -148,7 +148,7 @@ start_elasticsearch(){
 }
 
 create_bootstrap_user(){
-    echo 'Creating elk user' >> /tmp/log
+    echo 'Creating elk user with password $ssh_password' >> /tmp/log
     echo $ssh_password | /usr/share/elasticsearch/bin/elasticsearch-keystore add -x 'bootstrap.password'
     systemctl restart elasticsearch
     sleep 60
@@ -187,6 +187,7 @@ cp ca/ca.crt /etc/elasticsearch/certs/ca
 cp elasticsearch/elasticsearch.crt /etc/elasticsearch/certs
 chmod -R 770 /etc/elasticsearch/certs
 cp elasticsearch/elasticsearch.key /etc/elasticsearch/certs
+echo "xpack.security.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
 echo "xpack.security.transport.ssl.verification_mode: certificate" >> /etc/elasticsearch/elasticsearch.yml
 echo "xpack.security.transport.ssl.key: /etc/elasticsearch/certs/elasticsearch.key" >> /etc/elasticsearch/elasticsearch.yml
 echo "xpack.security.transport.ssl.certificate: /etc/elasticsearch/certs/elasticsearch.crt" >> /etc/elasticsearch/elasticsearch.yml

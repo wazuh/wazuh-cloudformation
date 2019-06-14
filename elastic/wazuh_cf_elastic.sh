@@ -84,8 +84,7 @@ discovery.seed_hosts:
   - "10.0.2.123"
   - "10.0.2.124"
   - "10.0.2.125"
-xpack.security.enabled: true
-xpack.security.transport.ssl.enabled: true
+
 EOF
 
 echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
@@ -112,7 +111,6 @@ mkdir -p /etc/systemd/system/elasticsearch.service.d/
 echo '[Service]' > /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
 echo 'LimitMEMLOCK=infinity' >> /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
 
-
 # Allowing unlimited memory allocation
 echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
 echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
@@ -133,6 +131,8 @@ set_xpack_certs(){
     cp ca/ca.crt /etc/elasticsearch/certs/ca
     cp elastic-node${node_name}/elastic-node${node_name}.crt /etc/elasticsearch/certs
     cp elastic-node${node_name}/elastic-node${node_name}.key /etc/elasticsearch/certs
+    echo "xpack.security.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.transport.ssl.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
     echo "xpack.security.transport.ssl.verification_mode: certificate" >> /etc/elasticsearch/elasticsearch.yml
     echo "xpack.security.transport.ssl.key: /etc/elasticsearch/certs/elastic-node${node_name}.key" >> /etc/elasticsearch/elasticsearch.yml
     echo "xpack.security.transport.ssl.certificate: /etc/elasticsearch/certs/elastic-node${node_name}.crt" >> /etc/elasticsearch/elasticsearch.yml
