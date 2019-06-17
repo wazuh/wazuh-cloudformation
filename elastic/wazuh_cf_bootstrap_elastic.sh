@@ -70,11 +70,13 @@ install_elasticsearch(){
 }
 
 configuring_elasticsearch(){
+echo "Configuring elasticsearch." >> /tmp/deploy.log
+
 # Creating data and logs directories
 mkdir -p /mnt/ephemeral/elasticsearch/lib
 mkdir -p /mnt/ephemeral/elasticsearch/log
 chown -R elasticsearch:elasticsearch /mnt/ephemeral/elasticsearch
-echo "Created volumes in ephemeral." >> /tmp/log
+echo "Created volumes in ephemeral." >> /tmp/deploy.log
 
 cat > /etc/elasticsearch/elasticsearch.yml << EOF
 cluster.name: "wazuh_elastic"
@@ -94,14 +96,14 @@ echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
 ram_gb=$[$(free -g | awk '/^Mem:/{print $2}')+1]
 ram=$(( ${ram_gb} / 2 ))
 if [ $ram -eq "0" ]; then ram=1; fi
-echo "Setting RAM." >> /tmp/log
+echo "Setting RAM." >> /tmp/deploy.log
 
 # Configuring jvm.options
 cat > /etc/elasticsearch/jvm.options << EOF
 -Xms${ram}g
 -Xmx${ram}g
 EOF
-echo "Setting JVM options." >> /tmp/log
+echo "Setting JVM options." >> /tmp/deploy.log
 
 mkdir -p /etc/systemd/system/elasticsearch.service.d/
 echo '[Service]' > /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
@@ -110,16 +112,16 @@ echo 'LimitMEMLOCK=infinity' >> /etc/systemd/system/elasticsearch.service.d/elas
 # Allowing unlimited memory allocation
 echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
 echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
-echo "Setting memory lock options." >> /tmp/log
+echo "Setting memory lock options." >> /tmp/deploy.log
 echo "Setting permissions." >> /tmp/deploy.log
 start_elasticsearch
 }
 
 load_template(){
-    echo "Loading template..." >> /tmp/log
+    echo "Loading template..." >> /tmp/deploy.log
     until curl -XGET "https://$eth0_ip:9200" -k -u elastic:${ssh_password}; do
         sleep 5
-        echo "Elasticsearch not ready yet..." >> /tmp/log
+        echo "Elasticsearch not ready yet..." >> /tmp/deploy.log
     done
 
     url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/7.x/wazuh-template.json"
@@ -128,7 +130,7 @@ load_template(){
     curl -XPUT "https://${eth0_ip}:9200/_template/wazuh" -k -u elastic:${ssh_password} -H 'Content-Type: application/json' -d@${alerts_template}
     curl -XDELETE "https://${eth0_ip}:9200/wazuh-alerts-*" -k -u elastic:${ssh_password}
     # Correct owner for Elasticsearch directories
-    echo "Added template." >> /tmp/log
+    echo "Added template." >> /tmp/deploy.log
 }
 
 start_elasticsearch(){
@@ -143,11 +145,11 @@ start_elasticsearch(){
 }
 
 create_bootstrap_user(){
-    echo 'Creating elk user with password $ssh_password' >> /tmp/log
+    echo "Creating elk user with password $ssh_password" >> /tmp/deploy.log
     echo $ssh_password | /usr/share/elasticsearch/bin/elasticsearch-keystore add -x 'bootstrap.password'
     systemctl restart elasticsearch
     sleep 60
-    echo 'Done' >> /tmp/log
+    echo 'Done' >> /tmp/deploy.log
 }
 
 set_security(){
@@ -183,6 +185,7 @@ cp elasticsearch/elasticsearch.crt /etc/elasticsearch/certs
 chmod -R 770 /etc/elasticsearch/certs
 cp elasticsearch/elasticsearch.key /etc/elasticsearch/certs
 echo "xpack.security.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
+echo "xpack.security.transport.ssl.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
 echo "xpack.security.transport.ssl.verification_mode: certificate" >> /etc/elasticsearch/elasticsearch.yml
 echo "xpack.security.transport.ssl.key: /etc/elasticsearch/certs/elasticsearch.key" >> /etc/elasticsearch/elasticsearch.yml
 echo "xpack.security.transport.ssl.certificate: /etc/elasticsearch/certs/elasticsearch.crt" >> /etc/elasticsearch/elasticsearch.yml
