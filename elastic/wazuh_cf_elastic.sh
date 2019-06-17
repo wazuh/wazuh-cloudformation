@@ -122,7 +122,11 @@ set_security(){
     sleep 30
     echo "Installed sshpass." >> /tmp/log
     echo $ssh_password >> pass
-    sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/
+    while [ ! -f /home/wazuh/certs.zip ];do
+        sleep 2
+        echo "No certs yet, trying again in 2 secs..." >> /tmp/log
+        sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/ 2> /tmp/logerr.log
+    done
     echo "Got certs.zip." >> /tmp/log
     rm pass -f
     cp /home/wazuh/certs.zip .
