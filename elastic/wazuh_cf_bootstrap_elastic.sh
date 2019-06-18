@@ -61,12 +61,10 @@ echo "Added Elasticsearch repo." >> /tmp/deploy.log
 
 install_elasticsearch(){
     echo "Installing Elasticsearch." >> /tmp/deploy.log
-
     # Installing Elasticsearch
     yum -y install elasticsearch-${elastic_version}
     chkconfig --add elasticsearch
     echo "Installed Elasticsearch." >> /tmp/deploy.log
-
 }
 
 configuring_elasticsearch(){
@@ -134,6 +132,7 @@ load_template(){
 }
 
 start_elasticsearch(){
+    echo "Starting Elasticsearch and setting permissions" >> /tmp/deploy.log
     chown elasticsearch:elasticsearch -R /etc/elasticsearch
     chown elasticsearch:elasticsearch -R /usr/share/elasticsearch
     chown elasticsearch:elasticsearch -R /var/lib/elasticsearch
@@ -141,7 +140,8 @@ start_elasticsearch(){
     # Starting Elasticsearch
     echo "daemon-reload." >> /tmp/deploy.log
     systemctl elasticsearch restart
-    echo "starting elasticsearch service." >> /tmp/deploy.log
+    echo "Started elasticsearch service." >> /tmp/deploy.log
+    systemctl status elasticsearch >> /tmp/deploy.log
 }
 
 create_bootstrap_user(){
@@ -153,6 +153,7 @@ create_bootstrap_user(){
 }
 
 set_security(){
+echo "Setting security in Elasticsearch bootstrap node" >> /tmp/deploy.log
 cat > /usr/share/elasticsearch/instances.yml << EOF
 instances:
     - name: "wazuh-manager"
@@ -175,6 +176,7 @@ instances:
         - "$eth0_ip"
 EOF
 /usr/share/elasticsearch/bin/elasticsearch-certutil cert ca --pem --in /usr/share/elasticsearch/instances.yml --out /usr/share/elasticsearch/certs.zip
+echo "Generated certs" >> /tmp/deploy.log
 cp /usr/share/elasticsearch/certs.zip /home/wazuh/
 chown wazuh:wazuh /home/wazuh/certs.zip
 cp /usr/share/elasticsearch/certs.zip .
@@ -197,7 +199,7 @@ echo "xpack.security.http.ssl.key: /etc/elasticsearch/certs/elasticsearch.key" >
 echo "xpack.security.http.ssl.certificate: /etc/elasticsearch/certs/elasticsearch.crt" >> /etc/elasticsearch/elasticsearch.yml
 echo "xpack.security.http.ssl.certificate_authorities: [ "/etc/elasticsearch/certs/ca/ca.crt" ]" >> /etc/elasticsearch/elasticsearch.yml
 chown -R elasticsearch:elasticsearch /etc/elasticsearch/certs
-start_elasticsearch
+echo "Starting elasticsearch"
 }
 
 disable_elk_repos(){
