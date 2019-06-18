@@ -139,7 +139,7 @@ start_elasticsearch(){
     systemctl daemon-reload
     # Starting Elasticsearch
     echo "daemon-reload." >> /tmp/deploy.log
-    systemctl elasticsearch restart
+    systemctl restart elasticsearch
     echo "Started elasticsearch service." >> /tmp/deploy.log
     systemctl status elasticsearch >> /tmp/deploy.log
 }
