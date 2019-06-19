@@ -164,8 +164,6 @@ Metadata:
           default: "Kibana configuration"
         Parameters:
           - KibanaPort
-          - KibanaUsername
-          - KibanaPassword
       -
         Label:
           default: "Splunk configuration"
@@ -406,22 +404,6 @@ Parameters:
     Default: '443'
     Description: Port for Kibana WUI
     Type: String
-  KibanaUsername:
-    Default: wazuh
-    Description: Username for Kibana access
-    Type: String
-    MinLength: '1'
-    MaxLength: '16'
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Only alphanumeric characters
-  KibanaPassword:
-    Description: Password for Kibana access
-    NoEcho: 'True'
-    Type: String
-    MinLength: '1'
-    MaxLength: '48'
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Only alphanumeric characters
   SplunkUsername:
     Default: wazuh
     Description: Username for Splunk access
@@ -1039,8 +1021,6 @@ Resources:
                 SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
                 KibanaPort: ${KibanaPort}
-                KibanaUsername: ${KibanaUsername}
-                KibanaPassword: ${KibanaPassword}
                 WazuhApiAdminUsername: ${WazuhApiAdminUsername}
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
@@ -1828,9 +1808,6 @@ Outputs:
   KibanaPort: 
     Description: Port number for Kibana WUI access
     Value: !Ref KibanaPort
-  KibanaUsername:
-    Description: Username for Kibana WUI
-    Value: !Ref KibanaUsername
   SplunkUsername:
     Description: Username for Splunk WUI
     Value: !Ref SplunkUsername
