@@ -40,7 +40,7 @@ adduser ${ssh_username}
 echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
 usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
 sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
-service sshd restart
+systemctl restart sshd
 
 echo "Created SSH user." >> /tmp/log
 
@@ -329,7 +329,7 @@ EOF
 
 auditctl -D
 auditctl -R /etc/audit/rules.d/audit.rules
-service auditd restart
+systemctl restart auditd
 # Localfiles
 cat >> ${manager_config} << EOF
 <ossec_config>

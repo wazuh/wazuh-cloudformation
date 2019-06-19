@@ -31,7 +31,7 @@ adduser ${ssh_username}
 echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
 usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
 sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
-service sshd restart
+systemctl restart sshd
 echo "Created SSH user." >> /tmp/log
 
 if [[ ${EnvironmentType} == 'staging' ]]
@@ -111,7 +111,7 @@ cat >> ${manager_config} << EOF
 EOF
 
 # Restart for receiving cluster data
-service wazuh-manager restart
+systemctl restart wazuh-manager
 # Wait for cluster information to be received (rules,lists...)
 sleep 60
 
@@ -192,52 +192,6 @@ cat >> ${manager_config} << EOF
 EOF
 fi
 
-# AWS integration if key already set
-if [ "x${AwsAccessKey}" != "x" ]; then
-cat >> ${manager_config} << EOF
-<ossec_config>
-  <wodle name="aws-s3">
-    <disabled>no</disabled>
-    <remove_from_bucket>no</remove_from_bucket>
-    <interval>30m</interval>
-    <run_on_start>yes</run_on_start>
-    <skip_on_error>no</skip_on_error>
-    <bucket type="cloudtrail">
-      <name>wazuh-cloudtrail</name>
-      <access_key>${AwsAccessKey}</access_key>
-      <secret_key>${AwsSecretKey}</secret_key>
-      <only_logs_after>2019-MAR-24</only_logs_after>
-    </bucket>
-    <bucket type="guardduty">
-      <name>wazuh-aws-wodle</name>
-      <path>guardduty</path>
-      <access_key>${AwsAccessKey}</access_key>
-      <secret_key>${AwsSecretKey}</secret_key>
-      <only_logs_after>2019-MAR-24</only_logs_after>
-    </bucket>
-    <bucket type="custom">
-      <name>wazuh-aws-wodle</name>
-      <path>macie</path>
-      <access_key>${AwsAccessKey}</access_key>
-      <secret_key>${AwsSecretKey}</secret_key>
-      <only_logs_after>2019-MAR-24</only_logs_after>
-    </bucket>
-    <bucket type="vpcflow">
-      <name>wazuh-aws-wodle</name>
-      <path>vpc</path>
-      <access_key>${AwsAccessKey}</access_key>
-      <secret_key>${AwsSecretKey}</secret_key>
-      <only_logs_after>2019-MAR-24</only_logs_after>
-    </bucket>
-    <service type="inspector">
-      <access_key>${AwsAccessKey}</access_key>
-      <secret_key>${AwsSecretKey}</secret_key>
-    </service>
-  </wodle>
-</ossec_config>
-EOF
-fi
-
 the_uid=$(id -u wazuh)
 
 # Audit rules
@@ -248,7 +202,7 @@ EOF
 
 auditctl -D
 auditctl -R /etc/audit/rules.d/audit.rules
-service auditd restart
+systemctl restart auditd
 
 # Localfiles
 cat >> ${manager_config} << EOF
@@ -304,7 +258,7 @@ EOF
 echo "Cluster configuration" >> /tmp/log
 
 # Restart wazuh-manager
-service wazuh-manager restart
+systemctl restart wazuh-manager
 
 # Installing Filebeat
 yum -y install filebeat

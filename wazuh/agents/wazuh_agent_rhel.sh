@@ -27,7 +27,7 @@ adduser ${ssh_username}
 echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
 usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
 sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
-service sshd restart
+systemctl restart sshd
 
 # Added trojan
 cp /usr/bin/w /usr/bin/w.backup
@@ -51,11 +51,11 @@ yum install -y http://mirror.centos.org/centos/7/extras/x86_64/Packages/containe
 
 # install Docker
 yum install -y docker-ce
-service docker start
+systemctl restart docker
 
 ### Use case 2: Web server
 yum install httpd -y
-service httpd restart
+systemctl restart httpd
 
 ### Use case 3: Mysql
 wget https://repo.mysql.com//mysql80-community-release-el7-2.noarch.rpm
@@ -97,7 +97,7 @@ EOF
 
 auditctl -D
 auditctl -R /etc/audit/rules.d/audit.rules
-service auditd restart
+systemctl restart auditd
 
 ### Use case 7: Diamorphine
 yum install "kernel-devel-uname-r == $(uname -r)" -y
@@ -201,6 +201,9 @@ systemctl restart wazuh-agent
 systemctl restart suricata
 
 echo "Restarted Wazuh agent." >> /tmp/log
+
+# give time to execute Docker actions
+sleep 300
 
 # Executing docker commands
 docker pull nginx

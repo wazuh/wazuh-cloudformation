@@ -42,7 +42,7 @@ create_ssh_user(){
     usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
     echo "Created SSH user." >> /tmp/deploy.log
     sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
-    service sshd restart
+    systemctl restart sshd
     echo "Started SSH service." >> /tmp/deploy.log
 }
 
@@ -251,13 +251,13 @@ server {
     location / {
         auth_basic "Restricted";
         auth_basic_user_file /etc/nginx/conf.d/kibana.htpasswd;
-        proxy_pass https://127.0.0.1:5601/;
+        proxy_pass https://$eth0_ip:5601/;
     }
 }
 EOF
 
 # Starting Nginx
-service nginx restart
+systemctl restart nginx
 echo "Restarted NGINX..." >> /tmp/log
 
 }

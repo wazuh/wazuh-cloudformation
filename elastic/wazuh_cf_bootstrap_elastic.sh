@@ -38,7 +38,7 @@ create_ssh_user(){
     echo "Created SSH user." >> /tmp/deploy.log
 
     sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
-    service sshd restart
+    systemctl restart sshd
     echo "Started SSH service." >> /tmp/deploy.log
 }
 
