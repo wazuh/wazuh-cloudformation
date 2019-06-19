@@ -241,7 +241,6 @@ echo "Installed NGINX." >> /tmp/log
 yum install httpd-tools-2.4.33-2.amzn2.0.2.x86_64 -y
 
 # Configure Nginx
-htpasswd -b -c /etc/nginx/conf.d/kibana.htpasswd ${kibana_username} ${kibana_password}
 cat > /etc/nginx/conf.d/kibana.conf << EOF
 server {
     listen ${kibana_port} default_server;
@@ -249,8 +248,6 @@ server {
     access_log            /var/log/nginx/nginx.access.log;
     error_log            /var/log/nginx/nginx.error.log;
     location / {
-        auth_basic "Restricted";
-        auth_basic_user_file /etc/nginx/conf.d/kibana.htpasswd;
         proxy_pass https://$eth0_ip:5601/;
     }
 }
