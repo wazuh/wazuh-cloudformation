@@ -716,9 +716,9 @@ EOF
 
 # Attach agents to groups
 rhel_id=`/var/ossec/bin/manage_agents -l | grep RHEL | cut -d':' -f2 | cut -d ',' -f1`
-#windows_id = /var/ossec/bin/manage_agents -l | grep Windows | cut -d':' -f2 | cut -d ',' -f1
+windows_id=`/var/ossec/bin/manage_agents -l | grep Win | cut -d':' -f2 | cut -d ',' -f1`
 
 /var/ossec/bin/agent_groups -a -g redhat -i ${rhel_id} -q
 /var/ossec/bin/agent_groups -a -g mysql -i ${rhel_id} -q
 /var/ossec/bin/agent_groups -a -g apache -i ${rhel_id} -q
-#/var/ossec/bin/agent_groups -a -g windows -i ${windows_id} -q
+/var/ossec/bin/agent_groups -a -g windows -i ${windows_id} -q
