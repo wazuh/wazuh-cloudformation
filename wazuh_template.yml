@@ -1685,6 +1685,7 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
+          export DEBIAN_FRONTEND=noninteractive
           echo 'Starting...' > /tmp/cflog.log
           apt update
           apt-get -y install python-setuptools curl python-pip
