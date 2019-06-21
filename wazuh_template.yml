@@ -1502,8 +1502,9 @@ Resources:
           $Password = (convertto-securestring -asplaintext ${SshPassword} -force)
           New-LocalUser "wazuh" -Password $Password -FullName "wazuh" -Description "Wazuh user for remote desktop"
           Add-LocalGroupMember -Group "Remote Desktop Users" -Member "wazuh"
+          Set-ADAccountPassword -Identity "Administrator" -Reset -NewPassword $Password
           $master_ip=${WazuhNetworkLoadBalancer.DNSName}
-          $url = "https://packages.wazuh.com/3.x/windows/wazuh-agent-3.9.2-1.msi" 
+          $url = "https://packages.wazuh.com/3.x/windows/wazuh-agent-3.9.2-1.msi"
           $path = "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi" 
           if(!(Split-Path -parent $path) -or !(Test-Path -pathType Container (Split-Path -parent $path))) { 
             $targetFile = Join-Path $pwd (Split-Path -leaf $path) 
