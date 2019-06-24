@@ -316,7 +316,7 @@ elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
 curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/filebeat/7.x/filebeat.yml
 
 # Filebeat configuration
-curl -so /etc/filebeat/wazuh-template.json "https://raw.githubusercontent.com/wazuh/wazuh/$wazuh_version/extensions/elasticsearch/7.x/wazuh-template.json"
+curl -so /etc/filebeat/wazuh-template.json "https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_version/extensions/elasticsearch/7.x/wazuh-template.json"
 
 # File permissions
 chmod go-w /etc/filebeat/filebeat.yml
