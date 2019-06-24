@@ -208,6 +208,12 @@ cat > ${default_index} << EOF
 }
 EOF
 
+echo "Waiting for Kibana service..." >> /tmp/deploy.log
+until curl -XGET "https://$eth0_ip:5601/api/status" -k -u elastic:${ssh_password}; do
+    sleep 5
+    echo "Kibana not ready yet..." >> /tmp/deploy.log
+done
+
 curl -POST "https://$eth0_ip:5601/api/kibana/settings" -u elastic:${ssh_password} -k -H "Content-Type: application/json" -H "kbn-xsrf: true" -d@${default_index}
 rm -f ${default_index}
 echo "Set up default Index pattern." >> /tmp/log
