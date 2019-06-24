@@ -208,17 +208,17 @@ cat > ${default_index} << EOF
 }
 EOF
 
-curl -POST "https://localhost:5601/api/kibana/settings" -u elastic:${ssh_password} -k -H "Content-Type: application/json" -H "kbn-xsrf: true" -d@${default_index}
+curl -POST "https://$eth0_ip:5601/api/kibana/settings" -u elastic:${ssh_password} -k -H "Content-Type: application/json" -H "kbn-xsrf: true" -d@${default_index}
 rm -f ${default_index}
 echo "Set up default Index pattern." >> /tmp/log
 
 # Configuring Kibana TimePicker
-curl -POST "https://localhost:5601/api/kibana/settings" -u elastic:${ssh_password} -k -H "Content-Type: application/json" -H "kbn-xsrf: true" -d \
+curl -POST "https://$eth0_ip:5601/api/kibana/settings" -u elastic:${ssh_password} -k -H "Content-Type: application/json" -H "kbn-xsrf: true" -d \
 '{"changes":{"timepicker:timeDefaults":"{\n  \"from\": \"now-24h\",\n  \"to\": \"now\",\n  \"mode\": \"quick\"}"}}'
 echo "Set up default timepicker." >> /tmp/log
 
 # Do not ask user to help providing usage statistics to Elastic
-curl -POST "https://localhost:5601/api/telemetry/v1/optIn" -u elastic:${ssh_password} -k -H "Content-Type: application/json" -H "kbn-xsrf: true" -d '{"enabled":false}'
+curl -POST "https://$eth0_ip:5601/api/telemetry/v1/optIn" -u elastic:${ssh_password} -k -H "Content-Type: application/json" -H "kbn-xsrf: true" -d '{"enabled":false}'
 echo  "Do not ask user to help providing usage statistics to Elastic" >> /tmp/log
 
 # Disable Elastic repository
