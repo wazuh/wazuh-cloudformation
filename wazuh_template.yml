@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-
+Description: Provides a demo environment with a Wazuh cluster of two nodes, Elasticsearch cluster of three nodes with xpack security and SSL enabled, a Splunk instance and several agents.
 Mappings:
   RegionMap:
     us-east-1:
