@@ -79,7 +79,7 @@ rm -f /etc/suricata/suricata.yaml
 wget -O /etc/suricata/suricata.yaml http://www.branchnetconsulting.com/wazuh/suricata.yaml
 tar -xvzf emerging.rules.tar.gz && mv rules/*.rules /etc/suricata/rules
 sed -i '/rule-files:/,/#only use the scada_special if you have the scada extensions compiled int/{//!d}' /etc/suricata/suricata.yaml
-sed -i '/rule-files/ a \  - "*.rule*' /etc/suricata/suricata.yaml
+sed -i '/rule-files/ a \  - "*.rules"' /etc/suricata/suricata.yaml
 chown suricata:suricata /etc/suricata/rules/*.rules
 chmod +r /etc/suricata/rules/*.rules
 systemctl daemon-reload
