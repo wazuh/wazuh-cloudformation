@@ -170,6 +170,14 @@ disable_elk_repos(){
     sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
 }
 
+set_elk_password(){
+    echo "Creating elk user with password $ssh_password" >> /tmp/deploy.log
+    echo $ssh_password | /usr/share/elasticsearch/bin/elasticsearch-keystore add -x 'bootstrap.password'
+    systemctl restart elasticsearch
+    sleep 60
+    echo 'Done' >> /tmp/deploy.log
+}
+
 main(){
     check_root
     create_ssh_user
@@ -179,6 +187,7 @@ main(){
     set_security
     start_elasticsearch
     disable_elk_repos
+    set_elk_password
 }
 
 main
