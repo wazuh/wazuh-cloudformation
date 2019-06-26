@@ -276,6 +276,7 @@ custom_welcome(){
   sed -i 's|Your window into the Elastic Stack|The Open Source Security Platform|g' /usr/share/kibana/optimize/bundles/login.bundle.js
   unalias cp
   cp custom_welcome/login.style.css /usr/share/kibana/optimize/bundles/login.style.css -f
+  chown kibana:kibana /usr/share/kibana/optimize/bundles/ -R
 }
 
 main(){
