@@ -420,11 +420,18 @@ wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
 elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
 elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
 
-curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/filebeat/7.x/filebeat.yml
+curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/filebeat-module/extensions/filebeat/7.x/filebeat.yml
+chmod go+r /etc/filebeat/filebeat.yml
 
 # Configuring Filebeat
 sed -i "s|'http://YOUR_ELASTIC_SERVER_IP:9200'|'10.0.2.123','10.0.2.124','10.0.2.125'|" /etc/filebeat/filebeat.yml
-curl -so /etc/filebeat/wazuh-template.json "https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/elasticsearch/7.x/wazuh-template.json"
+curl -so /etc/filebeat/wazuh-template.json https://raw.githubusercontent.com/wazuh/wazuh/filebeat-module/extensions/elasticsearch/7.x/wazuh-template.json
+chmod go+r /etc/filebeat/wazuh-template.json
+
+curl -so /tmp/wazuh-module.zip https://packages-dev.wazuh.com/utils/wazuh-module.zip
+unzip /tmp/wazuh-module.zip -d /usr/share/filebeat/module/wazuh
+chmod 755 -R /usr/share/filebeat/module/wazuh
+
 amazon-linux-extras install epel -y
 yum install -y sshpass
 chmod go-w /etc/filebeat/wazuh-template.json
@@ -447,6 +454,8 @@ echo "output.elasticsearch.protocol: https" >> /etc/filebeat/filebeat.yml
 echo "output.elasticsearch.ssl.certificate: "/etc/filebeat/certs/wazuh-manager.crt"" >> /etc/filebeat/filebeat.yml
 echo "output.elasticsearch.ssl.key: "/etc/filebeat/certs/wazuh-manager.key"" >> /etc/filebeat/filebeat.yml
 echo "output.elasticsearch.ssl.certificate_authorities: ["/etc/filebeat/certs/ca/ca.crt"]" >> /etc/filebeat/filebeat.yml
+systemctl enable filebeat
+systemctl daemon-reload
 systemctl restart filebeat
 echo "Restarted Filebeat." >> /tmp/log
 
