@@ -144,7 +144,7 @@ get_plugin_url(){
 
 install_plugin(){
   echo "Installing app" >> /tmp/log
-  /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
+  sudo -u kibana /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
   echo "App installed!" >> /tmp/log
 }
 
