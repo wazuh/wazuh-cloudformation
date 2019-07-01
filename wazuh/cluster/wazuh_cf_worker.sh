@@ -313,18 +313,24 @@ wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
 wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
 elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
 elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
-curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_major.$wazuh_minor.$wazuh_patch/extensions/filebeat/7.x/filebeat.yml
+curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/filebeat-module/extensions/filebeat/7.x/filebeat.yml
 
 # Filebeat configuration
-curl -so /etc/filebeat/wazuh-template.json "https://raw.githubusercontent.com/wazuh/wazuh/v$wazuh_version/extensions/elasticsearch/7.x/wazuh-template.json"
-
+curl -so /etc/filebeat/wazuh-template.json https://raw.githubusercontent.com/wazuh/wazuh/filebeat-module/extensions/elasticsearch/7.x/wazuh-template.json
+chmod go+r /etc/filebeat/filebeat.yml
 # File permissions
-chmod go-w /etc/filebeat/filebeat.yml
-chmod go-w /etc/filebeat/wazuh-template.json
+chmod go-r /etc/filebeat/wazuh-template.json
 sed -i "s|'http://YOUR_ELASTIC_SERVER_IP:9200'|'10.0.2.123','10.0.2.124','10.0.2.125'|" /etc/filebeat/filebeat.yml
+chmod go+r /etc/filebeat/wazuh-template.json
+
 echo "output.elasticsearch.username: "elastic"" >> /etc/filebeat/filebeat.yml
 echo "output.elasticsearch.password: "$ssh_password"" >> /etc/filebeat/filebeat.yml
 mkdir -p /etc/filebeat/certs/ca
+
+curl -s https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/utils/wazuh-filebeat-module.tar.gz | tar -xvz --no-same-owner -C /usr/share/filebeat/module --owner=0
+mkdir -p /usr/share/filebeat/module/wazuh
+chmod 755 -R /usr/share/filebeat/module/wazuh
+
 amazon-linux-extras install epel -y
 yum install -y sshpass
 sleep 500
