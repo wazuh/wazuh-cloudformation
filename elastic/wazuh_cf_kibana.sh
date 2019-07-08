@@ -264,7 +264,7 @@ echo "Restarted NGINX..." >> /tmp/log
 }
 
 custom_welcome(){
-
+  unalias cp
   curl https://s3.amazonaws.com/wazuh.com/wp-content/uploads/demo/custom-welcome.tar.gz --output custom.tar.gz
   tar xvf custom.tar.gz
   cp custom_welcome/wazuh_wazuh_bg.svg /usr/share/kibana/optimize/bundles/
@@ -274,7 +274,6 @@ custom_welcome(){
   sed -i 's|Welcome to Kibana|Welcome to Wazuh|g' /usr/share/kibana/optimize/bundles/kibana.bundle.js
   sed -i 's|Your window into the Elastic Stack|The Open Source Security Platform|g' /usr/share/kibana/optimize/bundles/kibana.bundle.js
   sed -i 's|Your window into the Elastic Stack|The Open Source Security Platform|g' /usr/share/kibana/optimize/bundles/login.bundle.js
-  unalias cp
   cp custom_welcome/login.style.css /usr/share/kibana/optimize/bundles/login.style.css -f
   chown kibana:kibana /usr/share/kibana/optimize/bundles/ -R
 }
