@@ -190,13 +190,6 @@ start_kibana(){
 kibana_optional_configs(){
 echo "Configuring Kibana options" >> /tmp/log
 
-# Enabling extensions
-sed -i "s/#extensions.docker    : false/extensions.docker : true/" /usr/share/kibana/plugins/wazuh/config.yml
-sed -i "s/#extensions.aws    : false/extensions.aws : true/" /usr/share/kibana/plugins/wazuh/config.yml
-sed -i "s/#extensions.osquery    : false/extensions.osquery : true/" /usr/share/kibana/plugins/wazuh/config.yml
-sed -i "s/#extensions.oscap    : false/extensions.oscap : true/" /usr/share/kibana/plugins/wazuh/config.yml
-sed -i "s/#extensions.virustotal    : false/extensions.virustotal : true/" /usr/share/kibana/plugins/wazuh/config.yml
-
 # Configuring default index pattern for Kibana
 default_index="/tmp/default_index.json"
 
@@ -214,17 +207,17 @@ until curl -XGET "https://$eth0_ip:5601/api/status" -k -u elastic:${ssh_password
     echo "Kibana not ready yet..." >> /tmp/deploy.log
 done
 
-curl -POST "https://$eth0_ip:5601/api/kibana/settings" -u elastic:${ssh_password} -k -H "Content-Type: application/json" -H "kbn-xsrf: true" -d@${default_index}
+curl -POST "https://$eth0_ip:5601/api/kibana/settings" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d@${default_index}
 rm -f ${default_index}
 echo "Set up default Index pattern." >> /tmp/log
 
 # Configuring Kibana TimePicker
-curl -POST "https://$eth0_ip:5601/api/kibana/settings" -u elastic:${ssh_password} -k -H "Content-Type: application/json" -H "kbn-xsrf: true" -d \
+curl -POST "https://$eth0_ip:5601/api/kibana/settings" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d \
 '{"changes":{"timepicker:timeDefaults":"{\n  \"from\": \"now-24h\",\n  \"to\": \"now\",\n  \"mode\": \"quick\"}"}}'
 echo "Set up default timepicker." >> /tmp/log
 
 # Do not ask user to help providing usage statistics to Elastic
-curl -POST "https://$eth0_ip:5601/api/telemetry/v1/optIn" -u elastic:${ssh_password} -k -H "Content-Type: application/json" -H "kbn-xsrf: true" -d '{"enabled":false}'
+curl -POST "https://$eth0_ip:5601/api/telemetry/v1/optIn" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d '{"enabled":false}'
 echo  "Do not ask user to help providing usage statistics to Elastic" >> /tmp/log
 
 # Disable Elastic repository
