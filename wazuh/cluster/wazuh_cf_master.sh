@@ -97,10 +97,12 @@ wget https://wazuh.com/resources/iplist-to-cdblist.py -O /var/ossec/etc/lists/ip
 echo ${WindowsPublicIp} >> /var/ossec/etc/lists/alienvault_reputation.ipset
 python /var/ossec/etc/lists/iplist-to-cdblist.py /var/ossec/etc/lists/alienvault_reputation.ipset /var/ossec/etc/lists/blacklist-alienvault
 
+ll >> /tmp/cdblists.log
 # Delete ipset and python script
 rm -rf /var/ossec/etc/lists/alienvault_reputation.ipset
 rm -rf /var/ossec/etc/lists/iplist-to-cdblist.py
-/var/ossec/bin/ossec-makelists
+chmod o-r blacklist-alienvault
+/var/ossec/bin/ossec-makelists >> /tmp/makelist.log
 
 echo "Updated CDB list ,added Windows agent IP." >> /tmp/log
 
