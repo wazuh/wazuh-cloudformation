@@ -2,7 +2,7 @@
 # Install Kibana instance using Cloudformation template
 # Support for Amazon Linux
 
-echo "Starting process." >> /tmp/log
+echo "Starting process." >> /tmp/deploy.log
 
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
@@ -65,11 +65,11 @@ install_kibana(){
 # Installing Kibana
 yum -y install kibana-${elastic_version}
 chkconfig --add kibana
-echo "Kibana installed." >> /tmp/log
+echo "Kibana installed." >> /tmp/deploy.log
 }
 
 kibana_certs(){
-  echo "certs " >> /tmp/log
+  echo "certs " >> /tmp/deploy.log
   amazon-linux-extras install epel -y
   yum install -y sshpass
   sleep 500
@@ -106,11 +106,11 @@ xpack.security.enabled: true
 elasticsearch.username: "elastic"
 elasticsearch.password: "$ssh_password"
 EOF
-echo "Kibana.yml configured." >> /tmp/log
+echo "Kibana.yml configured." >> /tmp/deploy.log
 
 # Allow Kibana to listen on privileged ports
 setcap 'CAP_NET_BIND_SERVICE=+eip' /usr/share/kibana/node/bin/node
-echo "Setcap executed" >> /tmp/log
+echo "Setcap executed" >> /tmp/deploy.log
 
 # Configuring Kibana default settings
 cat > /etc/default/kibana << 'EOF'
@@ -122,7 +122,7 @@ nice=""
 KILL_ON_STOP_TIMEOUT=0
 NODE_OPTIONS="--max-old-space-size=4096"
 EOF
-echo "/etc/default/kibana completed" >> /tmp/log
+echo "/etc/default/kibana completed" >> /tmp/deploy.log
 }
 
 
@@ -143,13 +143,13 @@ get_plugin_url(){
 }
 
 install_plugin(){
-  echo "Installing app" >> /tmp/log
+  echo "Installing app" >> /tmp/deploy.log
   sudo -u kibana /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
-  echo "App installed!" >> /tmp/log
+  echo "App installed!" >> /tmp/deploy.log
 }
 
 add_api(){
-echo "Adding Wazuh API" >> /tmp/log
+echo "Adding Wazuh API" >> /tmp/deploy.log
 api_config="/tmp/api_config.json"
 api_time=$(($(date +%s%N)/1000000))
 wazuh_api_password_base64=`echo -n ${wazuh_api_password} | base64`
@@ -173,22 +173,22 @@ EOF
 CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "https://10.0.2.124:9200/.wazuh/_doc/${api_time}" -u elastic:${ssh_password} -k)
 if [ "x$CONFIG_CODE" != "x200" ]; then
   curl -s -XPUT "https://10.0.2.124:9200/.wazuh/_doc/${api_time}" -u elastic:${ssh_password} -k -H 'Content-Type: application/json' -d@${api_config}
-  echo "Loaded Wazuh API to an Elasticsearch >=v7 cluster" >> /tmp/log
+  echo "Loaded Wazuh API to an Elasticsearch >=v7 cluster" >> /tmp/deploy.log
 fi
 
 rm -f ${api_config}
-echo "Configured API" >> /tmp/log
+echo "Configured API" >> /tmp/deploy.log
 }
 
 start_kibana(){
   # Starting Kibana
   systemctl restart kibana
   sleep 60
-  echo "Started Kibana" >> /tmp/log
+  echo "Started Kibana" >> /tmp/deploy.log
 }
 
 kibana_optional_configs(){
-echo "Configuring Kibana options" >> /tmp/log
+echo "Configuring Kibana options" >> /tmp/deploy.log
 
 # Configuring default index pattern for Kibana
 default_index="/tmp/default_index.json"
@@ -209,30 +209,30 @@ done
 
 curl -POST "https://$eth0_ip:5601/api/kibana/settings" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d@${default_index}
 rm -f ${default_index}
-echo "Set up default Index pattern." >> /tmp/log
+echo "Set up default Index pattern." >> /tmp/deploy.log
 
 # Configuring Kibana TimePicker
 curl -POST "https://$eth0_ip:5601/api/kibana/settings" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d \
 '{"changes":{"timepicker:timeDefaults":"{\n  \"from\": \"now-24h\",\n  \"to\": \"now\",\n  \"mode\": \"quick\"}"}}'
-echo "Set up default timepicker." >> /tmp/log
+echo "Set up default timepicker." >> /tmp/deploy.log
 
 # Do not ask user to help providing usage statistics to Elastic
 curl -POST "https://$eth0_ip:5601/api/telemetry/v1/optIn" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d '{"enabled":false}'
-echo  "Do not ask user to help providing usage statistics to Elastic" >> /tmp/log
+echo  "Do not ask user to help providing usage statistics to Elastic" >> /tmp/deploy.log
 
 # Disable Elastic repository
 sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
-echo "Configured Kibana" >> /tmp/log
+echo "Configured Kibana" >> /tmp/deploy.log
 }
 
 add_nginx(){
 
-echo "Installing NGINX..." >> /tmp/log
+echo "Installing NGINX..." >> /tmp/deploy.log
 # Install Nginx ang generate certificates
 sudo amazon-linux-extras install nginx1.12
 mkdir -p /etc/ssl/certs /etc/ssl/private
 openssl req -x509 -batch -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/kibana.key -out /etc/ssl/certs/kibana.pem
-echo "Installed NGINX." >> /tmp/log
+echo "Installed NGINX." >> /tmp/deploy.log
 
 # Installing htpasswd (needed for Amazon Linux)
 yum install httpd-tools-2.4.33-2.amzn2.0.2.x86_64 -y
@@ -252,11 +252,12 @@ EOF
 
 # Starting Nginx
 systemctl restart nginx
-echo "Restarted NGINX..." >> /tmp/log
+echo "Restarted NGINX..." >> /tmp/deploy.log
 
 }
 
 custom_welcome(){
+  echo "custom_welcome " >> /tmp/deploy.log
   unalias cp
   curl https://s3.amazonaws.com/wazuh.com/wp-content/uploads/demo/custom-welcome.tar.gz --output custom.tar.gz
   tar xvf custom.tar.gz
