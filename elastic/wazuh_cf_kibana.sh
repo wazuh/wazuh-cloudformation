@@ -207,17 +207,17 @@ until curl -XGET "https://$eth0_ip:5601/api/status" -k -u elastic:${ssh_password
     echo "Kibana not ready yet..." >> /tmp/deploy.log
 done
 
-curl -POST "https://$eth0_ip:5601/api/kibana/settings" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d@${default_index}
-rm -f ${default_index}
-echo "Set up default Index pattern." >> /tmp/deploy.log
-
 # Configuring Kibana TimePicker
-curl -POST "https://$eth0_ip:5601/api/kibana/settings" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d \
+curl -XPOST "https://$eth0_ip:5601/api/kibana/settings" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d \
 '{"changes":{"timepicker:timeDefaults":"{\n  \"from\": \"now-24h\",\n  \"to\": \"now\",\n  \"mode\": \"quick\"}"}}'
 echo "Set up default timepicker." >> /tmp/deploy.log
 
+curl -XPOST "https://$eth0_ip:5601/api/kibana/settings" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d@${default_index}
+rm -f ${default_index}
+echo "Set up default Index pattern." >> /tmp/deploy.log
+
 # Do not ask user to help providing usage statistics to Elastic
-curl -POST "https://$eth0_ip:5601/api/telemetry/v1/optIn" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d '{"enabled":false}'
+curl -XPOST "https://$eth0_ip:5601/api/telemetry/v1/optIn" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d '{"enabled":false}'
 echo  "Do not ask user to help providing usage statistics to Elastic" >> /tmp/deploy.log
 
 # Disable Elastic repository
