@@ -261,7 +261,7 @@ echo "Cluster configuration" >> /tmp/log
 systemctl restart wazuh-manager
 
 # Installing Filebeat
-yum -y install filebeat
+yum -y install filebeat-${elastic_version}
 chkconfig --add filebeat
 echo "Installed Filebeat" >> /tmp/log
 
@@ -327,7 +327,7 @@ echo "output.elasticsearch.username: "elastic"" >> /etc/filebeat/filebeat.yml
 echo "output.elasticsearch.password: "$ssh_password"" >> /etc/filebeat/filebeat.yml
 mkdir -p /etc/filebeat/certs/ca
 
-curl -s https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/utils/wazuh-filebeat-module.tar.gz | tar -xvz --no-same-owner -C /usr/share/filebeat/module --owner=0
+curl -s https://packages-dev.wazuh.com/3.x/filebeat/wazuh-filebeat-0.1.tar.gz | tar -xvz -C /usr/share/filebeat/module
 mkdir -p /usr/share/filebeat/module/wazuh
 chmod 755 -R /usr/share/filebeat/module/wazuh
 

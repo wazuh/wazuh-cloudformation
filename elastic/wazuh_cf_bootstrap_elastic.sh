@@ -216,7 +216,7 @@ main(){
     create_bootstrap_user
     set_security
     start_elasticsearch
-    load_template
+    #load_template
     disable_elk_repos
 }
 
