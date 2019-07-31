@@ -422,12 +422,12 @@ wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
 elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
 elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
 
-curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/filebeat-module/extensions/filebeat/7.x/filebeat.yml
+curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/filebeat/7.x/filebeat.yml
 chmod go+r /etc/filebeat/filebeat.yml
 
 # Configuring Filebeat
 sed -i "s|'http://YOUR_ELASTIC_SERVER_IP:9200'|'10.0.2.123','10.0.2.124','10.0.2.125'|" /etc/filebeat/filebeat.yml
-curl -so /etc/filebeat/wazuh-template.json https://raw.githubusercontent.com/wazuh/wazuh/filebeat-module/extensions/elasticsearch/7.x/wazuh-template.json
+curl -so /etc/filebeat/wazuh-template.json https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/elasticsearch/7.x/wazuh-template.json
 chmod go+r /etc/filebeat/wazuh-template.json
 
 curl -s https://packages-dev.wazuh.com/3.x/filebeat/wazuh-filebeat-0.1.tar.gz | tar -xvz -C /usr/share/filebeat/module
