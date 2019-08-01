@@ -140,7 +140,7 @@ cat > ${user_config} << EOF
 }
 EOF
   # Create wazuh user
-  curl -XPOST "https://$eth0_ip:9200/_security/user/wazuh" -k -u elastic:${ssh_password} -d@${user_config}
+  curl -XPOST "https://$eth0_ip:9200/_security/user/wazuh" -k -u elastic:${ssh_password} -d@${user_config} -H 'Content-Type: application/json'
 
 }
 start_elasticsearch(){
