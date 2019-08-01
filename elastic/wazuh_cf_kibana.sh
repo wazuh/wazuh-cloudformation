@@ -217,7 +217,7 @@ rm -f ${default_index}
 echo "Set up default Index pattern." >> /tmp/deploy.log
 
 # Do not ask user to help providing usage statistics to Elastic
-curl -XPOST "https://$eth0_ip:5601/api/telemetry/v1/optIn" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d '{"enabled":false}'
+curl -XPOST "https://$eth0_ip:5601/api/telemetry/v2/optIn" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d '{"enabled":false}'
 echo  "Do not ask user to help providing usage statistics to Elastic" >> /tmp/deploy.log
 
 # Disable Elastic repository
