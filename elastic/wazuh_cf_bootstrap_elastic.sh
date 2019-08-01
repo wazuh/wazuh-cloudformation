@@ -131,6 +131,18 @@ load_template(){
     echo "Added template." >> /tmp/deploy.log
 }
 
+add_wazuh_user(){
+user_config='/tmp/userconfig'
+cat > ${user_config} << EOF
+{
+  "password": "${ssh_password}",
+  "roles" : [ "superuser" ]
+}
+EOF
+  # Create wazuh user
+  curl -XPOST "https://$eth0_ip:9200/_security/user/wazuh" -k -u elastic:${ssh_password} -d@${user_config}
+
+}
 start_elasticsearch(){
     echo "Starting Elasticsearch and setting permissions" >> /tmp/deploy.log
     chown elasticsearch:elasticsearch -R /etc/elasticsearch
