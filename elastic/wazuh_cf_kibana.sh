@@ -202,7 +202,7 @@ cat > ${default_index} << EOF
 EOF
 
 echo "Waiting for Kibana service..." >> /tmp/deploy.log
-until curl -XGET "https://$eth0_ip:5601/api/status" -k -u elastic:${ssh_password}; do
+until curl -XGET "https://$eth0_ip:5601" -k -u elastic:${ssh_password}; do
     sleep 5
     echo "Kibana not ready yet..." >> /tmp/deploy.log
 done
