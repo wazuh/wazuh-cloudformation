@@ -229,6 +229,7 @@ main(){
     set_security
     start_elasticsearch
     #load_template
+    add_wazuh_user
     disable_elk_repos
 }
 
