@@ -1,8 +1,8 @@
 #!/bin/bash
 # Install Wazuh master instance using Cloudformation template
 # Support for Amazon Linux
-touch /tmp/log
-echo "Starting process." > /tmp/log
+touch /tmp/deploy.log
+echo "Starting process." > /tmp/deploy.log
 
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
@@ -27,7 +27,7 @@ AwsAccessKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsAccessKey:' | cut -d' ' -f
 SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
 
-echo "Added env vars." >> /tmp/log
+echo "Added env vars." >> /tmp/deploy.log
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -42,7 +42,7 @@ usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
 sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
 systemctl restart sshd
 
-echo "Created SSH user." >> /tmp/log
+echo "Created SSH user." >> /tmp/deploy.log
 
 if [[ ${EnvironmentType} == 'staging' ]]
 then
@@ -87,7 +87,7 @@ manager_config="/var/ossec/etc/ossec.conf"
 local_rules="/var/ossec/etc/rules/local_rules.xml"
 # Enable registration service (only for master node)
 
-echo "Installed wazuh manager package" >> /tmp/log
+echo "Installed wazuh manager package" >> /tmp/deploy.log
 
 ### Use case 1: IP reputation
 
@@ -101,9 +101,11 @@ rm -rf /var/ossec/etc/lists/alienvault_reputation.ipset
 rm -rf /var/ossec/etc/lists/iplist-to-cdblist.py
 sleep 15
 chmod 660 /var/ossec/etc/lists/blacklist-alienvault
+echo "Changed permissions" >> /tmp/deploy.log
+echo `ls -liah /var/ossec/etc/lists/ | grep alienvault` >> /tmp/deploy.log
 /var/ossec/bin/ossec-makelists
 
-echo "Updated CDB list ,added Windows agent IP." >> /tmp/log
+echo "Updated CDB list ,added Windows agent IP." >> /tmp/deploy.log
 
 # Change manager protocol to tcp, to be used by Amazon ELB
 sed -i "s/<protocol>udp<\/protocol>/<protocol>tcp<\/protocol>/" ${manager_config}
@@ -137,7 +139,7 @@ EOF
 
 # Setting password for agents registration
 echo "${wazuh_registration_password}" > /var/ossec/etc/authd.pass
-echo "Set registration password." > /tmp/log
+echo "Set registration password." > /tmp/deploy.log
 
 # Installing Python Cryptography module for the cluster
 pip install cryptography
@@ -383,17 +385,17 @@ EOF
 
 # Restart wazuh-manager
 systemctl restart wazuh-manager
-echo "Restarted Wazuh manager." >> /tmp/log
+echo "Restarted Wazuh manager." >> /tmp/deploy.log
 
 # Installing NodeJS
 curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
 yum -y install nodejs
-echo "Installed NODEJS." >> /tmp/log
+echo "Installed NODEJS." >> /tmp/deploy.log
 
 # Installing wazuh-api
 yum -y install wazuh-api
 chkconfig --add wazuh-api
-echo "Installed Wazuh API." >> /tmp/log
+echo "Installed Wazuh API." >> /tmp/deploy.log
 
 # Configuring Wazuh API user and password
 cd /var/ossec/api/configuration/auth
@@ -404,16 +406,16 @@ api_ssl_dir="/var/ossec/api/configuration/ssl"
 openssl req -x509 -batch -nodes -days 3650 -newkey rsa:2048 -keyout ${api_ssl_dir}/server.key -out ${api_ssl_dir}/server.crt
 sed -i "s/config.https = \"no\";/config.https = \"yes\";/" /var/ossec/api/configuration/config.js
 sed -i "s/config.port = \"55000\";/config.port = \"${wazuh_api_port}\";/" /var/ossec/api/configuration/config.js
-echo "Setting port and SSL to Wazuh API." >> /tmp/log
+echo "Setting port and SSL to Wazuh API." >> /tmp/deploy.log
 
 # Restart wazuh-api
 systemctl restart wazuh-api 
-echo "Restarted Wazuh API." >> /tmp/log
+echo "Restarted Wazuh API." >> /tmp/deploy.log
 
 # Installing Filebeat
 yum -y install filebeat-${elastic_version}
 chkconfig --add filebeat
-echo "Installed Filebeat." >> /tmp/log
+echo "Installed Filebeat." >> /tmp/deploy.log
 
 wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
 wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
@@ -458,7 +460,7 @@ echo "output.elasticsearch.ssl.certificate_authorities: ["/etc/filebeat/certs/ca
 systemctl enable filebeat
 systemctl daemon-reload
 systemctl restart filebeat
-echo "Restarted Filebeat." >> /tmp/log
+echo "Restarted Filebeat." >> /tmp/deploy.log
 
 
 # Load template in Easticsearch
@@ -512,7 +514,7 @@ echo "Starting Splunk..."
 
 # restart service
 /opt/splunkforwarder/bin/splunk restart &> /dev/null
-echo "Done with Splunk." >> /tmp/log
+echo "Done with Splunk." >> /tmp/deploy.log
 
 # Creating groups
 /var/ossec/bin/agent_groups -a -g apache -q
@@ -566,24 +568,6 @@ cat >> ${redhat_conf} << EOF
 		<skip_nfs>yes</skip_nfs>
 	</syscheck>
 	<!-- Policy monitoring -->
-	<rootcheck>
-		<disabled>no</disabled>
-		<check_unixaudit>yes</check_unixaudit>
-		<check_files>yes</check_files>
-		<check_trojans>yes</check_trojans>
-		<check_dev>no</check_dev>
-		<check_sys>no</check_sys>
-		<check_pids>yes</check_pids>
-		<check_ports>no</check_ports>
-		<check_if>no</check_if>
-		<!-- Frequency that rootcheck is executed - every 12 hours -->
-		<frequency>60</frequency>
-		<rootkit_files>/var/ossec/etc/shared/rootkit_files.txt</rootkit_files>
-		<rootkit_trojans>/var/ossec/etc/shared/rootkit_trojans.txt</rootkit_trojans>
-		<system_audit>/var/ossec/etc/shared/system_audit_rcl.txt</system_audit>
-		<system_audit>/var/ossec/etc/shared/system_audit_ssh.txt</system_audit>
-		<skip_nfs>yes</skip_nfs>
-	</rootcheck>
 	<!-- OpenSCAP integration -->
 	<wodle name="open-scap">
 		<disabled>no</disabled>
