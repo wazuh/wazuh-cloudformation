@@ -100,8 +100,8 @@ python /var/ossec/etc/lists/iplist-to-cdblist.py /var/ossec/etc/lists/alienvault
 rm -rf /var/ossec/etc/lists/alienvault_reputation.ipset
 rm -rf /var/ossec/etc/lists/iplist-to-cdblist.py
 sleep 15
-chmod 660 blacklist-alienvault
-/var/ossec/bin/ossec-makelists >> /tmp/makelist.log
+chmod 660 /var/ossec/etc/lists/blacklist-alienvault
+/var/ossec/bin/ossec-makelists
 
 echo "Updated CDB list ,added Windows agent IP." >> /tmp/log
 
@@ -426,7 +426,7 @@ chmod go+r /etc/filebeat/filebeat.yml
 
 # Configuring Filebeat
 sed -i "s|'http://YOUR_ELASTIC_SERVER_IP:9200'|'10.0.2.123','10.0.2.124','10.0.2.125'|" /etc/filebeat/filebeat.yml
-curl -so /etc/filebeat/wazuh-template.json https://raw.githubusercontent.com/wazuh/wazuh/3.9/extensions/elasticsearch/7.x/wazuh-template.json
+curl -so /etc/filebeat/wazuh-template.json https://raw.githubusercontent.com/wazuh/wazuh/7aabaad52489627f6e6baf5772b79a0569ccff75/extensions/elasticsearch/7.x/wazuh-template.json
 chmod go+r /etc/filebeat/wazuh-template.json
 
 curl -s https://packages-dev.wazuh.com/3.x/filebeat/wazuh-filebeat-0.1.tar.gz | tar -xvz -C /usr/share/filebeat/module
