@@ -90,6 +90,7 @@ local_rules="/var/ossec/etc/rules/local_rules.xml"
 echo "Installed wazuh manager package" >> /tmp/deploy.log
 
 ### Use case 1: IP reputation
+echo "Fetching AlienVault reputation IPset" >> /tmp/deploy.log
 
 wget https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/alienvault_reputation.ipset -O /var/ossec/etc/lists/alienvault_reputation.ipset
 wget https://wazuh.com/resources/iplist-to-cdblist.py -O /var/ossec/etc/lists/iplist-to-cdblist.py
@@ -99,7 +100,6 @@ python /var/ossec/etc/lists/iplist-to-cdblist.py /var/ossec/etc/lists/alienvault
 # Delete ipset and python script
 rm -rf /var/ossec/etc/lists/alienvault_reputation.ipset
 rm -rf /var/ossec/etc/lists/iplist-to-cdblist.py
-sleep 15
 chmod 660 /var/ossec/etc/lists/blacklist-alienvault
 echo "Changed permissions" >> /tmp/deploy.log
 echo `ls -liah /var/ossec/etc/lists/ | grep alienvault` >> /tmp/deploy.log
@@ -390,7 +390,7 @@ echo "Restarted Wazuh manager." >> /tmp/deploy.log
 # Installing NodeJS
 curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
 yum -y install nodejs
-echo "Installed NODEJS." >> /tmp/deploy.log
+echo "Installed NodeJS." >> /tmp/deploy.log
 
 # Installing wazuh-api
 yum -y install wazuh-api
