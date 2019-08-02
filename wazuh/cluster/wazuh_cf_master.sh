@@ -101,9 +101,9 @@ python /var/ossec/etc/lists/iplist-to-cdblist.py /var/ossec/etc/lists/alienvault
 rm -rf /var/ossec/etc/lists/alienvault_reputation.ipset
 rm -rf /var/ossec/etc/lists/iplist-to-cdblist.py
 chmod 660 /var/ossec/etc/lists/blacklist-alienvault
+/var/ossec/bin/ossec-makelists
 echo "Changed permissions" >> /tmp/deploy.log
 echo `ls -liah /var/ossec/etc/lists/ | grep alienvault` >> /tmp/deploy.log
-/var/ossec/bin/ossec-makelists
 
 echo "Updated CDB list ,added Windows agent IP." >> /tmp/deploy.log
 
