@@ -122,7 +122,7 @@ load_template(){
         echo "Elasticsearch not ready yet..." >> /tmp/deploy.log
     done
 
-    url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/filebeat-module/extensions/elasticsearch/7.x/wazuh-template.json"
+    url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/af0a39d797112866435b4d30a5d104634ee8997e/extensions/elasticsearch/7.x/wazuh-template.json"
     alerts_template="/tmp/wazuh-template.json"
     curl -Lo ${alerts_template} ${url_alerts_template}
     curl -XPUT "https://${eth0_ip}:9200/_template/wazuh" -k -u elastic:${ssh_password} -H 'Content-Type: application/json' -d@${alerts_template}
@@ -131,6 +131,18 @@ load_template(){
     echo "Added template." >> /tmp/deploy.log
 }
 
+add_wazuh_user(){
+user_config='/tmp/userconfig'
+cat > ${user_config} << EOF
+{
+  "password": "${ssh_password}",
+  "roles" : [ "superuser" ]
+}
+EOF
+  # Create wazuh user
+  curl -XPOST "https://$eth0_ip:9200/_security/user/wazuh" -k -u elastic:${ssh_password} -d@${user_config} -H 'Content-Type: application/json'
+
+}
 start_elasticsearch(){
     echo "Starting Elasticsearch and setting permissions" >> /tmp/deploy.log
     chown elasticsearch:elasticsearch -R /etc/elasticsearch
@@ -217,6 +229,7 @@ main(){
     set_security
     start_elasticsearch
     #load_template
+    add_wazuh_user
     disable_elk_repos
 }
 
