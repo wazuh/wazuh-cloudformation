@@ -79,6 +79,8 @@ echo "Created volumes in ephemeral." >> /tmp/deploy.log
 cat > /etc/elasticsearch/elasticsearch.yml << EOF
 cluster.name: "wazuh_elastic"
 node.name: "coordinating_node"
+path.data: /mnt/ephemeral/elasticsearch/lib
+path.logs: /mnt/ephemeral/elasticsearch/log
 node.master: false
 node.data: false
 node.ingest: false
