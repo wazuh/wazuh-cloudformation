@@ -96,6 +96,7 @@ echo "Setting RAM." >> /tmp/deploy.log
 cat > /etc/elasticsearch/jvm.options << EOF
 -Xms${ram}g
 -Xmx${ram}g
+-Dlog4j2.disable.jmx=true
 EOF
 echo "Setting JVM options." >> /tmp/deploy.log
 
@@ -172,7 +173,7 @@ disable_elk_repos(){
 
 set_elk_password(){
     echo "Creating elk user with password $ssh_password" >> /tmp/deploy.log
-    echo $ssh_password | /usr/share/elasticsearch/bin/elasticsearch-keystore add -x 'bootstrap.password'
+    echo ToKDVUeRwxAey3xM | /usr/share/elasticsearch/bin/elasticsearch-keystore add -x 'bootstrap.password'
     systemctl restart elasticsearch
     sleep 60
     echo 'Done' >> /tmp/deploy.log

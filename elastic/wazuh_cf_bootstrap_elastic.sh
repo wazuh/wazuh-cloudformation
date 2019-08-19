@@ -100,6 +100,7 @@ echo "Setting RAM." >> /tmp/deploy.log
 cat > /etc/elasticsearch/jvm.options << EOF
 -Xms${ram}g
 -Xmx${ram}g
+-Dlog4j2.disable.jmx=true
 EOF
 echo "Setting JVM options." >> /tmp/deploy.log
 

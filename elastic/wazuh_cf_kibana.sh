@@ -95,6 +95,7 @@ echo "Setting RAM." >> /tmp/deploy.log
 cat > /etc/elasticsearch/jvm.options << EOF
 -Xms${ram}g
 -Xmx${ram}g
+-Dlog4j2.disable.jmx=true
 EOF
 echo "Setting JVM options." >> /tmp/deploy.log
 
@@ -129,6 +130,14 @@ set_security(){
     echo "Configured security." >> /tmp/deploy.log
     chown -R elasticsearch:elasticsearch /etc/elasticsearch/certs
     echo "Changed permissions certs directory." >> /tmp/deploy.log
+}
+
+create_bootstrap_user(){
+    echo "Creating elk user with password $ssh_password" >> /tmp/deploy.log
+    echo $ssh_password | /usr/share/elasticsearch/bin/elasticsearch-keystore add -x 'bootstrap.password'
+    systemctl restart elasticsearch
+    sleep 60
+    echo 'Done' >> /tmp/deploy.log
 }
 
 start_elasticsearch(){
@@ -176,7 +185,6 @@ kibana_certs(){
   echo "server.ssl.enabled: true" >> /etc/kibana/kibana.yml
   echo "server.ssl.certificate: "/etc/kibana/certs/kibana.crt"" >> /etc/kibana/kibana.yml
   echo "server.ssl.key: "/etc/kibana/certs/kibana.key"" >> /etc/kibana/kibana.yml
-  sed -i "s/^server.ssl.enabled: false/server.ssl.enabled: true/" /etc/kibana/kibana.yml
 }
 
 configure_kibana(){
@@ -185,7 +193,6 @@ cat > /etc/kibana/kibana.yml << EOF
 elasticsearch.hosts: ["https://$eth0_ip:9200"]
 server.port: 5601
 server.host: "$eth0_ip"
-server.ssl.enabled: false
 xpack.security.enabled: true
 elasticsearch.username: "elastic"
 elasticsearch.password: "$ssh_password"
@@ -364,6 +371,7 @@ main(){
   install_elasticsearch
   configure_kibana
   configuring_elasticsearch
+  create_bootstrap_user
   kibana_certs
   set_security
   start_elasticsearch
