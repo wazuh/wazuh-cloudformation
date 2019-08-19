@@ -173,7 +173,7 @@ disable_elk_repos(){
 
 set_elk_password(){
     echo "Creating elk user with password $ssh_password" >> /tmp/deploy.log
-    echo ToKDVUeRwxAey3xM | /usr/share/elasticsearch/bin/elasticsearch-keystore add -x 'bootstrap.password'
+    echo $ssh_password | /usr/share/elasticsearch/bin/elasticsearch-keystore add -x 'bootstrap.password'
     systemctl restart elasticsearch
     sleep 60
     echo 'Done' >> /tmp/deploy.log
