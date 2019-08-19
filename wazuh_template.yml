@@ -227,8 +227,9 @@ Parameters:
       - 7.2.0_3.9.3
       - 7.2.0_3.9.4
       - 7.3.0_3.9.4
+      - 7.3.0_3.9.5
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
-    Default: 7.3.0_3.9.4
+    Default: 7.3.0_3.9.5
     Description: Elastic and Wazuh versions to be installed
     Type: String
   WazuhInstanceType:
@@ -706,7 +707,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.4_7.3.0/elastic/wazuh_cf_bootstrap_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.5_7.3.0/elastic/wazuh_cf_bootstrap_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -766,7 +767,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.4_7.3.0/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.5_7.3.0/elastic/wazuh_cf_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -826,7 +827,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.4_7.3.0/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.5_7.3.0/elastic/wazuh_cf_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -1034,7 +1035,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_kibana.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.4_7.3.0/elastic/wazuh_cf_kibana.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.5_7.3.0/elastic/wazuh_cf_kibana.sh
               mode: '000700'
               owner: root
               group: root
@@ -1100,7 +1101,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_splunk.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.4_7.3.0/splunk/wazuh_cf_splunk.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.5_7.3.0/splunk/wazuh_cf_splunk.sh
               mode: '000700'
               owner: root
               group: root
@@ -1175,7 +1176,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_master.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.4_7.3.0/wazuh/cluster/wazuh_cf_master.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.5_7.3.0/wazuh/cluster/wazuh_cf_master.sh
               mode: '000700'
               owner: root
               group: root
@@ -1262,7 +1263,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_worker.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.4_7.3.0/wazuh/cluster/wazuh_cf_worker.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.5_7.3.0/wazuh/cluster/wazuh_cf_worker.sh
               mode: '000700'
               owner: root
               group: root
@@ -1340,7 +1341,7 @@ Resources:
               group: root
             /tmp/wazuh_agent_amazon.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.4_7.3.0/wazuh/agents/wazuh_agent_amazon.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.5_7.3.0/wazuh/agents/wazuh_agent_amazon.sh
               mode: '000700'
               owner: root
               group: root
@@ -1418,7 +1419,7 @@ Resources:
               group: root
             /tmp/wazuh_agent_centos.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.4_7.3.0/wazuh/agents/wazuh_agent_centos.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.5_7.3.0/wazuh/agents/wazuh_agent_centos.sh
               mode: '000700'
               owner: root
               group: root
@@ -1507,7 +1508,7 @@ Resources:
           Add-LocalGroupMember -Group "Remote Desktop Users" -Member "wazuh"
           net user Administrator ${SshPassword}
           $master_ip=${WazuhNetworkLoadBalancer.DNSName}
-          $url = "https://packages.wazuh.com/3.x/windows/wazuh-agent-3.9.4-1.msi"
+          $url = "https://packages.wazuh.com/3.x/windows/wazuh-agent-3.9.5-1.msi"
           $path = "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi" 
           if(!(Split-Path -parent $path) -or !(Test-Path -pathType Container (Split-Path -parent $path))) { 
             $targetFile = Join-Path $pwd (Split-Path -leaf $path) 
@@ -1574,7 +1575,7 @@ Resources:
               group: root
             /tmp/wazuh_agent_debian.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.4_7.3.0/wazuh/agents/wazuh_cf_agent_debian.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.5_7.3.0/wazuh/agents/wazuh_cf_agent_debian.sh
               mode: '000700'
               owner: root
               group: root
@@ -1659,7 +1660,7 @@ Resources:
               group: root
             /tmp/wazuh_agent_ubuntu.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.4_7.3.0/wazuh/agents/wazuh_cf_agent_ubuntu.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.5_7.3.0/wazuh/agents/wazuh_cf_agent_ubuntu.sh
               mode: '000700'
               owner: root
               group: root
@@ -1744,7 +1745,7 @@ Resources:
               group: root
             /tmp/wazuh_agent_rhel.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.4_7.3.0/wazuh/agents/wazuh_agent_rhel.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.9.5_7.3.0/wazuh/agents/wazuh_agent_rhel.sh
               mode: '000700'
               owner: root
               group: root
