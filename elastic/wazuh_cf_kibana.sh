@@ -71,6 +71,11 @@ install_elasticsearch(){
 }
 
 configuring_elasticsearch(){
+mkdir -p /mnt/ephemeral/elasticsearch/lib
+mkdir -p /mnt/ephemeral/elasticsearch/log
+chown -R elasticsearch:elasticsearch /mnt/ephemeral/elasticsearch
+
+echo "Created volumes in ephemeral." >> /tmp/deploy.log
 cat > /etc/elasticsearch/elasticsearch.yml << EOF
 cluster.name: "wazuh_elastic"
 node.name: "coordinating_node"
