@@ -61,6 +61,90 @@ EOF
 echo "Added Elasticsearch repo." >> /tmp/deploy.log
 }
 
+# Installing ELK coordinating only mode
+install_elasticsearch(){
+    echo "Installing Elasticsearch." >> /tmp/deploy.log
+    # Installing Elasticsearch
+    yum -y install elasticsearch-${elastic_version}
+    chkconfig --add elasticsearch
+    echo "Installed Elasticsearch." >> /tmp/deploy.log
+}
+
+configuring_elasticsearch(){
+cat > /etc/elasticsearch/elasticsearch.yml << EOF
+cluster.name: "wazuh_elastic"
+node.name: "coordinating_node"
+node.master: false
+node.data: false
+node.ingest: false
+discovery.seed_hosts: 
+  - "10.0.2.123"
+  - "10.0.2.124"
+  - "10.0.2.125"
+EOF
+
+echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
+
+# Calculating RAM for Elasticsearch
+ram_gb=$[$(free -g | awk '/^Mem:/{print $2}')+1]
+ram=$(( ${ram_gb} / 2 ))
+if [ $ram -eq "0" ]; then ram=1; fi
+echo "Setting RAM." >> /tmp/deploy.log
+
+# Configuring jvm.options
+cat > /etc/elasticsearch/jvm.options << EOF
+-Xms${ram}g
+-Xmx${ram}g
+EOF
+echo "Setting JVM options." >> /tmp/deploy.log
+
+mkdir -p /etc/systemd/system/elasticsearch.service.d/
+echo '[Service]' > /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
+echo 'LimitMEMLOCK=infinity' >> /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
+
+# Allowing unlimited memory allocation
+echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
+echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
+echo "Setting memory lock options." >> /tmp/deploy.log
+echo "Setting permissions." >> /tmp/deploy.log
+# restarting elasticsearch after changes
+}
+
+set_security(){
+
+    mkdir -p /etc/elasticsearch/certs
+    cp /etc/kibana/certs/* /etc/elasticsearch/certs/ -R
+    echo "xpack.security.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.transport.ssl.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.transport.ssl.verification_mode: certificate" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.transport.ssl.key: "/etc/elasticsearch/certs/kibana.key"" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.transport.ssl.certificate: /etc/elasticsearch/certs/kibana.crt" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.transport.ssl.certificate_authorities: [ "/etc/elasticsearch/certs/ca/ca.crt" ]" >> /etc/elasticsearch/elasticsearch.yml
+    echo "# HTTP layer" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.http.ssl.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.http.ssl.verification_mode: certificate" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.http.ssl.key: "/etc/elasticsearch/certs/kibana.key"" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.http.ssl.certificate: /etc/elasticsearch/certs/kibana.crt" >> /etc/elasticsearch/elasticsearch.yml
+    echo "xpack.security.http.ssl.certificate_authorities: [ "/etc/elasticsearch/certs/ca/ca.crt" ]" >> /etc/elasticsearch/elasticsearch.yml
+    echo "Configured security." >> /tmp/deploy.log
+    chown -R elasticsearch:elasticsearch /etc/elasticsearch/certs
+    echo "Changed permissions certs directory." >> /tmp/deploy.log
+}
+
+start_elasticsearch(){
+    echo "start_elasticsearch." >> /tmp/deploy.log
+    # Correct owner for Elasticsearch directories
+    chown elasticsearch:elasticsearch -R /etc/elasticsearch
+    chown elasticsearch:elasticsearch -R /usr/share/elasticsearch
+    chown elasticsearch:elasticsearch -R /var/lib/elasticsearch
+    systemctl daemon-reload
+    # Starting Elasticsearch
+    echo "daemon-reload." >> /tmp/deploy.log
+    systemctl restart elasticsearch
+    echo "done with starting elasticsearch service." >> /tmp/deploy.log
+}
+
+
 install_kibana(){
 # Installing Kibana
 yum -y install kibana-${elastic_version}
@@ -98,7 +182,7 @@ kibana_certs(){
 configure_kibana(){
 # Configuring kibana.yml
 cat > /etc/kibana/kibana.yml << EOF
-elasticsearch.hosts: ["https://10.0.2.124:9200"]
+elasticsearch.hosts: ["https://$eth0_ip:9200"]
 server.port: 5601
 server.host: "$eth0_ip"
 server.ssl.enabled: false
@@ -277,8 +361,12 @@ main(){
   create_ssh_user
   import_elk_repo
   install_kibana
+  install_elasticsearch
   configure_kibana
+  configuring_elasticsearch
   kibana_certs
+  set_security
+  start_elasticsearch
   get_plugin_url
   install_plugin
   start_kibana
