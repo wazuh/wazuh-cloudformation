@@ -286,6 +286,10 @@ start_kibana(){
 }
 
 kibana_optional_configs(){
+until curl -XGET "https://$eth0_ip:5601" -k -u elastic:${ssh_password}; do
+    sleep 5
+    echo "Kibana not ready yet..." >> /tmp/deploy.log
+done
 echo "Configuring Kibana options" >> /tmp/deploy.log
 
 # Configuring default index pattern for Kibana
@@ -355,6 +359,10 @@ echo "Restarted NGINX..." >> /tmp/deploy.log
 }
 
 custom_welcome(){
+  until curl -XGET "https://$eth0_ip:5601" -k -u elastic:${ssh_password}; do
+    sleep 5
+    echo "Kibana not ready yet..." >> /tmp/deploy.log
+  done
   echo "custom_welcome " >> /tmp/deploy.log
   unalias cp
   curl https://s3.amazonaws.com/wazuh.com/wp-content/uploads/demo/custom-welcome.tar.gz --output custom.tar.gz
