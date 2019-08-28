@@ -194,6 +194,15 @@ kibana_certs(){
   echo "server.ssl.key: "/etc/kibana/certs/kibana.key"" >> /etc/kibana/kibana.yml
 }
 
+custom_welcome(){
+    # Set Wazuh app as the default landing page
+    echo "server.defaultRoute: /app/wazuh"  >> /etc/kibana/kibana.yml
+ 
+    # Redirect Kibana welcome screen to Discover
+    echo "Redirect Kibana welcome screen to Discover"
+    sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/global_nav/global_nav.html
+    sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/header_global_nav/header_global_nav.js
+}
 configure_kibana(){
 # Configuring kibana.yml
 cat > /etc/kibana/kibana.yml << EOF
@@ -388,6 +397,7 @@ main(){
   configuring_elasticsearch
   create_bootstrap_user
   kibana_certs
+  custom_welcome
   set_security
   start_elasticsearch
   get_plugin_url
