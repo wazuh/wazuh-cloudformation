@@ -271,7 +271,7 @@ cat >> ${manager_config} << EOF
   <integration>
     <name>slack</name>
     <hook_url>${SlackHook}</hook_url>
-    <level>10</level>
+    <level>12</level>
     <alert_format>json</alert_format>
   </integration>
 </ossec_config>
