@@ -123,7 +123,7 @@ load_template(){
         echo "Elasticsearch not ready yet..." >> /tmp/deploy.log
     done
 
-    url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v3.9.5/extensions/elasticsearch/7.x/wazuh-template.json"
+    url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v3.10.0-rc1/extensions/elasticsearch/7.x/wazuh-template.json"
     alerts_template="/tmp/wazuh-template.json"
     curl -Lo ${alerts_template} ${url_alerts_template}
     curl -XPUT "https://${eth0_ip}:9200/_template/wazuh" -k -u elastic:${ssh_password} -H 'Content-Type: application/json' -d@${alerts_template}
