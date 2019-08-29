@@ -326,6 +326,7 @@ Parameters:
     AllowedValues:
       - t2.medium
       - t2.large
+      - m5ad.large
       - i3.large
       - i3.xlarge
       - i3.2xlarge
@@ -339,6 +340,7 @@ Parameters:
       - t2.medium
       - t2.large
       - m5.large
+      - m5ad.large
       - m5.xlarge
       - m5.2xlarge
       - r5.large
