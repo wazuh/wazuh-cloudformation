@@ -194,7 +194,7 @@ kibana_certs(){
   echo "server.ssl.key: "/etc/kibana/certs/kibana.key"" >> /etc/kibana/kibana.yml
 }
 
-custom_welcome(){
+redirect_app(){
     # Set Wazuh app as the default landing page
     echo "server.defaultRoute: /app/wazuh"  >> /etc/kibana/kibana.yml
  
@@ -414,7 +414,7 @@ main(){
   add_api
   kibana_optional_configs
   add_nginx
-  custom_welcome
+  redirect_app
 }
 
 main
