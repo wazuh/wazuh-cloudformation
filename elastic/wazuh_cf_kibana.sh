@@ -290,14 +290,20 @@ echo "Configured API" >> /tmp/deploy.log
 start_kibana(){
   # Starting Kibana
   systemctl restart kibana
-  sleep 60
+  until [ "$health" != '' ]; do
+    health="$(curl "https://$eth0_ip:5601/" -k -u elastic:$ssh_password)"
+    >&2 echo "Kibana not ready yet..."
+    sleep 1
+  done
   echo "Started Kibana" >> /tmp/deploy.log
+
 }
 
 kibana_optional_configs(){
-until curl -XGET "https://$eth0_ip:5601" -k -u elastic:${ssh_password}; do
-    sleep 5
-    echo "Kibana not ready yet..." >> /tmp/deploy.log
+until [ "$health" != '' ]; do
+  health="$(curl "https://$eth0_ip:5601/" -k -u elastic:$ssh_password)"
+  >&2 echo "Kibana not ready yet..."
+  sleep 1
 done
 echo "Configuring Kibana options" >> /tmp/deploy.log
 
@@ -313,9 +319,10 @@ cat > ${default_index} << EOF
 EOF
 
 echo "Waiting for Kibana service..." >> /tmp/deploy.log
-until curl -XGET "https://$eth0_ip:5601" -k -u elastic:${ssh_password}; do
-    sleep 5
-    echo "Kibana not ready yet..." >> /tmp/deploy.log
+until [ "$health" != '' ]; do
+  health="$(curl "https://$eth0_ip:5601/" -k -u elastic:$ssh_password)"
+  >&2 echo "Kibana not ready yet..."
+  sleep 1
 done
 
 # Configuring Kibana TimePicker
@@ -368,9 +375,10 @@ echo "Restarted NGINX..." >> /tmp/deploy.log
 }
 
 custom_welcome(){
-  until curl -XGET "https://$eth0_ip:5601" -k -u elastic:${ssh_password}; do
-    sleep 5
-    echo "Kibana not ready yet..." >> /tmp/deploy.log
+  until [ "$health" != '' ]; do
+    health="$(curl "https://$eth0_ip:5601/" -k -u elastic:$ssh_password)"
+    >&2 echo "Kibana not ready yet..."
+    sleep 1
   done
   echo "custom_welcome " >> /tmp/deploy.log
   unalias cp
