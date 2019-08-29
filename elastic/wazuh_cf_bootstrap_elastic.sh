@@ -133,6 +133,11 @@ load_template(){
 }
 
 add_wazuh_user(){
+  
+until curl -XGET "https://$eth0_ip:9200" -k -u elastic:${ssh_password}; do
+  sleep 5
+  echo "Elasticsearch not ready yet..." >> /tmp/deploy.log
+done
 user_config='/tmp/userconfig'
 cat > ${user_config} << EOF
 {
