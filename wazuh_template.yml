@@ -1513,6 +1513,8 @@ Resources:
           $master_ip=${WazuhNetworkLoadBalancer.DNSName}
           $url = "https://packages-dev.wazuh.com/pre-release/windows/wazuh-agent-3.10.0-1.msi"
           $path = "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi" 
+          $url_osquery = "https://pkg.osquery.io/windows/osquery-3.3.2.msi"
+          $path_osquery = "C:\\Users\\Administrator\\Desktop\\osquery.msi" 
           if(!(Split-Path -parent $path) -or !(Test-Path -pathType Container (Split-Path -parent $path))) { 
             $targetFile = Join-Path $pwd (Split-Path -leaf $path) 
           } 
@@ -1523,12 +1525,20 @@ Resources:
             "Error installing Google Chrome."
           }
           (New-Object Net.WebClient).DownloadFile($url, $path) 
+          (New-Object Net.WebClient).DownloadFile($url_osquery, $path_osquery)
           New-Item -ItemType directory -Path C:\Santiago
           try {
             Start-Process -FilePath "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi" -Wait -ArgumentList /q,ADDRESS=${WazuhNetworkLoadBalancer.DNSName},AUTHD_SERVER=${WazuhNetworkLoadBalancer.DNSName},AGENT_NAME="Windows",PROTOCOL="TCP",PASSWORD=${WazuhRegistrationPassword}
           } catch {
             $_.Exception.Message
             "Error installing Wazuh agent"
+            Exit
+          }
+          try {
+            Start-Process -FilePath "C:\\Users\\Administrator\\Desktop\\osquery.msi" -Wait
+          } catch {
+            $_.Exception.Message
+            "Error installing Osquery"
             Exit
           }
           </powershell>
