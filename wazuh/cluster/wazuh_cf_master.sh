@@ -26,6 +26,7 @@ AwsSecretKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsSecretKey:' | cut -d' ' -f
 AwsAccessKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsAccessKey:' | cut -d' ' -f2)
 SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
+TAG='v3.10.0-rc2'
 
 echo "Added env vars." >> /tmp/deploy.log
 
@@ -425,12 +426,12 @@ wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
 elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
 elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
 
-curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/v3.10.0-rc1/extensions/filebeat/7.x/filebeat.yml
+curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/filebeat/7.x/filebeat.yml
 chmod go+r /etc/filebeat/filebeat.yml
 
 # Configuring Filebeat
 sed -i "s|'http://YOUR_ELASTIC_SERVER_IP:9200'|'10.0.2.123','10.0.2.124','10.0.2.125'|" /etc/filebeat/filebeat.yml
-curl -so /etc/filebeat/wazuh-template.json https://raw.githubusercontent.com/wazuh/wazuh/v3.10.0-rc1/extensions/elasticsearch/7.x/wazuh-template.json
+curl -so /etc/filebeat/wazuh-template.json https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/elasticsearch/7.x/wazuh-template.json
 chmod go+r /etc/filebeat/wazuh-template.json
 
 curl -s https://packages.wazuh.com/3.x/filebeat/wazuh-filebeat-0.1.tar.gz | tar -xvz -C /usr/share/filebeat/module
@@ -489,10 +490,10 @@ yum install splunkforwarder-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm -y -q &> /de
 
 echo "Setting up Splunk forwarder..."
 # props.conf
-curl -so /opt/splunkforwarder/etc/system/local/props.conf https://raw.githubusercontent.com/wazuh/wazuh/v3.10.0-rc1/extensions/splunk/props.conf
+curl -so /opt/splunkforwarder/etc/system/local/props.conf https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/splunk/props.conf
 
 # inputs.conf
-curl -so /opt/splunkforwarder/etc/system/local/inputs.conf https://raw.githubusercontent.com/wazuh/wazuh/v3.10.0-rc1/extensions/splunk/inputs.conf
+curl -so /opt/splunkforwarder/etc/system/local/inputs.conf https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/splunk/inputs.conf
 
 # set hostname
 sed -i "s:MANAGER_HOSTNAME:$(hostname):g" /opt/splunkforwarder/etc/system/local/inputs.conf

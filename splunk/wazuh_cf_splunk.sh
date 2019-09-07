@@ -11,7 +11,7 @@ eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet addr:' | cut -d: -f2  | cut -d' ' -f1
 wazuh_api_user=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminUsername:' | cut -d' ' -f2)
 wazuh_api_password=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminPassword:' | cut -d' ' -f2)
 wazuh_api_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiPort:' | cut -d' ' -f2)
-
+TAG="v3.10.0-rc2"
 
 # Creating SSH user
 adduser ${ssh_username}
@@ -35,11 +35,11 @@ echo "USERNAME = $splunk_username" >> /opt/splunk/etc/system/local/user-seed.con
 echo "PASSWORD = $splunk_password" >> /opt/splunk/etc/system/local/user-seed.conf
 
 # fetching configuration files
-curl -so /opt/splunk/etc/system/local/inputs.conf https://raw.githubusercontent.com/wazuh/wazuh/v3.10.0-rc1/extensions/splunk/peer-inputs.conf &> /dev/null
-curl -so /opt/splunk/etc/system/local/indexes.conf https://raw.githubusercontent.com/wazuh/wazuh/v3.10.0-rc1/extensions/splunk/peer-indexes.conf &> /dev/null
+curl -so /opt/splunk/etc/system/local/inputs.conf https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/splunk/peer-inputs.conf &> /dev/null
+curl -so /opt/splunk/etc/system/local/indexes.conf https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/splunk/peer-indexes.conf &> /dev/null
 
 # clone app
-git clone -b 3.10 --single-branch git://github.com/wazuh/wazuh-splunk.git &> /dev/null
+git clone -b $TAG --single-branch git://github.com/wazuh/wazuh-splunk.git &> /dev/null
 
 # install app
 cp -R ./wazuh-splunk/SplunkAppForWazuh/ /opt/splunk/etc/apps/

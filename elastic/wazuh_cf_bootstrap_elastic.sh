@@ -17,6 +17,7 @@ node_name=$(cat /tmp/wazuh_cf_settings | grep '^NodeName:' | cut -d' ' -f2)
 master_ip=$(cat /tmp/wazuh_cf_settings | grep '^MasterIp:' | cut -d' ' -f2)
 worker_ip=$(cat /tmp/wazuh_cf_settings | grep '^WorkerIp:' | cut -d' ' -f2)
 kibana_ip=$(cat /tmp/wazuh_cf_settings | grep '^KibanaIp:' | cut -d' ' -f2)
+TAG="v3.10.0-rc2"
 echo "Added env vars." >> /tmp/deploy.log
 echo "eth0_ip: $eth0_ip" >> /tmp/deploy.log
 
@@ -123,7 +124,7 @@ load_template(){
         echo "Elasticsearch not ready yet..." >> /tmp/deploy.log
     done
 
-    url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/v3.10.0-rc1/extensions/elasticsearch/7.x/wazuh-template.json"
+    url_alerts_template="https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/elasticsearch/7.x/wazuh-template.json"
     alerts_template="/tmp/wazuh-template.json"
     curl -Lo ${alerts_template} ${url_alerts_template}
     curl -XPUT "https://${eth0_ip}:9200/_template/wazuh" -k -u elastic:${ssh_password} -H 'Content-Type: application/json' -d@${alerts_template}

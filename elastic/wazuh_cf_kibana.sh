@@ -44,6 +44,20 @@ create_ssh_user(){
     echo "Started SSH service." >> /tmp/deploy.log
 }
 
+await_kibana(){
+  echo "Waiting for Kibana service..."
+  status='x'
+  until [ "$status" == '' ]; do
+    health=`curl "https://$eth0_ip:5601" -k -u elastic:$ssh_password`
+    echo $health > status
+    curl "https://$eth0_ip:5601" -k -u elastic:$ssh_password 2> status
+    status=`cat status`
+    echo "Kibana not ready yet..."
+    sleep 1
+  done
+  echo "Done"
+}
+
 import_elk_repo(){
 # Configuring Elastic repository
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
@@ -195,6 +209,7 @@ kibana_certs(){
 }
 
 redirect_app(){
+    await_kibana
     # Set Wazuh app as the default landing page
     echo "server.defaultRoute: /app/wazuh"  >> /etc/kibana/kibana.yml
  
@@ -203,6 +218,7 @@ redirect_app(){
     sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/global_nav/global_nav.html
     sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/header_global_nav/header_global_nav.js
 }
+
 configure_kibana(){
 # Configuring kibana.yml
 cat > /etc/kibana/kibana.yml << EOF
@@ -219,17 +235,6 @@ echo "Kibana.yml configured." >> /tmp/deploy.log
 setcap 'CAP_NET_BIND_SERVICE=+eip' /usr/share/kibana/node/bin/node
 echo "Setcap executed" >> /tmp/deploy.log
 
-# Configuring Kibana default settings
-cat > /etc/default/kibana << 'EOF'
-ser="kibana"
-group="kibana"
-chroot="/"
-chdir="/"
-nice=""
-KILL_ON_STOP_TIMEOUT=0
-NODE_OPTIONS="--max-old-space-size=4096"
-EOF
-echo "/etc/default/kibana completed" >> /tmp/deploy.log
 }
 
 
@@ -237,13 +242,13 @@ get_plugin_url(){
   if [[ ${EnvironmentType} == 'staging' ]]
   then
     # Adding Wazuh pre_release repository
-  plugin_url="https://packages-dev.wazuh.com/staging/app/kibana/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}-rc1.zip"
+  plugin_url="https://packages-dev.wazuh.com/staging/app/kibana/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}-rc2.zip"
   elif [[ ${EnvironmentType} == 'production' ]]
   then
   plugin_url="https://packages.wazuh.com/wazuhapp/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
   elif [[ ${EnvironmentType} == 'devel' ]]
   then
-  plugin_url="https://packages-dev.wazuh.com/staging/app/kibana/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}-rc1.zip"
+  plugin_url="https://packages-dev.wazuh.com/staging/app/kibana/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}-rc2.zip"
   else
     echo 'no repo' >> /tmp/stage
   fi
@@ -290,21 +295,12 @@ echo "Configured API" >> /tmp/deploy.log
 start_kibana(){
   # Starting Kibana
   systemctl restart kibana
-  until [ "$health" != '' ]; do
-    health="$(curl "https://$eth0_ip:5601/" -k -u elastic:$ssh_password)"
-    >&2 echo "Kibana not ready yet..."
-    sleep 1
-  done
-  echo "Started Kibana" >> /tmp/deploy.log
+  await_kibana
 
 }
 
 kibana_optional_configs(){
-until [ "$health" != '' ]; do
-  health="$(curl "https://$eth0_ip:5601/" -k -u elastic:$ssh_password)"
-  >&2 echo "Kibana not ready yet..."
-  sleep 1
-done
+await_kibana
 echo "Configuring Kibana options" >> /tmp/deploy.log
 
 # Configuring default index pattern for Kibana
@@ -318,13 +314,7 @@ cat > ${default_index} << EOF
 }
 EOF
 
-echo "Waiting for Kibana service..." >> /tmp/deploy.log
-until [ "$health" != '' ]; do
-  health="$(curl "https://$eth0_ip:5601/" -k -u elastic:$ssh_password)"
-  >&2 echo "Kibana not ready yet..."
-  sleep 1
-done
-
+await_kibana
 # Configuring Kibana TimePicker
 curl -XPOST "https://$eth0_ip:5601/api/kibana/settings" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d \
 '{"changes":{"timepicker:timeDefaults":"{\n  \"from\": \"now-24h\",\n  \"to\": \"now\",\n  \"mode\": \"quick\"}"}}' >> /tmp/deploy.log
@@ -375,11 +365,7 @@ echo "Restarted NGINX..." >> /tmp/deploy.log
 }
 
 custom_welcome(){
-  until [ "$health" != '' ]; do
-    health="$(curl "https://$eth0_ip:5601/" -k -u elastic:$ssh_password)"
-    >&2 echo "Kibana not ready yet..."
-    sleep 1
-  done
+  await_kibana
   echo "custom_welcome " >> /tmp/deploy.log
   unalias cp
   curl https://s3.amazonaws.com/wazuh.com/wp-content/uploads/demo/custom-welcome.tar.gz --output custom.tar.gz
@@ -405,7 +391,6 @@ main(){
   configuring_elasticsearch
   create_bootstrap_user
   kibana_certs
-  custom_welcome
   set_security
   start_elasticsearch
   get_plugin_url
@@ -414,6 +399,7 @@ main(){
   add_api
   kibana_optional_configs
   add_nginx
+  custom_welcome
   redirect_app
 }
 

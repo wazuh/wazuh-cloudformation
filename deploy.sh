@@ -9,7 +9,7 @@ PARAMS_FILE='./parameters.json'
 TEMPLATE_FILE='./wazuh_template.yml'
 
 # Stack name
-STACK_NAME='demo-310rc1'
+STACK_NAME='demo-310rc2'
 
 # Bucket name
 BUCKET_NAME='demo-cloudformation-templates'
@@ -33,6 +33,6 @@ aws s3 cp $TEMPLATE_FILE s3://$BUCKET_NAME
 URL=`aws s3 presign s3://$BUCKET_NAME/$TEMPLATE_FILE`
 echo "Template URL: $URL"
 
-aws cloudformation create-stack --stack-name $STACK_NAME --template-url $URL --parameters file://$PARAMS_FILE
+aws cloudformation create-stack --stack-name demo-310rc2 --template-url $URL --parameters file://$PARAMS_FILE
 
 echo "Done"
