@@ -22,6 +22,22 @@ elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
 elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
 elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
 
+extract_certs(){
+  amazon-linux-extras install epel -y
+  yum install -y sshpass
+  echo $ssh_password >> pass
+
+  while [ ! -f /home/wazuh/certs.zip ]; do
+    sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/ 2> /dev/null
+    sleep 10
+  done
+  echo "Extract certs " >> /tmp/deploy.log
+  rm pass -f
+  cp /home/wazuh/certs.zip .
+  unzip certs.zip
+}
+
+
 check_root(){
     echo "Checking root." >> /tmp/deploy.log
     # Check if running as root
@@ -182,15 +198,6 @@ echo "Kibana installed." >> /tmp/deploy.log
 }
 
 kibana_certs(){
-  echo "certs " >> /tmp/deploy.log
-  amazon-linux-extras install epel -y
-  yum install -y sshpass
-  sleep 500
-  echo $ssh_password >> pass
-  sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/
-  rm pass -f
-  cp /home/wazuh/certs.zip .
-  unzip certs.zip
   mkdir /etc/kibana/certs/ca -p
   cp ca/ca.crt /etc/kibana/certs/ca
   cp kibana/kibana.crt /etc/kibana/certs
@@ -384,6 +391,7 @@ main(){
   create_ssh_user
   import_elk_repo
   install_elasticsearch
+  extract_certs
   configuring_elasticsearch
   create_bootstrap_user
   set_security
