@@ -58,21 +58,6 @@ await_kibana_ssl(){
   echo "Done"
 }
 
-await_kibana(){
-  echo "Waiting for Kibana service..." >> /tmp/deploy.sh
-  status='x'
-  until [ "$status" == '' ]; do
-    health=`curl "http://$eth0_ip:5601"`
-    echo $health > status
-    curl "http://$eth0_ip:5601" 2> status
-    status=`cat status`
-    echo "Status: $status" >> /tmp/deploy.sh
-    echo "Kibana not ready yet..." >> /tmp/deploy.sh
-    sleep 1
-  done
-  echo "Service is up." >> /tmp/deploy.sh
-}
-
 import_elk_repo(){
 # Configuring Elastic repository
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
@@ -310,7 +295,7 @@ echo "Configured API" >> /tmp/deploy.log
 start_kibana(){
   # Starting Kibana
   systemctl restart kibana
-  await_kibana
+  await_kibana_ssl
 
 }
 

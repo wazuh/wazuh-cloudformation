@@ -30,9 +30,9 @@ fi
 aws s3 cp $TEMPLATE_FILE s3://$BUCKET_NAME
 
 # Getting the template URL
-URL=`aws s3 presign s3://$BUCKET_NAME/$TEMPLATE_FILE`
+URL="https://demo-cloudformation-templates.s3-us-west-1.amazonaws.com/wazuh_template.yml"
 echo "Template URL: $URL"
 
-aws cloudformation create-stack --stack-name demo-310rc2 --template-url $URL --parameters file://$PARAMS_FILE
+aws cloudformation create-stack --stack-name demo-310rc2 --template-url $URL --parameters file://$PARAMS_FILE --capabilities CAPABILITY_IAM
 
 echo "Done"
