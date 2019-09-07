@@ -61,17 +61,12 @@ create_ssh_user(){
 }
 
 await_kibana_ssl(){
-  echo "Waiting for Kibana service..."
-  status_ssl='x'
-  until [ "$status_ssl" == '' ]; do
-    health=`curl "https://$eth0_ip:5601" -k -u elastic:$ssh_password`
-    echo $health > status_ssl
-    curl "https://$eth0_ip:5601" -k -u elastic:$ssh_password 2> status_ssl
-    status_ssl=`cat status_ssl`
-    echo "Kibana not ready yet..."
-    sleep 1
+  echo "Waiting for Kibana service..." >> /tmp/deploy.log
+  until curl -XGET "https://$eth0_ip:5601" -k -u elastic:${ssh_password}; do
+      sleep 5
+      echo "Kibana not ready yet..." >> /tmp/deploy.log
   done
-  echo "Done"
+  echo "Kibana is up" >> /tmp/deploy.log
 }
 
 import_elk_repo(){
