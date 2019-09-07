@@ -157,7 +157,6 @@ create_bootstrap_user(){
     echo "Creating elk user with password $ssh_password" >> /tmp/deploy.log
     echo $ssh_password | /usr/share/elasticsearch/bin/elasticsearch-keystore add -x 'bootstrap.password'
     systemctl restart elasticsearch
-    sleep 60
     echo 'Done' >> /tmp/deploy.log
 }
 
@@ -384,14 +383,14 @@ main(){
   check_root
   create_ssh_user
   import_elk_repo
-  install_kibana
   install_elasticsearch
-  configure_kibana
   configuring_elasticsearch
   create_bootstrap_user
-  kibana_certs
   set_security
   start_elasticsearch
+  install_kibana
+  configure_kibana
+  kibana_certs
   get_plugin_url
   install_plugin
   start_kibana
