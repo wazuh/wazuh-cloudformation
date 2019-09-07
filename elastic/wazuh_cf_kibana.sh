@@ -44,18 +44,33 @@ create_ssh_user(){
     echo "Started SSH service." >> /tmp/deploy.log
 }
 
-await_kibana(){
+await_kibana_ssl(){
   echo "Waiting for Kibana service..."
-  status='x'
-  until [ "$status" == '' ]; do
+  status_ssl='x'
+  until [ "$status_ssl" == '' ]; do
     health=`curl "https://$eth0_ip:5601" -k -u elastic:$ssh_password`
-    echo $health > status
-    curl "https://$eth0_ip:5601" -k -u elastic:$ssh_password 2> status
-    status=`cat status`
+    echo $health > status_ssl
+    curl "https://$eth0_ip:5601" -k -u elastic:$ssh_password 2> status_ssl
+    status_ssl=`cat status_ssl`
     echo "Kibana not ready yet..."
     sleep 1
   done
   echo "Done"
+}
+
+await_kibana(){
+  echo "Waiting for Kibana service..." >> /tmp/deploy.sh
+  status='x'
+  until [ "$status" == '' ]; do
+    health=`curl "http://$eth0_ip:5601"`
+    echo $health > status
+    curl "http://$eth0_ip:5601" 2> status
+    status=`cat status`
+    echo "Status: $status" >> /tmp/deploy.sh
+    echo "Kibana not ready yet..." >> /tmp/deploy.sh
+    sleep 1
+  done
+  echo "Service is up." >> /tmp/deploy.sh
 }
 
 import_elk_repo(){
@@ -209,7 +224,7 @@ kibana_certs(){
 }
 
 redirect_app(){
-    await_kibana
+    await_kibana_ssl
     # Set Wazuh app as the default landing page
     echo "server.defaultRoute: /app/wazuh"  >> /etc/kibana/kibana.yml
  
@@ -300,7 +315,6 @@ start_kibana(){
 }
 
 kibana_optional_configs(){
-await_kibana
 echo "Configuring Kibana options" >> /tmp/deploy.log
 
 # Configuring default index pattern for Kibana
@@ -314,7 +328,7 @@ cat > ${default_index} << EOF
 }
 EOF
 
-await_kibana
+await_kibana_ssl
 # Configuring Kibana TimePicker
 curl -XPOST "https://$eth0_ip:5601/api/kibana/settings" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d \
 '{"changes":{"timepicker:timeDefaults":"{\n  \"from\": \"now-24h\",\n  \"to\": \"now\",\n  \"mode\": \"quick\"}"}}' >> /tmp/deploy.log
@@ -365,7 +379,7 @@ echo "Restarted NGINX..." >> /tmp/deploy.log
 }
 
 custom_welcome(){
-  await_kibana
+  await_kibana_ssl
   echo "custom_welcome " >> /tmp/deploy.log
   unalias cp
   curl https://s3.amazonaws.com/wazuh.com/wp-content/uploads/demo/custom-welcome.tar.gz --output custom.tar.gz
