@@ -93,21 +93,17 @@ echo "Installed wazuh manager package" >> /tmp/deploy.log
 ### Use case 1: IP reputation
 echo "Fetching AlienVault reputation IPset" >> /tmp/deploy.log
 
-wget https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/alienvault_reputation.ipset -O /var/ossec/etc/lists/alienvault_reputation.ipset
-wget https://wazuh.com/resources/iplist-to-cdblist.py -O /var/ossec/etc/lists/iplist-to-cdblist.py
+wget https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/alienvault_reputation.ipset -O /tmp/alienvault_reputation.ipset
+wget https://wazuh.com/resources/iplist-to-cdblist.py -O /tmp/iplist-to-cdblist.py
 # Add Windows public IP to the list
-echo ${WindowsPublicIp} >> /var/ossec/etc/lists/alienvault_reputation.ipset
-python /var/ossec/etc/lists/iplist-to-cdblist.py /var/ossec/etc/lists/alienvault_reputation.ipset /var/ossec/etc/lists/blacklist-alienvault
+echo ${WindowsPublicIp} >> /tmp/alienvault_reputation.ipset
+python /tmp/iplist-to-cdblist.py /tmp/alienvault_reputation.ipset /tmp/blacklist-alienvault
 # Delete ipset and python script
-rm -rf /var/ossec/etc/lists/alienvault_reputation.ipset
-rm -rf /var/ossec/etc/lists/iplist-to-cdblist.py
+rm -rf /tmp/alienvault_reputation.ipset
+rm -rf /tmp/iplist-to-cdblist.py
+cp /tmp/blacklist-alienvault /var/ossec/etc/lists/
 chmod 660 /var/ossec/etc/lists/blacklist-alienvault
-chown -R ossec:ossec /var/ossec/etc/lists/
-chown root:ossec /var/ossec/etc/lists/
 /var/ossec/bin/ossec-makelists
-echo "Changed permissions" >> /tmp/deploy.log
-echo `ls -liah /var/ossec/etc/lists/ | grep alienvault` >> /tmp/deploy.log
-
 echo "Updated CDB list ,added Windows agent IP." >> /tmp/deploy.log
 
 # Change manager protocol to tcp, to be used by Amazon ELB
