@@ -151,7 +151,8 @@ echo "Setting permissions." >> /tmp/deploy.log
 set_security(){
 
     mkdir -p /etc/elasticsearch/certs
-    cp /etc/kibana/certs/* /etc/elasticsearch/certs/ -R
+    cp /kibana/* /etc/elasticsearch/certs/ -R
+    cp /ca /etc/elasticsearch/certs/ -R
     echo "xpack.security.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
     echo "xpack.security.transport.ssl.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
     echo "xpack.security.transport.ssl.verification_mode: certificate" >> /etc/elasticsearch/elasticsearch.yml
