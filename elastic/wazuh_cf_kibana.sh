@@ -302,6 +302,7 @@ start_kibana(){
 }
 
 kibana_optional_configs(){
+sleep 500
 echo "Configuring Kibana options" >> /tmp/deploy.log
 
 # Configuring default index pattern for Kibana
