@@ -219,6 +219,17 @@ redirect_app(){
     echo "Redirect Kibana welcome screen to Discover"
     sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/global_nav/global_nav.html
     sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/header_global_nav/header_global_nav.js
+
+cat > /etc/kibana/kibana.yml << EOF
+xpack.apm.ui.enabled: false
+xpack.grokdebugger.enabled: false
+xpack.searchprofiler.enabled: false
+xpack.ml.enabled: false
+xpack.canvas.enabled: false
+xpack.infra.enabled: false
+xpack.monitoring.enabled: false
+console.enabled: false
+EOF
 }
 
 configure_kibana(){
