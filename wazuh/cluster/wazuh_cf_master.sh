@@ -411,28 +411,33 @@ echo "Setting port and SSL to Wazuh API." >> /tmp/deploy.log
 systemctl restart wazuh-api 
 echo "Restarted Wazuh API." >> /tmp/deploy.log
 
+
 # Installing Filebeat
 yum -y install filebeat-${elastic_version}
-chkconfig --add filebeat
-echo "Installed Filebeat." >> /tmp/deploy.log
+echo "Installed Filebeat" >> /tmp/log
 
+# Configuring Filebeat
 wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
 wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
 wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
 elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
 elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
 
+# Install Filebeat module
+curl -s "https://packages.wazuh.com/3.x/filebeat/wazuh-filebeat-0.1.tar.gz" | tar -xvz -C /usr/share/filebeat/module
+
+# Get Filebeat configuration file
 curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/filebeat/7.x/filebeat.yml
-chmod go+r /etc/filebeat/filebeat.yml
 
-# Configuring Filebeat
-sed -i "s|'http://YOUR_ELASTIC_SERVER_IP:9200'|'10.0.2.123','10.0.2.124','10.0.2.125'|" /etc/filebeat/filebeat.yml
+# Elasticsearch template
 curl -so /etc/filebeat/wazuh-template.json https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/elasticsearch/7.x/wazuh-template.json
-chmod go+r /etc/filebeat/wazuh-template.json
 
-curl -s https://packages.wazuh.com/3.x/filebeat/wazuh-filebeat-0.1.tar.gz | tar -xvz -C /usr/share/filebeat/module
-mkdir -p /usr/share/filebeat/module/wazuh
-chmod 755 -R /usr/share/filebeat/module/wazuh
+# File permissions
+chmod go-w /etc/filebeat/filebeat.yml
+chmod go-w /etc/filebeat/wazuh-template.json
+
+# Point to Elasticsearch cluster
+sed -i "s|'http://YOUR_ELASTIC_SERVER_IP:9200'|'10.0.2.123','10.0.2.124','10.0.2.125'|" /etc/filebeat/filebeat.yml
 
 amazon-linux-extras install epel -y
 yum install -y sshpass

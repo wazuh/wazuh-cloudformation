@@ -263,9 +263,37 @@ systemctl restart wazuh-manager
 
 # Installing Filebeat
 yum -y install filebeat-${elastic_version}
-chkconfig --add filebeat
 echo "Installed Filebeat" >> /tmp/log
 
+# Configuring Filebeat
+wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
+wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
+wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
+elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
+elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
+
+# Install Filebeat module
+curl -s "https://packages.wazuh.com/3.x/filebeat/wazuh-filebeat-0.1.tar.gz" | tar -xvz -C /usr/share/filebeat/module
+
+# Get Filebeat configuration file
+curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/filebeat/7.x/filebeat.yml
+
+# Elasticsearch template
+curl -so /etc/filebeat/wazuh-template.json https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/elasticsearch/7.x/wazuh-template.json
+
+# File permissions
+chmod go-w /etc/filebeat/filebeat.yml
+chmod go-w /etc/filebeat/wazuh-template.json
+
+# Point to Elasticsearch cluster
+sed -i "s|'http://YOUR_ELASTIC_SERVER_IP:9200'|'10.0.2.123','10.0.2.124','10.0.2.125'|" /etc/filebeat/filebeat.yml
+
+# Filebeat security
+echo "output.elasticsearch.username: "elastic"" >> /etc/filebeat/filebeat.yml
+echo "output.elasticsearch.password: "$ssh_password"" >> /etc/filebeat/filebeat.yml
+
+# Create certs folder
+mkdir -p /etc/filebeat/certs/ca
 
 # Setting up Splunk Forwarder
 yum -y install wget
@@ -308,29 +336,6 @@ echo "Starting Splunk..."
 /opt/splunkforwarder/bin/splunk restart &> /dev/null
 echo "Done with Splunk." >> /tmp/log
 
-# Configuring Filebeat
-wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
-wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
-wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
-elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
-elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
-curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/filebeat/7.x/filebeat.yml
-
-# Filebeat configuration
-curl -so /etc/filebeat/wazuh-template.json https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/elasticsearch/7.x/wazuh-template.json
-chmod go+r /etc/filebeat/filebeat.yml
-# File permissions
-chmod go-r /etc/filebeat/wazuh-template.json
-sed -i "s|'http://YOUR_ELASTIC_SERVER_IP:9200'|'10.0.2.123','10.0.2.124','10.0.2.125'|" /etc/filebeat/filebeat.yml
-chmod go+r /etc/filebeat/wazuh-template.json
-
-echo "output.elasticsearch.username: "elastic"" >> /etc/filebeat/filebeat.yml
-echo "output.elasticsearch.password: "$ssh_password"" >> /etc/filebeat/filebeat.yml
-mkdir -p /etc/filebeat/certs/ca
-
-curl -s https://packages.wazuh.com/3.x/filebeat/wazuh-filebeat-0.1.tar.gz | tar -xvz -C /usr/share/filebeat/module
-mkdir -p /usr/share/filebeat/module/wazuh
-chmod 755 -R /usr/share/filebeat/module/wazuh
 
 amazon-linux-extras install epel -y
 yum install -y sshpass
