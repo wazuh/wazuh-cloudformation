@@ -1814,12 +1814,12 @@ Outputs:
     Value: !GetAtt
       - ElasticMasterC
       - PublicIp
-  MasterInstance:
+  WazuhMasterInstance:
     Description: Elastic Stack and Wazuh versions
     Value: !GetAtt
       - MasterInstance
       - PublicIp
-  WorkerInstance:
+  WazuhWorkerInstance:
     Description: Elastic Stack and Wazuh versions
     Value: !GetAtt
       - WorkerInstance
