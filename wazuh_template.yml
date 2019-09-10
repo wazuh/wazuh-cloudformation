@@ -1801,40 +1801,66 @@ Resources:
 Outputs:
   ElasticBootstrapIp:
     Description: Elastic Stack and Wazuh versions
-    Value: !Ref ElasticBootstrap.PublicIp
+    Value: !GetAtt 
+      - ElasticBootstrap
+      - PublicIp
   ElasticMasterB:
     Description: Elastic Stack and Wazuh versions
-    Value: !Ref ElasticMasterB.PublicIp
+    Value: !GetAtt
+      - ElasticMasterB
+      - PublicIp
   ElasticMasterC:
     Description: Elastic Stack and Wazuh versions
-    Value: !Ref ElasticMasterC.PublicIp
+    Value: !GetAtt
+      - ElasticMasterC
+      - PublicIp
   MasterInstance:
     Description: Elastic Stack and Wazuh versions
-    Value: !Ref MasterInstance.PublicIp
+    Value: !GetAtt
+      - MasterInstance
+      - PublicIp
   WorkerInstance:
     Description: Elastic Stack and Wazuh versions
-    Value: !Ref WorkerInstance.PublicIp
+    Value: !GetAtt
+      - WorkerInstance
+      - PublicIp
   KibanaInstance:
     Description: Elastic Stack and Wazuh versions
-    Value: !Ref KibanaInstance.PublicIp
+    Value: !GetAtt
+      - KibanaInstance
+      - PublicIp
   Amazon:
     Description: Elastic Stack and Wazuh versions
-    Value: !Ref Amazon.PublicIp
+    Value: !GetAtt
+      - Amazon
+      - PublicIp
   Centos:
     Description: Elastic Stack and Wazuh versions
-    Value: !Ref Centos.PublicIp
+    Value: !GetAtt
+      - Centos
+      - PublicIp
   Debian:
     Description: Elastic Stack and Wazuh versions
-    Value: !Ref Debian.PublicIp
+    Value: !GetAtt
+      - Debian
+      - PublicIp
   Ubuntu:
     Description: Elastic Stack and Wazuh versions
-    Value: !Ref Ubuntu.PublicIp
+    Value: !GetAtt
+      - Ubuntu
+      - PublicIp
   Windows:
     Description: Elastic Stack and Wazuh versions
-    Value: !Ref Windows.PublicIp
+    Value: !GetAtt
+      - Windows
+      - PublicIp
   RHEL7:
     Description: Elastic Stack and Wazuh versions
-    Value: !Ref RHEL7.PublicIp
+    Value: !GetAtt
+      - RHEL7
+      - PublicIp
   Centos:
     Description: Elastic Stack and Wazuh versions
-    Value: !Ref Centos.PublicIp
+    Value: !GetAtt
+      - Centos
+      - PublicIp
