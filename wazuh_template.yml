@@ -1799,45 +1799,42 @@ Resources:
         - AllocationId
 
 Outputs:
-  ElasticWazuhVersion:
+  ElasticBootstrapIp:
     Description: Elastic Stack and Wazuh versions
-    Value: !Ref ElasticWazuhVersion
-  SshUsername:
-    Description: SSH Username
-    Value: !Ref SshUsername
-  KibanaPort: 
-    Description: Port number for Kibana WUI access
-    Value: !Ref KibanaPort
-  SplunkUsername:
-    Description: Username for Splunk WUI
-    Value: !Ref SplunkUsername
-  WazuhServerPort:
-    Description: Port number for agents communication with Wazuh server
-    Value: !Ref WazuhServerPort
-  WazuhRegistrationPort:
-    Description: Port number for agents registration with Wazuh server
-    Value: !Ref WazuhRegistrationPort
-  WazuhApiPort:
-    Description: Port number used by Wazuh API
-    Value: !Ref WazuhApiPort
-  WazuhApiAdminUsername:
-    Description: Admin username for Wazuh API
-    Value: !Ref WazuhApiAdminUsername
-  KeyPairName:
-    Description: Key pair used for SSH access
-    Value: !Ref KeyPairName
-  WazuhInstanceType:
-    Description: Wazuh servers instance type
-    Value: !Ref WazuhInstanceType
-  AgentInstanceType:
-    Description: Amazon Linux Wazuh agent instance type
-    Value: !Ref AgentInstanceType
-  ElasticInstanceType:
-    Description: Elasticsearch data nodes instance type
-    Value: !Ref ElasticInstanceType
-  KibanaInstanceType:
-    Description: Kibana server instance type
-    Value: !Ref KibanaInstanceType
-  SplunkInstanceType:
-    Description: Splunk server instance type
-    Value: !Ref SplunkInstanceType
+    Value: !Ref ElasticBootstrap.PublicIp
+  ElasticMasterB:
+    Description: Elastic Stack and Wazuh versions
+    Value: !Ref ElasticMasterB.PublicIp
+  ElasticMasterC:
+    Description: Elastic Stack and Wazuh versions
+    Value: !Ref ElasticMasterC.PublicIp
+  MasterInstance:
+    Description: Elastic Stack and Wazuh versions
+    Value: !Ref MasterInstance.PublicIp
+  WorkerInstance:
+    Description: Elastic Stack and Wazuh versions
+    Value: !Ref WorkerInstance.PublicIp
+  KibanaInstance:
+    Description: Elastic Stack and Wazuh versions
+    Value: !Ref KibanaInstance.PublicIp
+  Amazon:
+    Description: Elastic Stack and Wazuh versions
+    Value: !Ref Amazon.PublicIp
+  Centos:
+    Description: Elastic Stack and Wazuh versions
+    Value: !Ref Centos.PublicIp
+  Debian:
+    Description: Elastic Stack and Wazuh versions
+    Value: !Ref Debian.PublicIp
+  Ubuntu:
+    Description: Elastic Stack and Wazuh versions
+    Value: !Ref Ubuntu.PublicIp
+  Windows:
+    Description: Elastic Stack and Wazuh versions
+    Value: !Ref Windows.PublicIp
+  RHEL7:
+    Description: Elastic Stack and Wazuh versions
+    Value: !Ref RHEL7.PublicIp
+  Centos:
+    Description: Elastic Stack and Wazuh versions
+    Value: !Ref Centos.PublicIp
