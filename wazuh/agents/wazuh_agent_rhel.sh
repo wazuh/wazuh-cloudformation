@@ -71,7 +71,6 @@ yum install nc vim lsof openscap-scanner -y
 
 ### Use case 6: Suricata
 # Install Suricata
-curl -O https://copr.fedorainfracloud.org/coprs/jasonish/suricata-stable/repo/epel-7/jasonish-suricata-stable-epel-7.repo
 yum -y install suricata-4.1.4
 wget https://rules.emergingthreats.net/open/suricata-4.1.4/emerging.rules.tar.gz
 tar zxvf emerging.rules.tar.gz
