@@ -47,8 +47,7 @@ yum install wget git python-requests -y
 yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 
 # add selinux dependencies 
-yum install -y http://mirror.centos.org/centos/7/extras/x86_64/Packages/container-selinux-2.74-1.el7.noarch.rpm
-
+yum install -y http://mirror.centos.org/centos/7/extras/x86_64/Packages/container-selinux-2.107-1.el7_6.noarch.rpm
 # install Docker
 yum install -y docker-ce
 systemctl restart docker
