@@ -210,28 +210,6 @@ kibana_certs(){
   echo "server.ssl.key: "/etc/kibana/certs/kibana.key"" >> /etc/kibana/kibana.yml
 }
 
-redirect_app(){
-    await_kibana_ssl
-    # Set Wazuh app as the default landing page
-    echo "server.defaultRoute: /app/wazuh"  >> /etc/kibana/kibana.yml
- 
-    # Redirect Kibana welcome screen to Discover
-    echo "Redirect Kibana welcome screen to Discover"
-    sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/global_nav/global_nav.html
-    sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/header_global_nav/header_global_nav.js
-
-cat > /etc/kibana/kibana.yml << EOF
-xpack.apm.ui.enabled: false
-xpack.grokdebugger.enabled: false
-xpack.searchprofiler.enabled: false
-xpack.ml.enabled: false
-xpack.canvas.enabled: false
-xpack.infra.enabled: false
-xpack.monitoring.enabled: false
-console.enabled: false
-EOF
-}
-
 configure_kibana(){
 # Configuring kibana.yml
 cat > /etc/kibana/kibana.yml << EOF
@@ -271,6 +249,22 @@ install_plugin(){
   echo "Installing app" >> /tmp/deploy.log
   sudo -u kibana /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
   echo "App installed!" >> /tmp/deploy.log
+  echo "Redirecting to Wazuh app " >> /tmp/deploy.log
+  # Set Wazuh app as the default landing page
+  echo "server.defaultRoute: /app/wazuh" >> /etc/kibana/kibana.yml
+  # Redirect Kibana welcome screen to Discover
+  echo "Redirect Kibana welcome screen to Discover"
+  sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/global_nav/global_nav.html
+  sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/header_global_nav/header_global_nav.js
+  echo "xpack.apm.ui.enabled: false" >> /etc/kibana/kibana.yml
+  echo "xpack.grokdebugger.enabled: false" >> /etc/kibana/kibana.yml
+  echo "xpack.searchprofiler.enabled: false" >> /etc/kibana/kibana.yml
+  echo "xpack.ml.enabled: false" >> /etc/kibana/kibana.yml
+  echo "xpack.canvas.enabled: false" >> /etc/kibana/kibana.yml
+  echo "xpack.infra.enabled: false" >> /etc/kibana/kibana.yml
+  echo "xpack.monitoring.enabled: false" >> /etc/kibana/kibana.yml
+  echo "console.enabled: false" >> /etc/kibana/kibana.yml
+
 }
 
 add_api(){
@@ -414,7 +408,6 @@ main(){
   kibana_optional_configs
   add_nginx
   custom_welcome
-  redirect_app
 }
 
 main
