@@ -255,7 +255,7 @@ get_plugin_url(){
   if [[ ${EnvironmentType} == 'staging' ]]
   then
     # Adding Wazuh pre_release repository
-  plugin_url="https://github.com/wazuh/wazuh-kibana-app/files/3596932/wazuh-3.10.0.zip"
+  plugin_url="https://packages.wazuh.com/wazuhapp/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
   elif [[ ${EnvironmentType} == 'production' ]]
   then
   plugin_url="https://packages.wazuh.com/wazuhapp/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
