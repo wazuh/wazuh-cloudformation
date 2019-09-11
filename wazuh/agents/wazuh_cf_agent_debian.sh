@@ -2,7 +2,7 @@
 # Install Wazuh agent using Cloudformation template
 # Support for Debian/Ubuntu
 touch /tmp/log
-echo "Starting process." > /tmp/log
+echo "Starting process." >> /tmp/deploy.log
 agent_name=$(cat /tmp/wazuh_cf_settings | grep '^agent_name:' | cut -d' ' -f2)
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 master_ip=$(cat /tmp/wazuh_cf_settings | grep '^WazuhMasterIP:' | cut -d' ' -f2)
@@ -21,7 +21,7 @@ fi
 
 # Installing dependencies
 apt-get install curl apt-transport-https lsb-release -y
-echo "Installed dependencies." > /tmp/log
+echo "Installed dependencies." >> /tmp/deploy.log
 
 # Add SSH user
 useradd ${ssh_username}
@@ -54,16 +54,16 @@ apt-get update
 
 # Install Wazuh agent
 apt-get install wazuh-agent -y
-echo "Installed Wazuh agent." > /tmp/log
+echo "Installed Wazuh agent." >> /tmp/deploy.log
 
 # Add registration password
 echo "${wazuh_registration_password}" > /var/ossec/etc/authd.pass
-echo "Set registration password." > /tmp/log
-echo "Registering agent..." > /tmp/log
+echo "Set registration password." >> /tmp/deploy.log
+echo "Registering agent..." >> /tmp/deploy.log
 
 # Register agent using authd
 /var/ossec/bin/agent-auth -m ${master_ip} -A Debian
-echo "Agent registered." > /tmp/log
+echo "Agent registered." >> /tmp/deploy.log
 
 sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' /var/ossec/etc/ossec.conf
 sed -i "s/<protocol>udp<\/protocol>/<protocol>tcp<\/protocol>/" ${manager_config}
@@ -72,4 +72,4 @@ sed -i "s/<protocol>udp<\/protocol>/<protocol>tcp<\/protocol>/" ${manager_config
 
 systemctl enable wazuh-agent
 systemctl restart wazuh-agent
-echo "Agent restarted." > /tmp/log
+echo "Agent restarted." >> /tmp/deploy.log
