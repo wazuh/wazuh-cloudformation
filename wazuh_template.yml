@@ -24,14 +24,14 @@ Mappings:
       HVMCENTOS7: ami-074e2d6769f445be5
       HVMREDHAT7: ami-18726478
       HVMDEBIAN: ami-0adbaf2e0ce044437
-      HVMWINDOWS: ami-004a782f694e8dde2
+      HVMWINDOWS: ami-0069635df219ce9e5
     us-west-2:
       HVM64: ami-0cb72367e98845d43
       HVMUBUNTU64: ami-0196ce5c34425a906
       HVMCENTOS7: ami-01ed306a12b7d1c96
       HVMREDHAT7: ami-28e07e50
       HVMDEBIAN: ami-05a3ef6744aa96514
-      HVMWINDOWS: ami-0a7f9ce0459523133
+      HVMWINDOWS: ami-04ad37d2932b886c0
     ca-central-1:
       HVM64: ami-08a9b721ecc5b0a53
       HVMUBUNTU64: ami-0380eb76ff3ad603f
