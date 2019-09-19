@@ -26,6 +26,7 @@ AwsSecretKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsSecretKey:' | cut -d' ' -f
 AwsAccessKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsAccessKey:' | cut -d' ' -f2)
 SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
+elastic_ip=$(cat /tmp/wazuh_cf_settings | grep '^ElasticIp:' | cut -d' ' -f2)
 TAG='v3.10.0'
 
 echo "Added env vars." >> /tmp/deploy.log
@@ -84,3 +85,31 @@ EOF
 # Installing wazuh-manager
 yum -y install wazuh-manager
 chkconfig --add wazuh-manager
+
+
+# Installing Filebeat
+yum -y install filebeat-${elastic_version}
+echo "Installed Filebeat" >> /tmp/log
+
+# Configuring Filebeat
+wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
+wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
+wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
+elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
+elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
+
+# Install Filebeat module
+curl -s "https://packages.wazuh.com/3.x/filebeat/wazuh-filebeat-0.1.tar.gz" | tar -xvz -C /usr/share/filebeat/module
+
+# Get Filebeat configuration file
+curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/filebeat/7.x/filebeat.yml
+
+# Elasticsearch template
+curl -so /etc/filebeat/wazuh-template.json https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/elasticsearch/7.x/wazuh-template.json
+
+# File permissions
+chmod go-w /etc/filebeat/filebeat.yml
+chmod go-w /etc/filebeat/wazuh-template.json
+
+# Point to Elasticsearch cluster
+sed -i "s|'http://YOUR_ELASTIC_SERVER_IP:9200'|'$elastic_ip'|" /etc/filebeat/filebeat.yml

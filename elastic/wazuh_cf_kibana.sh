@@ -21,21 +21,7 @@ wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
 elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
 elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
 elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
-
-extract_certs(){
-  amazon-linux-extras install epel -y
-  yum install -y sshpass
-  echo $ssh_password >> pass
-
-  while [ ! -f /home/wazuh/certs.zip ]; do
-    sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/ 2> /dev/null
-    sleep 10
-  done
-  echo "Extract certs " >> /tmp/deploy.log
-  rm pass -f
-  cp /home/wazuh/certs.zip .
-  unzip certs.zip
-}
+ElasticIp=$(cat /tmp/wazuh_cf_settings | grep '^ElasticIp:' | cut -d' ' -f2)
 
 
 check_root(){
@@ -60,9 +46,9 @@ create_ssh_user(){
     echo "Started SSH service." >> /tmp/deploy.log
 }
 
-await_kibana_ssl(){
+await_kibana(){
   echo "Waiting for Kibana service..." >> /tmp/deploy.log
-  until curl -XGET "https://$eth0_ip:5601" -k -u elastic:${ssh_password}; do
+  until curl -XGET "http://$eth0_ip:5601" -k -u elastic:${ssh_password}; do
       sleep 5
       echo "Kibana not ready yet..." >> /tmp/deploy.log
   done
@@ -106,16 +92,9 @@ cluster.name: "wazuh_elastic"
 node.name: "coordinating_node"
 path.data: /mnt/ephemeral/elasticsearch/lib
 path.logs: /mnt/ephemeral/elasticsearch/log
-node.master: false
-node.data: false
-node.ingest: false
-discovery.seed_hosts: 
-  - "10.0.2.123"
-  - "10.0.2.124"
-  - "10.0.2.125"
+network.host: 0.0.0.0
+discovery.type: single-node
 EOF
-
-echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
 
 # Calculating RAM for Elasticsearch
 ram_gb=$[$(free -g | awk '/^Mem:/{print $2}')+1]
@@ -143,35 +122,6 @@ echo "Setting permissions." >> /tmp/deploy.log
 # restarting elasticsearch after changes
 }
 
-set_security(){
-
-    mkdir -p /etc/elasticsearch/certs
-    cp /kibana/* /etc/elasticsearch/certs/ -R
-    cp /ca /etc/elasticsearch/certs/ -R
-    echo "xpack.security.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.transport.ssl.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.transport.ssl.verification_mode: certificate" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.transport.ssl.key: "/etc/elasticsearch/certs/kibana.key"" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.transport.ssl.certificate: /etc/elasticsearch/certs/kibana.crt" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.transport.ssl.certificate_authorities: [ "/etc/elasticsearch/certs/ca/ca.crt" ]" >> /etc/elasticsearch/elasticsearch.yml
-    echo "# HTTP layer" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.http.ssl.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.http.ssl.verification_mode: certificate" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.http.ssl.key: "/etc/elasticsearch/certs/kibana.key"" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.http.ssl.certificate: /etc/elasticsearch/certs/kibana.crt" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.http.ssl.certificate_authorities: [ "/etc/elasticsearch/certs/ca/ca.crt" ]" >> /etc/elasticsearch/elasticsearch.yml
-    echo "Configured security." >> /tmp/deploy.log
-    chown -R elasticsearch:elasticsearch /etc/elasticsearch/certs
-    echo "Changed permissions certs directory." >> /tmp/deploy.log
-}
-
-create_bootstrap_user(){
-    echo "Creating elk user with password $ssh_password" >> /tmp/deploy.log
-    echo $ssh_password | /usr/share/elasticsearch/bin/elasticsearch-keystore add -x 'bootstrap.password'
-    systemctl restart elasticsearch
-    echo 'Done' >> /tmp/deploy.log
-}
-
 start_elasticsearch(){
     echo "start_elasticsearch." >> /tmp/deploy.log
     # Correct owner for Elasticsearch directories
@@ -193,32 +143,14 @@ chkconfig --add kibana
 echo "Kibana installed." >> /tmp/deploy.log
 }
 
-kibana_certs(){
-  mkdir /etc/kibana/certs/ca -p
-  cp ca/ca.crt /etc/kibana/certs/ca
-  cp kibana/kibana.crt /etc/kibana/certs
-  cp kibana/kibana.key /etc/kibana/certs
-  chown -R kibana: /etc/kibana/certs
-  chmod -R 770 /etc/kibana/certs
-  echo "# Elasticsearch from/to Kibana" >> /etc/kibana/kibana.yml
-  echo "elasticsearch.ssl.certificateAuthorities: ["/etc/kibana/certs/ca/ca.crt"]" >> /etc/kibana/kibana.yml
-  echo "elasticsearch.ssl.certificate: "/etc/kibana/certs/kibana.crt"" >> /etc/kibana/kibana.yml
-  echo "elasticsearch.ssl.key: "/etc/kibana/certs/kibana.key"" >> /etc/kibana/kibana.yml
-  echo "# Browser from/to Kibana" >> /etc/kibana/kibana.yml
-  echo "server.ssl.enabled: true" >> /etc/kibana/kibana.yml
-  echo "server.ssl.certificate: "/etc/kibana/certs/kibana.crt"" >> /etc/kibana/kibana.yml
-  echo "server.ssl.key: "/etc/kibana/certs/kibana.key"" >> /etc/kibana/kibana.yml
-}
+
 
 configure_kibana(){
 # Configuring kibana.yml
 cat > /etc/kibana/kibana.yml << EOF
-elasticsearch.hosts: ["https://$eth0_ip:9200"]
+elasticsearch.hosts: ["http://localhost:9200"]
 server.port: 5601
-server.host: "$eth0_ip"
-xpack.security.enabled: true
-elasticsearch.username: "elastic"
-elasticsearch.password: "$ssh_password"
+server.host: 0.0.0.0
 EOF
 echo "Kibana.yml configured." >> /tmp/deploy.log
 
@@ -302,42 +234,7 @@ echo "Configured API" >> /tmp/deploy.log
 start_kibana(){
   # Starting Kibana
   systemctl restart kibana
-  await_kibana_ssl
-
-}
-
-kibana_optional_configs(){
-sleep 500
-echo "Configuring Kibana options" >> /tmp/deploy.log
-
-# Configuring default index pattern for Kibana
-default_index="/tmp/default_index.json"
-
-cat > ${default_index} << EOF
-{
-  "changes": {
-    "defaultIndex": "wazuh-alerts-3.x-*"
-  }
-}
-EOF
-
-await_kibana_ssl
-# Configuring Kibana TimePicker
-curl -XPOST "https://$eth0_ip:5601/api/kibana/settings" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d \
-'{"changes":{"timepicker:timeDefaults":"{\n  \"from\": \"now-24h\",\n  \"to\": \"now\",\n  \"mode\": \"quick\"}"}}' >> /tmp/deploy.log
-echo "Set up default timepicker." >> /tmp/deploy.log
-
-curl -XPOST "https://$eth0_ip:5601/api/kibana/settings" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d@${default_index} >> /tmp/deploy.log
-rm -f ${default_index}
-echo "Set up default Index pattern." >> /tmp/deploy.log
-
-# Do not ask user to help providing usage statistics to Elastic
-curl -XPOST "https://$eth0_ip:5601/api/telemetry/v2/optIn" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d '{"enabled":false}' >> /tmp/deploy.log
-echo  "Do not ask user to help providing usage statistics to Elastic" >> /tmp/deploy.log
-
-# Disable Elastic repository
-sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
-echo "Configured Kibana" >> /tmp/deploy.log
+  await_kibana
 }
 
 add_nginx(){
@@ -352,7 +249,7 @@ echo "Installed NGINX." >> /tmp/deploy.log
 # Installing htpasswd (needed for Amazon Linux)
 yum install httpd-tools-2.4.33-2.amzn2.0.2.x86_64 -y
 
-# Configure Nginx
+htpasswd -b -c /etc/nginx/conf.d/kibana.htpasswd ${ssh_username} ${ssh_password}
 cat > /etc/nginx/conf.d/kibana.conf << EOF
 server {
     listen ${kibana_port} default_server;
@@ -360,7 +257,9 @@ server {
     access_log            /var/log/nginx/nginx.access.log;
     error_log            /var/log/nginx/nginx.error.log;
     location / {
-        proxy_pass https://$eth0_ip:5601/;
+        auth_basic "Restricted";
+        auth_basic_user_file /etc/nginx/conf.d/kibana.htpasswd;
+        proxy_pass http://${eth0_ip}:5601/;
     }
 }
 EOF
@@ -368,46 +267,23 @@ EOF
 # Starting Nginx
 systemctl restart nginx
 echo "Restarted NGINX..." >> /tmp/deploy.log
-
 }
 
-custom_welcome(){
-  await_kibana_ssl
-  echo "custom_welcome " >> /tmp/deploy.log
-  unalias cp
-  curl https://s3.amazonaws.com/wazuh.com/wp-content/uploads/demo/custom-welcome.tar.gz --output custom.tar.gz
-  tar xvf custom.tar.gz
-  cp custom_welcome/wazuh_wazuh_bg.svg /usr/share/kibana/optimize/bundles/
-  cp custom_welcome/wazuh_logo_circle.svg /usr/share/kibana/optimize/bundles/
-  sed -i 's|Welcome to Kibana|Welcome to Wazuh|g' /usr/share/kibana/optimize/bundles/commons.bundle.js
-  sed -i 's|Welcome to Kibana|Welcome to Wazuh|g' /usr/share/kibana/optimize/bundles/login.bundle.js
-  sed -i 's|Welcome to Kibana|Welcome to Wazuh|g' /usr/share/kibana/optimize/bundles/kibana.bundle.js
-  sed -i 's|Your window into the Elastic Stack|The Open Source Security Platform|g' /usr/share/kibana/optimize/bundles/kibana.bundle.js
-  sed -i 's|Your window into the Elastic Stack|The Open Source Security Platform|g' /usr/share/kibana/optimize/bundles/login.bundle.js
-  cp custom_welcome/login.style.css /usr/share/kibana/optimize/bundles/login.style.css -f
-  chown kibana:kibana /usr/share/kibana/optimize/bundles/ -R
-}
 
 main(){
   check_root
   create_ssh_user
   import_elk_repo
   install_elasticsearch
-  extract_certs
   configuring_elasticsearch
-  create_bootstrap_user
-  set_security
   start_elasticsearch
   install_kibana
   configure_kibana
-  kibana_certs
   get_plugin_url
   install_plugin
   start_kibana
   add_api
-  kibana_optional_configs
   add_nginx
-  custom_welcome
 }
 
 main
