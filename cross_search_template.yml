@@ -109,7 +109,7 @@ Mappings:
       CIDR: 10.0.0.0/24
     SubnetEnv2:
       CIDR: 10.0.1.0/24
-    SubnetEnv3:
+    SubnetEnvCcs:
       CIDR: 10.0.2.0/24
 
 Metadata:
@@ -393,19 +393,19 @@ Resources:
             Value: !Ref 'AWS::StackId'
           - Key: Name
             Value: !Sub '${AWS::StackName}-SubnetEnv2'
-  SubnetEnv3:
+  SubnetEnvCcs:
       Type: 'AWS::EC2::Subnet'
       Properties:
         VpcId: !Ref WazuhVpc
         CidrBlock: !FindInMap
           - SubnetConfig
-          - SubnetEnv3
+          - SubnetEnvCcs
           - CIDR
         Tags:
           - Key: Application
             Value: !Ref 'AWS::StackId'
           - Key: Name
-            Value: !Sub '${AWS::StackName}-SubnetEnv3'
+            Value: !Sub '${AWS::StackName}-SubnetEnvCcs'
   
   # Internet access and routing
   InternetGateway:
@@ -447,10 +447,10 @@ Resources:
     Properties:
       SubnetId: !Ref SubnetEnv2
       RouteTableId: !Ref PublicRouteTable
-  SubnetEnv3PublicRouteTable:
+  SubnetEnvCcsPublicRouteTable:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
-      SubnetId: !Ref SubnetEnv3
+      SubnetId: !Ref SubnetEnvCcs
       RouteTableId: !Ref PublicRouteTable
   
   # Security groups
@@ -824,7 +824,7 @@ Resources:
           GroupSet: 
             - Ref: "ElasticSecurityGroup"
           SubnetId: 
-            Ref: "SubnetEnv2"
+            Ref: "SubnetEnvCcs"
       Tags:
         - Key: Name
           Value: ElasticCCS
@@ -852,8 +852,6 @@ Resources:
                 SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
                 KibanaPort: ${KibanaPort}
-                KibanaUsername: ${KibanaUsername}
-                KibanaPassword: ${KibanaPassword}
                 WazuhApiAdminUsername: ${WazuhApiAdminUsername}
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
@@ -909,4 +907,4 @@ Resources:
           GroupSet: 
             - Ref: "KibanaSecurityGroup"
           SubnetId: 
-            Ref: "SubnetWazuh"
+            Ref: "SubnetEnvCcs"
