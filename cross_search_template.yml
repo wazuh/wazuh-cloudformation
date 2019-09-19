@@ -860,24 +860,6 @@ Resources:
               mode: '000600'
               owner: root
               group: root
-            /tmp/wazuh_cf_elasticsearch.yml:
-              content: !Sub |
-                cluster.name: wazuh_elastic
-                path.data: /var/lib/elasticsearch
-                path.logs: /var/log/elasticsearch
-                bootstrap.memory_lock: true
-                network.host: _ec2_
-                discovery.zen.minimum_master_nodes: 2
-                discovery.zen.hosts_provider: ec2
-                discovery.ec2.groups: ${ElasticSecurityGroup}
-                discovery.ec2.host_type: private_ip
-                discovery.ec2.endpoint: ec2.${AWS::Region}.amazonaws.com
-                node.master: false
-                node.data: false
-                node.ingest: false
-              mode: '000644'
-              owner: root
-              group: root
             /tmp/wazuh_cf_kibana.sh:
               source: !Sub >-
                 https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/elastic/wazuh_cf_kibana.sh
@@ -908,3 +890,6 @@ Resources:
             - Ref: "KibanaSecurityGroup"
           SubnetId: 
             Ref: "SubnetEnvCcs"
+      Tags:
+        - Key: Name
+          Value: KibanaCcs
