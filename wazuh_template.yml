@@ -469,14 +469,6 @@ Resources:
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 3389
-          ToPort: 3389
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
         - IpProtocol: icmp
           FromPort: -1
           ToPort: -1
@@ -526,7 +518,7 @@ Resources:
                 MasterIp: ${WazuhMasterInstance.PrivateIp}
                 WorkerIp: ${WazuhWorkerInstance.PrivateIp}
                 KibanaIp: ${KibanaInstance.PrivateIp}
-                NodeName: 3
+                NodeName: 1
               mode: '000600'
               owner: root
               group: root
@@ -555,16 +547,16 @@ Resources:
             - Ref: "ElasticSecurityGroup"
           SubnetId: 
             Ref: "SubnetEnv1"
-          PrivateIpAddress: "10.0.2.124"
       Tags:
         - Key: Name
-          Value: ElasticBootstrap
+          Value: ElasticEnv1
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticBootstrap --configsets ElasticInstallationSet --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticBootstrap --region ${AWS::Region}
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticEnv1 --configsets ElasticInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticEnv1 --region ${AWS::Region}
     DependsOn: GatewayToInternet
+
   # Wazuh master instance
   ManagerEnv1:
     Type: AWS::EC2::Instance
@@ -627,12 +619,146 @@ Resources:
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
           GroupSet: 
-            - Ref: "ElasticSecurityGroup"
+            - Ref: "WazuhSecurityGroup"
           SubnetId: 
             Ref: "SubnetEnv1"
       Tags:
         - Key: Name
           Value: WazuhMaster
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource WazuhMasterInstance --configsets WazuhInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WazuhMasterInstance --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+
+
+  # Wazuh registration Listener for Network Load Balancer
+  ElasticEnv2:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          ElasticInstallationSet:
+            - Elasticfiles
+            - ElasticInstall
+        Elasticfiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                MasterIp: ${WazuhMasterInstance.PrivateIp}
+                WorkerIp: ${WazuhWorkerInstance.PrivateIp}
+                KibanaIp: ${KibanaInstance.PrivateIp}
+                NodeName: 2
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_elastic.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/elastic/wazuh_cf_elastic.sh
+              mode: '000700'
+              owner: root
+              group: root
+        ElasticInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_elastic.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVM64
+      InstanceType: !Ref ElasticInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "ElasticSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetEnv2"
+      Tags:
+        - Key: Name
+          Value: ElasticEnv2
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticEnv2 --configsets ElasticInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticEnv2 --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+
+  # Wazuh master instance
+  ManagerEnv2:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          WazuhInstallationSet:
+            - WazuhFiles
+            - WazuhInstall
+        WazuhFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                WazuhApiAdminUsername: ${WazuhApiAdminUsername}
+                WazuhApiAdminPassword: ${WazuhApiAdminPassword}
+                WazuhApiPort: ${WazuhApiPort}
+                WazuhServerPort: ${WazuhServerPort}
+                SplunkUsername: ${SplunkUsername}
+                SplunkPassword: ${SplunkPassword}
+                WazuhRegistrationPort: ${WazuhRegistrationPort}
+                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
+                WazuhClusterKey: ${WazuhClusterKey}
+                WindowsPublicIp: ${Windows.PublicIp}
+                AwsSecretKey: ${AwsSecretKey}
+                AwsAccessKey: ${AwsAccessKey}
+                VirusTotalKey: ${VirusTotalKey}
+                SlackHook: ${SlackHook}
+                EnvironmentType: ${EnvironmentType}
+                SplunkIp: ${SplunkInstance.PrivateIp}
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_master.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/wazuh/cluster/wazuh_cf_master.sh
+              mode: '000700'
+              owner: root
+              group: root
+        WazuhInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_master.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVM64
+      InstanceType: !Ref WazuhInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "WazuhSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetEnv2"
+      Tags:
+        - Key: Name
+          Value: WazuhMaster2
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
