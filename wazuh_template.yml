@@ -532,7 +532,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.10.0_7.3.2/elastic/wazuh_cf_bootstrap_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/elastic/wazuh_cf_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -602,7 +602,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_master.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.10.0_7.3.2/wazuh/cluster/wazuh_cf_master.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/wazuh/cluster/wazuh_cf_master.sh
               mode: '000700'
               owner: root
               group: root
