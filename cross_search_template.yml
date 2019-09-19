@@ -331,9 +331,42 @@ Resources:
       Tags:
         - Key: Application
           Value: !Ref 'AWS::StackId'
-        - Key: Name
-            Value: !Sub '${AWS::StackName}-Vpc'
 
+  # IAM role and profile
+  InstanceRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+                - cloudformation.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Sub '${AWS::StackName}-GetCloudformation'
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - 'cloudformation:DescribeStack*'
+                  - 'cloudformation:DescribeStackResource*'
+                  - 'cloudformation:List*'
+                Resource: '*'
+                Effect: Allow
+        - PolicyName: !Sub '${AWS::StackName}-DescribeInstances'
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - 'ec2:DescribeInstances'
+                Resource: '*'
+                Effect: Allow
+  InstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Roles:
+        - !Ref InstanceRole
   SubnetEnv1:
       Type: 'AWS::EC2::Subnet'
       Properties:
@@ -515,9 +548,6 @@ Resources:
                 SshUsername: ${SshUsername}
                 SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
-                MasterIp: ${WazuhMasterInstance.PrivateIp}
-                WorkerIp: ${WazuhWorkerInstance.PrivateIp}
-                KibanaIp: ${KibanaInstance.PrivateIp}
                 NodeName: 1
               mode: '000600'
               owner: root
@@ -577,18 +607,10 @@ Resources:
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
                 WazuhServerPort: ${WazuhServerPort}
-                SplunkUsername: ${SplunkUsername}
-                SplunkPassword: ${SplunkPassword}
                 WazuhRegistrationPort: ${WazuhRegistrationPort}
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
-                WindowsPublicIp: ${Windows.PublicIp}
-                AwsSecretKey: ${AwsSecretKey}
-                AwsAccessKey: ${AwsAccessKey}
-                VirusTotalKey: ${VirusTotalKey}
-                SlackHook: ${SlackHook}
                 EnvironmentType: ${EnvironmentType}
-                SplunkIp: ${SplunkInstance.PrivateIp}
               mode: '000600'
               owner: root
               group: root
@@ -649,9 +671,6 @@ Resources:
                 SshUsername: ${SshUsername}
                 SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
-                MasterIp: ${WazuhMasterInstance.PrivateIp}
-                WorkerIp: ${WazuhWorkerInstance.PrivateIp}
-                KibanaIp: ${KibanaInstance.PrivateIp}
                 NodeName: 2
               mode: '000600'
               owner: root
@@ -711,18 +730,10 @@ Resources:
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
                 WazuhServerPort: ${WazuhServerPort}
-                SplunkUsername: ${SplunkUsername}
-                SplunkPassword: ${SplunkPassword}
                 WazuhRegistrationPort: ${WazuhRegistrationPort}
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
-                WindowsPublicIp: ${Windows.PublicIp}
-                AwsSecretKey: ${AwsSecretKey}
-                AwsAccessKey: ${AwsAccessKey}
-                VirusTotalKey: ${VirusTotalKey}
-                SlackHook: ${SlackHook}
                 EnvironmentType: ${EnvironmentType}
-                SplunkIp: ${SplunkInstance.PrivateIp}
               mode: '000600'
               owner: root
               group: root

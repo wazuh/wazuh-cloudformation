@@ -12,7 +12,7 @@ TEMPLATE_FILE='./cross_search_template.yml'
 STACK_NAME='cross-search'
 
 # Bucket name
-BUCKET_NAME='cross-search-templates'
+BUCKET_NAME='demo-cloudformation-templates'
 
 # If any file doesn't exist, then break the execution
 if ! [ -f "$PARAMS_FILE" ] || ! [ -f "$TEMPLATE_FILE" ]; then
@@ -30,7 +30,7 @@ fi
 aws s3 cp $TEMPLATE_FILE s3://$BUCKET_NAME
 
 # Getting the template URL
-URL="https://cross-search-templates.s3-us-west-1.amazonaws.com/cross_search_template.yml"
+URL="https://demo-cloudformation-templates.s3-us-west-1.amazonaws.com/cross_search_template.yml"
 echo "Template URL: $URL"
 
 aws cloudformation create-stack --stack-name ${STACK_NAME} --template-url $URL --parameters file://$PARAMS_FILE --capabilities CAPABILITY_IAM
