@@ -858,7 +858,6 @@ Resources:
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
                 ElasticIp: ${ElasticCCS.PrivateIp}
-                ElbLogstashDNS: ${ElbLogstash.DNSName}
                 EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
