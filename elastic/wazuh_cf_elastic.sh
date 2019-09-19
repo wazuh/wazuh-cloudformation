@@ -10,13 +10,9 @@ elastic_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' 
 wazuh_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f2)
 eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*//' | cut -d' ' -f2)
 elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
-wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
-wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
-wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
 node_name=$(cat /tmp/wazuh_cf_settings | grep '^NodeName:' | cut -d' ' -f2)
-
+TAG="v3.10.0"
 echo "Added env vars." >> /tmp/deploy.log
-echo "eth0_ip: $eth0_ip" >> /tmp/deploy.log
 
 check_root(){
     # Check if running as root
@@ -66,6 +62,8 @@ install_elasticsearch(){
 }
 
 configuring_elasticsearch(){
+echo "Configuring elasticsearch." >> /tmp/deploy.log
+
 # Creating data and logs directories
 mkdir -p /mnt/ephemeral/elasticsearch/lib
 mkdir -p /mnt/ephemeral/elasticsearch/log
@@ -74,17 +72,14 @@ echo "Created volumes in ephemeral." >> /tmp/deploy.log
 
 cat > /etc/elasticsearch/elasticsearch.yml << EOF
 cluster.name: "wazuh_elastic"
-node.name: "node-$node_name"
+node.name: "environment-$node_name"
 node.master: true
 path.data: /mnt/ephemeral/elasticsearch/lib
 path.logs: /mnt/ephemeral/elasticsearch/log
-discovery.seed_hosts: 
-  - "10.0.2.123"
-  - "10.0.2.124"
-  - "10.0.2.125"
+network.host: 0.0.0.0
+cluster.initial_master_nodes: 
+  - "localhost"
 EOF
-
-echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
 
 # Calculating RAM for Elasticsearch
 ram_gb=$[$(free -g | awk '/^Mem:/{print $2}')+1]
@@ -109,53 +104,11 @@ echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
 echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
 echo "Setting memory lock options." >> /tmp/deploy.log
 echo "Setting permissions." >> /tmp/deploy.log
-# restarting elasticsearch after changes
 start_elasticsearch
 }
 
-set_security(){
-    echo "SET SECURITY." >> /tmp/deploy.log
-    # installing dependencies
-    mkdir /etc/elasticsearch/certs/ca -p
-    echo "Created certs directory." >> /tmp/deploy.log
-    amazon-linux-extras install epel -y
-    yum install -y sshpass
-    sleep 30
-    echo "Installed sshpass." >> /tmp/deploy.log
-    echo $ssh_password >> pass
-    while [ ! -f /home/wazuh/certs.zip ];do
-        sleep 2
-        echo "No certs yet, trying again in 2 secs..." >> /tmp/deploy.log
-        sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/ 2> /tmp/deploy.logerr.log
-    done
-    echo "Got certs.zip." >> /tmp/deploy.log
-    rm pass -f
-    cp /home/wazuh/certs.zip .
-    unzip certs.zip
-    echo "Unzipped certs.zip." >> /tmp/deploy.log
-    cp ca/ca.crt /etc/elasticsearch/certs/ca
-    cp elastic-node${node_name}/elastic-node${node_name}.crt /etc/elasticsearch/certs
-    cp elastic-node${node_name}/elastic-node${node_name}.key /etc/elasticsearch/certs
-    echo "xpack.security.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.transport.ssl.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.transport.ssl.verification_mode: certificate" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.transport.ssl.key: /etc/elasticsearch/certs/elastic-node${node_name}.key" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.transport.ssl.certificate: /etc/elasticsearch/certs/elastic-node${node_name}.crt" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.transport.ssl.certificate_authorities: [ "/etc/elasticsearch/certs/ca/ca.crt" ]" >> /etc/elasticsearch/elasticsearch.yml
-    echo "# HTTP layer" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.http.ssl.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.http.ssl.verification_mode: certificate" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.http.ssl.key: /etc/elasticsearch/certs/elastic-node${node_name}.key" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.http.ssl.certificate: /etc/elasticsearch/certs/elastic-node${node_name}.crt" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.http.ssl.certificate_authorities: [ "/etc/elasticsearch/certs/ca/ca.crt" ]" >> /etc/elasticsearch/elasticsearch.yml
-    echo "Configured security." >> /tmp/deploy.log
-    chown -R elasticsearch:elasticsearch /etc/elasticsearch/certs
-    echo "Changed permissions certs directory." >> /tmp/deploy.log
-}
-
 start_elasticsearch(){
-    echo "start_elasticsearch." >> /tmp/deploy.log
-    # Correct owner for Elasticsearch directories
+    echo "Starting Elasticsearch and setting permissions" >> /tmp/deploy.log
     chown elasticsearch:elasticsearch -R /etc/elasticsearch
     chown elasticsearch:elasticsearch -R /usr/share/elasticsearch
     chown elasticsearch:elasticsearch -R /var/lib/elasticsearch
@@ -163,20 +116,13 @@ start_elasticsearch(){
     # Starting Elasticsearch
     echo "daemon-reload." >> /tmp/deploy.log
     systemctl restart elasticsearch
-    echo "done with starting elasticsearch service." >> /tmp/deploy.log
+    echo "Started elasticsearch service." >> /tmp/deploy.log
+    systemctl status elasticsearch >> /tmp/deploy.log
 }
 
 disable_elk_repos(){
     # Disable repositories
     sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
-}
-
-set_elk_password(){
-    echo "Creating elk user with password $ssh_password" >> /tmp/deploy.log
-    echo $ssh_password | /usr/share/elasticsearch/bin/elasticsearch-keystore add -x 'bootstrap.password'
-    systemctl restart elasticsearch
-    sleep 60
-    echo 'Done' >> /tmp/deploy.log
 }
 
 main(){
@@ -185,10 +131,9 @@ main(){
     import_elk_repo
     install_elasticsearch
     configuring_elasticsearch
-    set_security
     start_elasticsearch
+    add_wazuh_user
     disable_elk_repos
-    set_elk_password
 }
 
 main
