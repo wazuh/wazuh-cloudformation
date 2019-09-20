@@ -113,3 +113,5 @@ chmod go-w /etc/filebeat/wazuh-template.json
 
 # Point to Elasticsearch cluster
 sed -i "s|'http://YOUR_ELASTIC_SERVER_IP:9200'|'$elastic_ip'|" /etc/filebeat/filebeat.yml
+
+systemctl restart filebeat

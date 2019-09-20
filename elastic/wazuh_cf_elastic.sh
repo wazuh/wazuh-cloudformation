@@ -11,6 +11,8 @@ wazuh_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' 
 eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*//' | cut -d' ' -f2)
 elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
 node_name=$(cat /tmp/wazuh_cf_settings | grep '^NodeName:' | cut -d' ' -f2)
+ip_cluster_a=$(cat /tmp/wazuh_cf_settings | grep '^IpClusterA:' | cut -d' ' -f2)
+ip_cluster_b=$(cat /tmp/wazuh_cf_settings | grep '^IpClusterB:' | cut -d' ' -f2)
 TAG="v3.10.0"
 echo "Added env vars." >> /tmp/deploy.log
 
@@ -124,6 +126,36 @@ disable_elk_repos(){
     sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
 }
 
+add_remote_clusters(){
+
+cat > ${remote_servers} << EOF
+{
+{
+  "persistent": {
+    "cluster": {
+      "remote": {
+        "cluster_one": {
+          "seeds": [
+            "$ip_cluster_a":9300
+          ]
+        },
+        "cluster_two": {
+          "seeds": [
+            "$ip_cluster_b":9300
+          ]
+        }
+      }
+    }
+  }
+}
+EOF
+
+curl -XPOST "https://$eth0_ip:5601/api/kibana/settings" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d@${default_index} >> /tmp/deploy.log
+rm -f ${default_index}
+curl -X PUT "localhost:9200/_cluster/settings?pretty" -H 'Content-Type: application/json' -d@${remote_servers}
+
+}
+
 main(){
     check_root
     create_ssh_user
@@ -133,6 +165,7 @@ main(){
     start_elasticsearch
     add_wazuh_user
     disable_elk_repos
+    add_remote_clusters
 }
 
 main
