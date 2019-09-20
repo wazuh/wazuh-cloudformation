@@ -835,6 +835,8 @@ Resources:
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticCCS --region ${AWS::Region}
     DependsOn: GatewayToInternet
 
+
+    
  # Kibana instance
   KibanaInstance:
     Type: AWS::EC2::Instance
@@ -896,6 +898,6 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource KibanaInstance --configsets ElasticInstallationSet --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource KibanaInstance --region ${AWS::Region}
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource KibanaInstance --configsets KibanaInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Kibana --region ${AWS::Region}
     DependsOn: GatewayToInternet
