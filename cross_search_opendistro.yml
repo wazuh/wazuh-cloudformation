@@ -554,7 +554,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_opendistro.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/elastic/wazuh_cf_opendistro.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-css-opendistro/elastic/wazuh_cf_opendistro.sh
               mode: '000700'
               owner: root
               group: root
@@ -616,7 +616,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_master.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/wazuh/cluster/wazuh_cf_master.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-css-opendistro/wazuh/cluster/wazuh_cf_master.sh
               mode: '000700'
               owner: root
               group: root
@@ -677,7 +677,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_opendistro.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/elastic/wazuh_cf_opendistro.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-css-opendistro/elastic/wazuh_cf_opendistro.sh
               mode: '000700'
               owner: root
               group: root
@@ -740,7 +740,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_master.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/wazuh/cluster/wazuh_cf_master.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-css-opendistro/wazuh/cluster/wazuh_cf_master.sh
               mode: '000700'
               owner: root
               group: root
@@ -802,7 +802,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_opendistro.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/elastic/wazuh_cf_opendistro.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-css-opendistro/elastic/wazuh_cf_opendistro.sh
               mode: '000700'
               owner: root
               group: root
@@ -864,7 +864,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_kibana.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/elastic/wazuh_cf_kibana.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-css-opendistro/elastic/wazuh_cf_kibana.sh
               mode: '000700'
               owner: root
               group: root
