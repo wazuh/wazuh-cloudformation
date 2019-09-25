@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Deploy an Elasticsearch Cross-Search clustering environment
+Description: Deploy an OpenDistro Cross-Search clustering environment
 Mappings:
   RegionMap:
     us-east-1:
@@ -134,7 +134,6 @@ Metadata:
           - WazuhInstanceType
           - ElasticInstanceType
           - KibanaInstanceType
-          - SplunkInstanceType
           - SshUsername
           - SshPassword       
       - 
@@ -204,8 +203,9 @@ Parameters:
       - 7.3.0_3.9.4
       - 7.3.0_3.9.5
       - 7.3.2_3.10.0
+      - 7.3.2_3.10.2
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
-    Default: 7.3.2_3.10.0
+    Default: 7.3.2_3.10.2
     Description: Elastic and Wazuh versions to be installed
     Type: String
   WazuhInstanceType:
@@ -552,16 +552,16 @@ Resources:
               mode: '000600'
               owner: root
               group: root
-            /tmp/wazuh_cf_elastic.sh:
+            /tmp/wazuh_cf_opendistro.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/elastic/wazuh_cf_opendistro.sh
               mode: '000700'
               owner: root
               group: root
         ElasticInstall:
           commands:
             01_RunInstallationScript:
-              command: /tmp/wazuh_cf_elastic.sh
+              command: /tmp/wazuh_cf_opendistro.sh
     Properties:
       ImageId: !FindInMap
         - "RegionMap"
@@ -675,16 +675,16 @@ Resources:
               mode: '000600'
               owner: root
               group: root
-            /tmp/wazuh_cf_elastic.sh:
+            /tmp/wazuh_cf_opendistro.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/elastic/wazuh_cf_opendistro.sh
               mode: '000700'
               owner: root
               group: root
         ElasticInstall:
           commands:
             01_RunInstallationScript:
-              command: /tmp/wazuh_cf_elastic.sh
+              command: /tmp/wazuh_cf_opendistro.sh
     Properties:
       ImageId: !FindInMap
         - "RegionMap"
@@ -800,16 +800,16 @@ Resources:
               mode: '000600'
               owner: root
               group: root
-            /tmp/wazuh_cf_elastic.sh:
+            /tmp/wazuh_cf_opendistro.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/elastic/wazuh_cf_elastic_cross.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-cross-search/elastic/wazuh_cf_opendistro.sh
               mode: '000700'
               owner: root
               group: root
         ElasticInstall:
           commands:
             01_RunInstallationScript:
-              command: /tmp/wazuh_cf_elastic.sh
+              command: /tmp/wazuh_cf_opendistro.sh
     Properties:
       ImageId: !FindInMap
         - "RegionMap"

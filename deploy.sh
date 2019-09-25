@@ -6,10 +6,10 @@
 PARAMS_FILE='./parameters.json'
 
 # Path of the template file
-TEMPLATE_FILE='./cross_search_template.yml'
+TEMPLATE_FILE='./cross_search_opendistro.yml'
 
 # Stack name
-STACK_NAME='cross-search'
+STACK_NAME='opendistro-cross-search'
 
 # Bucket name
 BUCKET_NAME='demo-cloudformation-templates'
@@ -30,7 +30,7 @@ fi
 aws s3 cp $TEMPLATE_FILE s3://$BUCKET_NAME
 
 # Getting the template URL
-URL="https://demo-cloudformation-templates.s3-us-west-1.amazonaws.com/cross_search_template.yml"
+URL="https://demo-cloudformation-templates.s3-us-west-1.amazonaws.com/cross_search_opendistro.yml"
 echo "Template URL: $URL"
 
 aws cloudformation create-stack --stack-name ${STACK_NAME} --template-url $URL --parameters file://$PARAMS_FILE --capabilities CAPABILITY_IAM
