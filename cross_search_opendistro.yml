@@ -682,7 +682,7 @@ Resources:
   Env2WazuhLb:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: !Sub '${AWS::StackName}-Wazuh'
+      Name: !Sub '${AWS::StackName}-WazuhNlb2'
       Scheme: internet-facing
       Subnets: 
         - !Ref SubnetEnv2
