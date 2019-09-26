@@ -329,7 +329,7 @@ Resources:
       Name: !Sub '${AWS::StackName}-Wazuh'
       Scheme: internet-facing
       Subnets: 
-        - !Ref SubnetWazuh
+        - !Ref SubnetEnv1
       Type: network
       Tags:
         - Key: Name
@@ -393,8 +393,6 @@ Resources:
       LoadBalancerArn: !Ref Env1WazuhLb
       Port: '1514'
       Protocol: TCP
-
-
 
 
 
@@ -543,7 +541,7 @@ Resources:
       Name: !Sub '${AWS::StackName}-KibanaLb'
       Scheme: internet-facing
       Subnets: 
-        - !Ref SubnetWazuh
+        - !Ref SubnetEnvCcs
       Type: network
       Tags:
         - Key: Name
@@ -681,20 +679,20 @@ Resources:
 
 
   # Wazuh Network Load Balancer
-  Env1WazuhLb:
+  Env2WazuhLb:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Name: !Sub '${AWS::StackName}-Wazuh'
       Scheme: internet-facing
       Subnets: 
-        - !Ref SubnetWazuh
+        - !Ref SubnetEnv2
       Type: network
       Tags:
         - Key: Name
           Value: nlbwazuh
 
   # Wazuh registration Target Group for Network Load Balancer
-  RegistrationTG:
+  RegistrationTG2:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       Name: !Sub '${AWS::StackName}-registrationTG'
@@ -713,18 +711,18 @@ Resources:
 
 
   # Wazuh registration Listener for Network Load Balancer
-  RegistrationListener:
+  RegistrationListener2:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
       - Type: forward
         TargetGroupArn: !Ref RegistrationTG
-      LoadBalancerArn: !Ref Env1WazuhLb
+      LoadBalancerArn: !Ref Env2WazuhLb
       Port: !Ref WazuhRegistrationPort
       Protocol: TCP
   
   # Reporting Target Group for Wazuh master and worker nodes
-  ReportingTG:
+  ReportingTG2:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
       Name: !Sub '${AWS::StackName}-reportingTG'
@@ -742,13 +740,13 @@ Resources:
           Value: reportingTG
 
   # Reporting Listener for Network LB.
-  ReportingListener:
+  ReportingListener2:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       DefaultActions:
       - Type: forward
         TargetGroupArn: !Ref ReportingTG
-      LoadBalancerArn: !Ref Env1WazuhLb
+      LoadBalancerArn: !Ref Env2WazuhLb
       Port: '1514'
       Protocol: TCP
 
