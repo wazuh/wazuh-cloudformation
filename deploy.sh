@@ -9,7 +9,7 @@ PARAMS_FILE='./parameters.json'
 TEMPLATE_FILE='./cross_search_opendistro.yml'
 
 # Stack name
-STACK_NAME='opendistro-cross-search'
+STACK_NAME='odistro-ccs'
 
 # Bucket name
 BUCKET_NAME='demo-cloudformation-templates'

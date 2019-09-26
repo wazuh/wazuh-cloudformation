@@ -682,7 +682,7 @@ Resources:
   Env2WazuhLb:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
-      Name: !Sub '${AWS::StackName}-WazuhNlb2'
+      Name: !Sub '${AWS::StackName}-nlb2'
       Scheme: internet-facing
       Subnets: 
         - !Ref SubnetEnv2
@@ -695,7 +695,7 @@ Resources:
   RegistrationTG2:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: !Sub '${AWS::StackName}-registrationTG'
+      Name: !Sub '${AWS::StackName}-registrationTG2'
       Port: !Ref WazuhRegistrationPort
       Protocol: TCP
       VpcId: !Ref WazuhVpc
@@ -707,7 +707,7 @@ Resources:
         Port: !Ref WazuhRegistrationPort
       Tags:
         - Key: Name
-          Value: registrationTG
+          Value: registrationTG2
 
 
   # Wazuh registration Listener for Network Load Balancer
@@ -716,7 +716,7 @@ Resources:
     Properties:
       DefaultActions:
       - Type: forward
-        TargetGroupArn: !Ref RegistrationTG
+        TargetGroupArn: !Ref RegistrationTG2
       LoadBalancerArn: !Ref Env2WazuhLb
       Port: !Ref WazuhRegistrationPort
       Protocol: TCP
@@ -725,7 +725,7 @@ Resources:
   ReportingTG2:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      Name: !Sub '${AWS::StackName}-reportingTG'
+      Name: !Sub '${AWS::StackName}-reportingTG2'
       Port: !Ref WazuhServerPort
       Protocol: TCP
       VpcId: !Ref WazuhVpc
@@ -737,7 +737,7 @@ Resources:
         Port: !Ref WazuhServerPort  
       Tags:
         - Key: Name
-          Value: reportingTG
+          Value: reportingTG2
 
   # Reporting Listener for Network LB.
   ReportingListener2:
@@ -745,7 +745,7 @@ Resources:
     Properties:
       DefaultActions:
       - Type: forward
-        TargetGroupArn: !Ref ReportingTG
+        TargetGroupArn: !Ref ReportingTG2
       LoadBalancerArn: !Ref Env2WazuhLb
       Port: '1514'
       Protocol: TCP
@@ -773,7 +773,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_opendistro.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-css-opendistro/elastic/wazuh_cf_opendistro.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-ccs-opendistro/elastic/wazuh_cf_opendistro.sh
               mode: '000700'
               owner: root
               group: root
@@ -835,7 +835,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_master.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-css-opendistro/wazuh/cluster/wazuh_cf_master.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-ccs-opendistro/wazuh/cluster/wazuh_cf_master.sh
               mode: '000700'
               owner: root
               group: root
@@ -896,7 +896,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_opendistro.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-css-opendistro/elastic/wazuh_cf_opendistro.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-ccs-opendistro/elastic/wazuh_cf_opendistro.sh
               mode: '000700'
               owner: root
               group: root
@@ -959,7 +959,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_master.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-css-opendistro/wazuh/cluster/wazuh_cf_master.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-ccs-opendistro/wazuh/cluster/wazuh_cf_master.sh
               mode: '000700'
               owner: root
               group: root
@@ -1021,7 +1021,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_opendistro.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-css-opendistro/elastic/wazuh_cf_opendistro.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-ccs-opendistro/elastic/wazuh_cf_opendistro.sh
               mode: '000700'
               owner: root
               group: root
@@ -1083,7 +1083,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_kibana.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-css-opendistro/elastic/wazuh_cf_kibana.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-ccs-opendistro/elastic/wazuh_cf_kibana.sh                
               mode: '000700'
               owner: root
               group: root
