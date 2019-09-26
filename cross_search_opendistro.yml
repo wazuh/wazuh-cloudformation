@@ -582,7 +582,7 @@ Resources:
         - Key: deregistration_delay.timeout_seconds
           Value: 600
       Targets:
-      - Id: !Ref KibanaCcs
+      - Id: !Ref KibanaInstance
         Port: !Ref KibanaPort
       Tags:
         - Key: Name
@@ -1115,7 +1115,7 @@ Resources:
             Ref: "SubnetEnvCcs"
       Tags:
         - Key: Name
-          Value: KibanaCcs
+          Value: KibanaInstance
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
