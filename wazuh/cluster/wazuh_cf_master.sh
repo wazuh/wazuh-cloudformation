@@ -68,19 +68,9 @@ else
 	echo 'no repo' >> /tmp/stage
 fi
 
-# Configuring Elastic repository
-rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
-elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
-cat > /etc/yum.repos.d/elastic.repo << EOF
-[elasticsearch-${elastic_major_version}.x]
-name=Elasticsearch repository for ${elastic_major_version}.x packages
-baseurl=https://artifacts.elastic.co/packages/${elastic_major_version}.x/yum
-gpgcheck=1
-gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
-enabled=1
-autorefresh=1
-type=rpm-md
-EOF
+# Configuring Filebeat-oss repository
+curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-${elastic_version}-x86_64.rpm
+yum install filebeat-${elastic_version}-x86_64.rpm
 
 # Installing wazuh-manager
 yum -y install wazuh-manager
