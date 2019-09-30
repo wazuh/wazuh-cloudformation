@@ -76,11 +76,6 @@ rpm -vi filebeat-${elastic_version}-x86_64.rpm
 yum -y install wazuh-manager
 chkconfig --add wazuh-manager
 
-
-# Installing Filebeat
-yum -y install filebeat-${elastic_version}
-echo "Installed Filebeat" >> /tmp/log
-
 # Configuring Filebeat
 wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
 wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
