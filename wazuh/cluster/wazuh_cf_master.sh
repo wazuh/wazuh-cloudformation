@@ -70,7 +70,7 @@ fi
 
 # Configuring Filebeat-oss repository
 curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-${elastic_version}-x86_64.rpm
-sudo rpm -vi filebeat-${elastic_version}-x86_64.rpm
+rpm -vi filebeat-${elastic_version}-x86_64.rpm
 
 # Installing wazuh-manager
 yum -y install wazuh-manager
