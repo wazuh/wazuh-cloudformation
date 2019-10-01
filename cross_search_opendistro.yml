@@ -997,65 +997,7 @@ Resources:
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ManagerEnv2 --region ${AWS::Region}
     DependsOn: GatewayToInternet
 
-
-
-  # Environment CCS
-  ElasticCCS:
-    Type: AWS::EC2::Instance
-    Metadata:
-      'AWS::CloudFormation::Init':
-        configSets:
-          ElasticInstallationSet:
-            - Elasticfiles
-            - ElasticInstall
-        Elasticfiles:
-          files:
-            /tmp/wazuh_cf_settings:
-              content: !Sub |
-                SshUsername: ${SshUsername}
-                SshPassword: ${SshPassword}
-                Elastic_Wazuh: ${ElasticWazuhVersion}
-                NodeName: 2
-              mode: '000600'
-              owner: root
-              group: root
-            /tmp/wazuh_cf_opendistro.sh:
-              source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-ccs-opendistro/elastic/wazuh_cf_opendistro.sh
-              mode: '000700'
-              owner: root
-              group: root
-        ElasticInstall:
-          commands:
-            01_RunInstallationScript:
-              command: /tmp/wazuh_cf_opendistro.sh
-    Properties:
-      ImageId: !FindInMap
-        - "RegionMap"
-        - Ref: "AWS::Region"
-        - HVM64
-      InstanceType: !Ref ElasticInstanceType
-      IamInstanceProfile: !Ref InstanceProfile
-      KeyName: !Ref KeyPairName
-      NetworkInterfaces:
-        - AssociatePublicIpAddress: "true"
-          DeviceIndex: "0"
-          GroupSet: 
-            - Ref: "ElasticSecurityGroup"
-          SubnetId: 
-            Ref: "SubnetEnvCcs"
-      Tags:
-        - Key: Name
-          Value: ElasticCCS
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticCCS --configsets ElasticInstallationSet --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticCCS --region ${AWS::Region}
-    DependsOn: GatewayToInternet
-
-
-    
+   
  # Kibana instance
   KibanaInstance:
     Type: AWS::EC2::Instance
@@ -1076,7 +1018,6 @@ Resources:
                 WazuhApiAdminUsername: ${WazuhApiAdminUsername}
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
-                ElasticIp: ${ElasticCCS.PrivateIp}
                 EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
