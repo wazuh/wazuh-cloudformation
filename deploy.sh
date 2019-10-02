@@ -3,13 +3,13 @@
 #!/bin/bash
 
 # Path of the parameters JSON file
-PARAMS_FILE='./parameters.json'
+PARAMS_FILE='parameters.json'
 
 # Path of the template file
-TEMPLATE_FILE='./cross_search_opendistro.yml'
+TEMPLATE_FILE='cross_search_opendistro.yml'
 
 # Stack name
-STACK_NAME='odistro-ccs'
+STACK_NAME='temp-ccs'
 
 # Bucket name
 BUCKET_NAME='demo-cloudformation-templates'
@@ -30,7 +30,7 @@ fi
 aws s3 cp $TEMPLATE_FILE s3://$BUCKET_NAME
 
 # Getting the template URL
-URL="https://demo-cloudformation-templates.s3-us-west-1.amazonaws.com/cross_search_opendistro.yml"
+URL="https://$BUCKET_NAME.s3-us-west-1.amazonaws.com/$TEMPLATE_FILE"
 echo "Template URL: $URL"
 
 aws cloudformation create-stack --stack-name ${STACK_NAME} --template-url $URL --parameters file://$PARAMS_FILE --capabilities CAPABILITY_IAM

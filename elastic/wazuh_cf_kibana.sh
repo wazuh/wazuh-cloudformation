@@ -44,6 +44,9 @@ curl https://d3g5vo6xdbdb9a.cloudfront.net/yum/opendistroforelasticsearch-artifa
 echo "Added OpenDistro repo." >> /tmp/deploy.log
 }
 
+install_java(){
+    amazon-linux-extras install java-openjdk11 
+}
 
 # Installing ELK coordinating only mode
 install_opendistro(){
@@ -75,6 +78,7 @@ main(){
   check_root
   create_ssh_user
   import_opendistro_repo
+  install_java
   install_opendistro
   configuring_elasticsearch
   start_opendistro

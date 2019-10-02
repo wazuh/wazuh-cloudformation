@@ -313,14 +313,7 @@ Parameters:
     Description: 'Used for HTTPS access to WUI. Existent certificate, identified by its Amazon Resource Name (ARN).'
     Type: String
 
-Conditions: 
-  HasSslCert: !Not [!Equals [!Ref SSLCertificateARN, ""]]
-
 Resources:
-
-
-
-
 
   # Wazuh Network Load Balancer
   Env1WazuhLb:
@@ -352,7 +345,6 @@ Resources:
       Tags:
         - Key: Name
           Value: registrationTG
-
 
   # Wazuh registration Listener for Network Load Balancer
   RegistrationListener:
@@ -393,7 +385,6 @@ Resources:
       LoadBalancerArn: !Ref Env1WazuhLb
       Port: '1514'
       Protocol: TCP
-
 
 
   # Network resources
@@ -531,9 +522,6 @@ Resources:
       SubnetId: !Ref SubnetEnvCcs
       RouteTableId: !Ref PublicRouteTable
 
-
-
-
   # Wazuh Network Load Balancer
   KibanaLb:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -547,14 +535,9 @@ Resources:
         - Key: Name
           Value: nlbwazuh
 
-
-
-
-
   # Listener for Kibana WUI
   TLSListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
-    Condition: HasSslCert
     Properties:
       DefaultActions:
       - Type: forward
@@ -565,12 +548,9 @@ Resources:
       Certificates:
       - CertificateArn: !Ref SSLCertificateARN
 
-
-
   # TLS Target Group for Network Load Balancer
   TLSTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Condition: HasSslCert
     Properties:
       Name: !Sub '${AWS::StackName}-TLSTargetGroup'
       Port: !Ref KibanaPort
@@ -585,17 +565,6 @@ Resources:
       Tags:
         - Key: Name
           Value: TLSTargetGroup
-
-
-
-
-
-
-
-
-
-
-
 
   # Security groups
   ElasticSecurityGroup:
@@ -676,8 +645,6 @@ Resources:
         - Key: Name
           Value: !Sub '${AWS::StackName}-WazuhSecurityGroup'
 
-
-
   # Wazuh Network Load Balancer
   Env2WazuhLb:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -708,7 +675,6 @@ Resources:
       Tags:
         - Key: Name
           Value: registrationTG2
-
 
   # Wazuh registration Listener for Network Load Balancer
   RegistrationListener2:
@@ -766,8 +732,6 @@ Resources:
               content: !Sub |
                 SshUsername: ${SshUsername}
                 SshPassword: ${SshPassword}
-                Elastic_Wazuh: ${ElasticWazuhVersion}
-                NodeName: 1
               mode: '000600'
               owner: root
               group: root
@@ -805,7 +769,6 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticEnv1 --configsets ElasticInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticEnv1 --region ${AWS::Region}
     DependsOn: GatewayToInternet
-
   ManagerEnv1:
     Type: AWS::EC2::Instance
     Metadata:
@@ -873,7 +836,6 @@ Resources:
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ManagerEnv1 --region ${AWS::Region}
     DependsOn: GatewayToInternet
 
-
   # Environment 2
   ElasticEnv2:
     Type: AWS::EC2::Instance
@@ -928,7 +890,6 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticEnv2 --configsets ElasticInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticEnv2 --region ${AWS::Region}
     DependsOn: GatewayToInternet
-
   ManagerEnv2:
     Type: AWS::EC2::Instance
     Metadata:
@@ -997,8 +958,6 @@ Resources:
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ManagerEnv2 --region ${AWS::Region}
     DependsOn: GatewayToInternet
 
-   
- # Kibana instance
   KibanaInstance:
     Type: AWS::EC2::Instance
     Metadata:
@@ -1014,7 +973,6 @@ Resources:
                 SshUsername: ${SshUsername}
                 SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
-                KibanaPort: ${KibanaPort}
                 WazuhApiAdminUsername: ${WazuhApiAdminUsername}
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
@@ -1024,14 +982,14 @@ Resources:
               group: root
             /tmp/wazuh_cf_kibana.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-ccs-opendistro/elastic/wazuh_cf_kibana.sh                
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-ccs-opendistro/elastic/wazuh_cf_kibana.sh
               mode: '000700'
               owner: root
               group: root
         KibanaInstall:
           commands:
             01_RunInstallationScript:
-              command: /tmp/wazuh_cf_kibana.sh
+              command: /tmp/wazuh_cf_kibana.sh 
     Properties:
       ImageId: !FindInMap
         - "RegionMap"
@@ -1043,7 +1001,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 100
+            VolumeSize: 200
             VolumeType: gp2
       NetworkInterfaces:
         - AssociatePublicIpAddress: "true"

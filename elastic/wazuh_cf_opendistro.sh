@@ -45,7 +45,7 @@ install_opendistro(){
 }
 
 install_java(){
-    yum install java-11-openjdk-devel
+    amazon-linux-extras install java-openjdk11 
 }
 
 start_opendistro(){
