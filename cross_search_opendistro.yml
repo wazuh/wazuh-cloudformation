@@ -542,7 +542,7 @@ Resources:
       DefaultActions:
       - Type: forward
         TargetGroupArn: !Ref TLSTargetGroup
-      LoadBalancerArn: !Ref Env1WazuhLb
+      LoadBalancerArn: !Ref KibanaLb
       Port: !Ref KibanaPort
       Protocol: TLS
       Certificates:
