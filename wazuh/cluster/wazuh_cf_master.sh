@@ -401,7 +401,7 @@ curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
 yum -y install nodejs
 echo "Installed NodeJS." >> /tmp/deploy.log
 
-if [[ ${EnvironmentType} != 'compile' ]]
+if [[ ${EnvironmentType} != 'sources' ]]
 then
   # Installing wazuh-api
   yum -y install wazuh-api
