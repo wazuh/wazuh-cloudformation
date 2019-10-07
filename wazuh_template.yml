@@ -251,7 +251,8 @@ Parameters:
     AllowedValues:
       - production
       - staging
-      - devel    
+      - devel   
+      - sources 
     ConstraintDescription: Must contain valid instance type
     Default: staging
     Description: Select a stage
