@@ -52,19 +52,17 @@ then
   curl -LO https://github.com/wazuh/wazuh/archive/$BRANCH.zip
   unzip $BRANCH.zip
   rm -f $BRANCH.zip
-
   USER_LANGUAGE="en" \
   USER_NO_STOP="y" \
   USER_INSTALL_TYPE="agent" \
   USER_DIR="/var/ossec" \
-  USER_ENABLE_EMAIL="n" \
+  USER_ENABLE_ACTIVE_RESPONSE="y" \
   USER_ENABLE_SYSCHECK="y" \
   USER_ENABLE_ROOTCHECK="y" \
   USER_ENABLE_OPENSCAP="n" \
-  USER_WHITE_LIST="n" \
-  USER_ENABLE_SYSLOG="n" \
-  USER_ENABLE_AUTHD="y" \
-  USER_AUTO_START="y" \
+  USER_AGENT_SERVER_IP="${master_ip}" \
+  USER_CA_STORE="/var/ossec/wpk_root.pem" \
+  USER_ENABLE_SCA="y" \
   THREADS=2 \
   wazuh-$BRANCH/install.sh
 
