@@ -257,7 +257,7 @@ get_plugin_url(){
     # The built backage is under /build
     cd build
     BUILD_SRC=$(pwd)
-    APP_FILE=$(ls)
+    APP_FILE=$(ls *.zip)
 
   else
     echo 'no repo' >> /tmp/stage
