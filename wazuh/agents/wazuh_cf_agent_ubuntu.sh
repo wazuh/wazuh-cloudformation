@@ -41,6 +41,33 @@ elif [[ ${EnvironmentType} == 'devel' ]]
 then
     curl -s https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH | apt-key add -
     echo "deb https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/staging/apt/ unstable main" | tee -a /etc/apt/sources.list.d/wazuh_staging.list
+elif [[ ${EnvironmentType} == 'sources' ]]
+then
+
+  # Compile Wazuh manager from sources
+  BRANCH="3.11"
+
+  yum install make gcc policycoreutils-python automake autoconf libtool -y
+
+  curl -LO https://github.com/wazuh/wazuh/archive/$BRANCH.zip
+  unzip $BRANCH.zip
+  rm -f $BRANCH.zip
+
+  USER_LANGUAGE="en" \
+  USER_NO_STOP="y" \
+  USER_INSTALL_TYPE="agent" \
+  USER_DIR="/var/ossec" \
+  USER_ENABLE_EMAIL="n" \
+  USER_ENABLE_SYSCHECK="y" \
+  USER_ENABLE_ROOTCHECK="y" \
+  USER_ENABLE_OPENSCAP="n" \
+  USER_WHITE_LIST="n" \
+  USER_ENABLE_SYSLOG="n" \
+  USER_ENABLE_AUTHD="y" \
+  USER_AUTO_START="y" \
+  THREADS=2 \
+  wazuh-$BRANCH/install.sh
+
 else
 	echo 'no repo' >> /tmp/stage
 fi
