@@ -260,7 +260,7 @@ get_plugin_url(){
       BUILD_SRC=$(pwd)
       APP_FILE=$(ls *.zip)
     else
-      plugin_url="https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/staging/app/kibana/wazuhapp-3.11-sources.zip"
+      plugin_url="https://aws-nist.s3-us-west-1.amazonaws.com/wazuhapp-3.11-sources.zip"
     fi
   else
     echo 'no repo' >> /tmp/stage
