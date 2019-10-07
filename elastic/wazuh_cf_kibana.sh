@@ -240,6 +240,25 @@ get_plugin_url(){
   elif [[ ${EnvironmentType} == 'devel' ]]
   then
   plugin_url="https://packages-dev.wazuh.com/staging/app/kibana/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
+  elif [[ ${EnvironmentType} == 'sources' ]]
+  then
+    BRANCH="3.11-7.3"
+    yum install -y git
+    curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
+    # Installing NodeJS
+    yum -y install nodejs
+    npm install -g yarn@1.10.1
+    git clone https://github.com/wazuh/wazuh-kibana-app -b $BRANCH --single-branch --depth=1 app
+    cd app
+    yarn
+    yarn build 2> /dev/null
+    # This command returns several errors, we workaround this by executing it twice
+    yarn build 2> /dev/null
+    # The built backage is under /build
+    cd build
+    BUILD_SRC=$(pwd)
+    APP_FILE=$(ls)
+
   else
     echo 'no repo' >> /tmp/stage
   fi
@@ -247,7 +266,11 @@ get_plugin_url(){
 
 install_plugin(){
   echo "Installing app" >> /tmp/deploy.log
-  sudo -u kibana /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
+  if [[ ${EnvironmentType} != 'sources' ]]
+    sudo -u kibana /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
+  else
+    sudo -u kibana /usr/share/kibana/bin/kibana-plugin install file:/$BUILD_SRC/$APP_FILE
+  fi
   echo "App installed!" >> /tmp/deploy.log
   echo "Redirecting to Wazuh app " >> /tmp/deploy.log
   # Set Wazuh app as the default landing page
