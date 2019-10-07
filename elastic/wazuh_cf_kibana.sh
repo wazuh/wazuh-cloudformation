@@ -267,6 +267,7 @@ get_plugin_url(){
 install_plugin(){
   echo "Installing app" >> /tmp/deploy.log
   if [[ ${EnvironmentType} != 'sources' ]]
+  then
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
   else
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install file:/$BUILD_SRC/$APP_FILE
