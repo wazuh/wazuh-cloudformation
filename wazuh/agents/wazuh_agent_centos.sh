@@ -55,7 +55,7 @@ then
   BRANCH="3.11"
 
   yum install make gcc policycoreutils-python automake autoconf libtool -y
-
+  yum install unzip git -y
   curl -LO https://github.com/wazuh/wazuh/archive/$BRANCH.zip
   unzip $BRANCH.zip
   rm -f $BRANCH.zip

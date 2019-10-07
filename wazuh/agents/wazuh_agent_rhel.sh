@@ -172,7 +172,7 @@ then
   # Compile Wazuh manager from sources
   BRANCH="3.11"
 
-  yum install make gcc policycoreutils-python automake autoconf libtool -y
+  yum install make gcc policycoreutils-python automake autoconf libtool unzip -y
 
   curl -LO https://github.com/wazuh/wazuh/archive/$BRANCH.zip
   unzip $BRANCH.zip
