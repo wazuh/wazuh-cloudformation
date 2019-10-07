@@ -269,7 +269,7 @@ get_plugin_url(){
 
 install_plugin(){
   echo "Installing app" >> /tmp/deploy.log
-  if [[ ${EnvironmentType} != 'sources' ]] && [[ ${BRANCH} != "" ]]
+  if [[ ${EnvironmentType} != 'sources' ]] || [[ ${BRANCH} == "" ]]
   then
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
   else
