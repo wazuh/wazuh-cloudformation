@@ -270,7 +270,7 @@ install_plugin(){
   then
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
   else
-    sudo -u kibana /usr/share/kibana/bin/kibana-plugin install file:/$BUILD_SRC/$APP_FILE
+    sudo -u kibana /usr/share/kibana/bin/kibana-plugin install file://$BUILD_SRC/$APP_FILE
   fi
   echo "App installed!" >> /tmp/deploy.log
   echo "Redirecting to Wazuh app " >> /tmp/deploy.log
