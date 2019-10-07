@@ -63,27 +63,37 @@ EOF
 elif [[ ${EnvironmentType} == 'devel' ]]
 then
 	echo -e '[wazuh_staging]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/staging/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_staging.repo
+elif [[ ${EnvironmentType} == 'sources' ]]
+then
+
+  # Compile Wazuh manager from sources
+  BRANCH="3.11"
+
+  yum install make gcc policycoreutils-python automake autoconf libtool -y
+
+  curl -LO https://github.com/wazuh/wazuh/archive/$BRANCH.zip
+  unzip $BRANCH.zip
+  rm -f $BRANCH.zip
+
+  USER_LANGUAGE="en" \
+  USER_NO_STOP="y" \
+  USER_INSTALL_TYPE="server" \
+  USER_DIR="/var/ossec" \
+  USER_ENABLE_EMAIL="n" \
+  USER_ENABLE_SYSCHECK="y" \
+  USER_ENABLE_ROOTCHECK="y" \
+  USER_ENABLE_OPENSCAP="n" \
+  USER_WHITE_LIST="n" \
+  USER_ENABLE_SYSLOG="n" \
+  USER_ENABLE_AUTHD="y" \
+  USER_AUTO_START="y" \
+  THREADS=2 \
+  wazuh-$BRANCH/install.sh
+
 else
 	echo 'no repo' >> /tmp/stage
 fi
 
-# Configuring Elastic repository
-rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
-elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
-cat > /etc/yum.repos.d/elastic.repo << EOF
-[elasticsearch-${elastic_major_version}.x]
-name=Elasticsearch repository for ${elastic_major_version}.x packages
-baseurl=https://artifacts.elastic.co/packages/${elastic_major_version}.x/yum
-gpgcheck=1
-gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
-enabled=1
-autorefresh=1
-type=rpm-md
-EOF
-
-# Installing wazuh-manager
-yum -y install wazuh-manager
-chkconfig --add wazuh-manager
 manager_config="/var/ossec/etc/ossec.conf"
 local_rules="/var/ossec/etc/rules/local_rules.xml"
 # Enable registration service (only for master node)
@@ -386,16 +396,25 @@ EOF
 # Restart wazuh-manager
 systemctl restart wazuh-manager
 echo "Restarted Wazuh manager." >> /tmp/deploy.log
-
-# Installing NodeJS
 curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
+# Installing NodeJS
 yum -y install nodejs
 echo "Installed NodeJS." >> /tmp/deploy.log
 
-# Installing wazuh-api
-yum -y install wazuh-api
-chkconfig --add wazuh-api
-echo "Installed Wazuh API." >> /tmp/deploy.log
+if [[ ${EnvironmentType} != 'compile' ]]
+then
+  # Installing wazuh-api
+  yum -y install wazuh-api
+  chkconfig --add wazuh-api
+  echo "Installed Wazuh API." >> /tmp/deploy.log
+else
+  npm config set user 0
+  curl -LO https://github.com/wazuh/wazuh-api/archive/$BRANCH.zip
+  unzip $BRANCH.zip
+  rm -f $BRANCH.zip
+  cd wazuh-api-$BRANCH
+  ./install_api.sh
+fi
 
 # Configuring Wazuh API user and password
 cd /var/ossec/api/configuration/auth
