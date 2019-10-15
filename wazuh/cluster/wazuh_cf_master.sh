@@ -88,6 +88,7 @@ then
   USER_ENABLE_AUTHD="y" \
   USER_AUTO_START="y" \
   THREADS=2 \
+  ../install.sh
   echo "Compiled wazuh" >> /tmp/deploy.log
 
 else
