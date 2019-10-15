@@ -60,10 +60,10 @@ then
   BRANCH="3.11"
 
   yum install make gcc policycoreutils-python automake autoconf libtool -y
-
-  curl -LO https://github.com/wazuh/wazuh/archive/$BRANCH.zip
-  unzip $BRANCH.zip
-  rm -f $BRANCH.zip
+  curl -Ls https://github.com/wazuh/wazuh/archive/$BRANCH.tar.gz | tar zx
+  rm -f $BRANCH.tar.gz
+  cd wazuh-$BRANCH/src
+  make TARGET=agent DEBUG=1 -j8
 
   USER_LANGUAGE="en" \
   USER_NO_STOP="y" \
@@ -78,7 +78,8 @@ then
   USER_ENABLE_AUTHD="y" \
   USER_AUTO_START="y" \
   THREADS=2 \
-  wazuh-$BRANCH/install.sh
+  ../install.sh
+  cd -
 
 else
 	echo 'no repo' >> /tmp/stage

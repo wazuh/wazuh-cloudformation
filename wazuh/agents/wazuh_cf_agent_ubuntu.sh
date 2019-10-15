@@ -47,11 +47,12 @@ then
   # Compile Wazuh manager from sources
   BRANCH="3.11"
 
-  yum install make gcc policycoreutils-python automake unzip autoconf libtool -y
+  apt install make gcc libc6-dev curl policycoreutils automake autoconf libtool -y
 
-  curl -LO https://github.com/wazuh/wazuh/archive/$BRANCH.zip
-  unzip $BRANCH.zip
-  rm -f $BRANCH.zip
+  curl -Ls https://github.com/wazuh/wazuh/archive/$BRANCH.tar.gz | tar zx
+  rm -f $BRANCH.tar.gz
+  cd wazuh-$BRANCH/src
+  make TARGET=agent DEBUG=1 -j8
   USER_LANGUAGE="en" \
   USER_NO_STOP="y" \
   USER_INSTALL_TYPE="agent" \
@@ -64,7 +65,8 @@ then
   USER_CA_STORE="/var/ossec/wpk_root.pem" \
   USER_ENABLE_SCA="y" \
   THREADS=2 \
-  wazuh-$BRANCH/install.sh
+  ../install.sh
+  cd -
 
 else
 	echo 'no repo' >> /tmp/stage
