@@ -149,7 +149,7 @@ EOF
 
 # Setting password for agents registration
 echo "${wazuh_registration_password}" > /var/ossec/etc/authd.pass
-echo "Set registration password." > /tmp/deploy.log
+echo "Set registration password." >> /tmp/deploy.log
 
 # Installing Python Cryptography module for the cluster
 pip install cryptography
