@@ -88,7 +88,7 @@ then
   USER_ENABLE_AUTHD="y" \
   USER_AUTO_START="y" \
   THREADS=2 \
-  cd -
+  echo "Compiled wazuh" >> /tmp/deploy.log
 
 else
 	echo 'no repo' >> /tmp/stage

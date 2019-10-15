@@ -71,7 +71,7 @@ then
   USER_ENABLE_SCA="y" \
   THREADS=2 \
   ../install.sh
-  cd -
+  echo "Compiled wazuh" >> /tmp/deploy.log
 
 else
 	echo 'no repo' >> /tmp/stage

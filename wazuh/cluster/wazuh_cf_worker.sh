@@ -79,7 +79,7 @@ then
   USER_AUTO_START="y" \
   THREADS=2 \
   ../install.sh
-  cd -
+  echo "Compiled wazuh" >> /tmp/deploy.log
 
 else
 	echo 'no repo' >> /tmp/stage
