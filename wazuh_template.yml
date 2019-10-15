@@ -1496,7 +1496,7 @@ Resources:
           Add-LocalGroupMember -Group "Remote Desktop Users" -Member "wazuh"
           net user Administrator ${SshPassword}
           $master_ip=${WazuhNetworkLoadBalancer.DNSName}
-          $url = "https://packages.wazuh.com/3.x/windows/wazuh-agent-3.10.2-1.msi"
+          $url = "https://packages-dev.wazuh.com/pre-release/windows/wazuh-agent-3.11.0-1.msi"
           $path = "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi" 
           $url_osquery = "https://pkg.osquery.io/windows/osquery-3.3.2.msi"
           $path_osquery = "C:\\Users\\Administrator\\Desktop\\osquery.msi" 
