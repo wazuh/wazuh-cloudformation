@@ -95,6 +95,44 @@ else
 	echo 'no repo' >> /tmp/stage
 fi
 
+# Configuring Elastic repository
+rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
+elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
+cat > /etc/yum.repos.d/elastic.repo << EOF
+[elasticsearch-${elastic_major_version}.x]
+name=Elasticsearch repository for ${elastic_major_version}.x packages
+baseurl=https://artifacts.elastic.co/packages/${elastic_major_version}.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=1
+autorefresh=1
+type=rpm-md
+EOF
+
+curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
+# Installing NodeJS
+yum -y install nodejs
+echo "Installed NodeJS." >> /tmp/deploy.log
+
+if [[ ${EnvironmentType} != 'sources' ]]
+then
+
+  # Installing wazuh-manager
+  yum -y install wazuh-manager
+  chkconfig --add wazuh-manager
+  # Installing wazuh-api
+  yum -y install wazuh-api
+  chkconfig --add wazuh-api
+  echo "Installed Wazuh API." >> /tmp/deploy.log
+else
+  npm config set user 0
+  curl -LO https://github.com/wazuh/wazuh-api/archive/$BRANCH.zip
+  unzip $BRANCH.zip
+  rm -f $BRANCH.zip
+  cd wazuh-api-$BRANCH
+  ./install_api.sh
+fi
+
 manager_config="/var/ossec/etc/ossec.conf"
 local_rules="/var/ossec/etc/rules/local_rules.xml"
 # Enable registration service (only for master node)
@@ -397,25 +435,7 @@ EOF
 # Restart wazuh-manager
 systemctl restart wazuh-manager
 echo "Restarted Wazuh manager." >> /tmp/deploy.log
-curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
-# Installing NodeJS
-yum -y install nodejs
-echo "Installed NodeJS." >> /tmp/deploy.log
 
-if [[ ${EnvironmentType} != 'sources' ]]
-then
-  # Installing wazuh-api
-  yum -y install wazuh-api
-  chkconfig --add wazuh-api
-  echo "Installed Wazuh API." >> /tmp/deploy.log
-else
-  npm config set user 0
-  curl -LO https://github.com/wazuh/wazuh-api/archive/$BRANCH.zip
-  unzip $BRANCH.zip
-  rm -f $BRANCH.zip
-  cd wazuh-api-$BRANCH
-  ./install_api.sh
-fi
 
 # Configuring Wazuh API user and password
 cd /var/ossec/api/configuration/auth
