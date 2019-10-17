@@ -27,7 +27,7 @@ AwsAccessKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsAccessKey:' | cut -d' ' -f
 SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
 elastic_ip=$(cat /tmp/wazuh_cf_settings | grep '^ElasticIp:' | cut -d' ' -f2)
-TAG='v3.10.0'
+TAG='v3.10.2'
 
 echo "Added env vars." >> /tmp/deploy.log
 
