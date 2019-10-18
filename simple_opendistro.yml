@@ -859,7 +859,6 @@ Resources:
           files:
             /tmp/wazuh_cf_settings:
               content: !Sub |
-                SshUsername: ${SshUsername}
                 SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
                 WazuhApiAdminUsername: ${WazuhApiAdminUsername}
@@ -869,11 +868,6 @@ Resources:
                 WazuhRegistrationPort: ${WazuhRegistrationPort}
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
-                WindowsPublicIp: ${Windows.PublicIp}
-                AwsSecretKey: ${AwsSecretKey}
-                AwsAccessKey: ${AwsAccessKey}
-                VirusTotalKey: ${VirusTotalKey}
-                SlackHook: ${SlackHook}
                 EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
@@ -948,16 +942,11 @@ Resources:
           files:
             /tmp/wazuh_cf_settings:
               content: !Sub |
-                SshUsername: ${SshUsername}
                 SshPassword: ${SshPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
                 WazuhServerPort: ${WazuhServerPort}
                 WazuhClusterKey: ${WazuhClusterKey}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                AwsSecretKey: ${AwsSecretKey}
-                AwsAccessKey: ${AwsAccessKey}
-                VirusTotalKey: ${VirusTotalKey}
-                SlackHook: ${SlackHook}
                 EnvironmentType: ${EnvironmentType}
               mode: '000600'
               owner: root
