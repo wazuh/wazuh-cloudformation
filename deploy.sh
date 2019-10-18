@@ -6,10 +6,10 @@
 PARAMS_FILE='parameters.json'
 
 # Path of the template file
-TEMPLATE_FILE='cross_search_opendistro.yml'
+TEMPLATE_FILE='simple_opendistro.yml'
 
 # Stack name
-STACK_NAME='temp-ccs'
+STACK_NAME='lendingclub'
 
 # Bucket name
 BUCKET_NAME='demo-cloudformation-templates'

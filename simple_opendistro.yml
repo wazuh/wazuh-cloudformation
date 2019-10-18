@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Deploy an OpenDistro Cross-Search clustering environment
+Description: Provides a demo environment with a Wazuh cluster of two nodes, Elasticsearch cluster of three nodes with opendistro.
 Mappings:
   RegionMap:
     us-east-1:
@@ -105,11 +105,9 @@ Mappings:
   SubnetConfig:
     WazuhVpc:
       CIDR: 10.0.0.0/16
-    SubnetEnv1:
+    SubnetWazuh:
       CIDR: 10.0.0.0/24
-    SubnetEnv2:
-      CIDR: 10.0.1.0/24
-    SubnetEnvCcs:
+    SubnetElasticsearch:
       CIDR: 10.0.2.0/24
 
 Metadata:
@@ -134,8 +132,8 @@ Metadata:
           - WazuhInstanceType
           - ElasticInstanceType
           - KibanaInstanceType
-          - SshUsername
-          - SshPassword       
+          - SshPassword
+
       - 
         Label:
           default: "Wazuh configuration"
@@ -147,11 +145,8 @@ Metadata:
           - WazuhApiAdminUsername
           - WazuhApiAdminPassword
           - WazuhClusterKey
-      -
-        Label:
-          default: "Kibana configuration"
-        Parameters:
-          - KibanaPort
+
+
       -
         Label:
           default: "SSL Certificate"
@@ -167,14 +162,7 @@ Parameters:
   KeyPairName:
     Description: Existing EC2 key pair for SSH access
     Type: 'AWS::EC2::KeyPair::KeyName'
-  SshUsername:
-    Default: wazuh
-    Description: SSH username
-    Type: String
-    MinLength: '5'
-    MaxLength: '32'
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Only alphanumeric characters. Minimum length 5. Maximum length 32.
+
   SshPassword:
     Description: SSH Password
     NoEcho: 'True'
@@ -258,7 +246,7 @@ Parameters:
     Default: t2.medium
     Description: Type of EC2 instance for Kibana instance
     Type: String
-  
+
   # Wazuh configuration
   WazuhServerPort:
     Default: '1514'
@@ -309,24 +297,379 @@ Parameters:
     Default: '443'
     Description: Port for Kibana WUI
     Type: String
+
   SSLCertificateARN:
     Description: 'Used for HTTPS access to WUI. Existent certificate, identified by its Amazon Resource Name (ARN).'
     Type: String
 
+Conditions: 
+  HasSslCert: !Not [!Equals [!Ref SSLCertificateARN, ""]]
+
 Resources:
 
+  # Network resources
+  WazuhVpc:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !FindInMap
+        - SubnetConfig
+        - WazuhVpc
+        - CIDR
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: client_name
+          Value: LendingClub
+  SubnetWazuh:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref WazuhVpc
+      CidrBlock: !FindInMap
+        - SubnetConfig
+        - SubnetWazuh
+        - CIDR
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: client_name
+          Value: LendingClub
+  SubnetAgents:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref WazuhVpc
+      CidrBlock: !FindInMap
+        - SubnetConfig
+        - SubnetAgents
+        - CIDR
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: client_name
+          Value: LendingClub
+  SubnetElasticsearch:
+      Type: 'AWS::EC2::Subnet'
+      Properties:
+        VpcId: !Ref WazuhVpc
+        CidrBlock: !FindInMap
+          - SubnetConfig
+          - SubnetElasticsearch
+          - CIDR
+        Tags:
+          - Key: Application
+            Value: !Ref 'AWS::StackId'
+          - Key: client_name
+            Value: LendingClub
+
+  # Internet access and routing
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: client_name
+          Value: LendingClub
+  GatewayToInternet:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref WazuhVpc
+      InternetGatewayId: !Ref InternetGateway
+  PublicRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref WazuhVpc
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: client_name
+          Value: LendingClub
+  PublicRoute:
+    Type: 'AWS::EC2::Route'
+    DependsOn: GatewayToInternet
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  SubnetWazuhPublicRouteTable:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref SubnetWazuh
+      RouteTableId: !Ref PublicRouteTable
+  SubnetElasticPublicRouteTable:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref SubnetElasticsearch
+      RouteTableId: !Ref PublicRouteTable
+  SubnetAgentsPublicRouteTable:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref SubnetAgents
+      RouteTableId: !Ref PublicRouteTable
+    
+  # Security groups
+  ElasticSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Elasticsearch security group
+      VpcId: !Ref WazuhVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9200
+          ToPort: 9400
+          CidrIp: !FindInMap
+            - SubnetConfig
+            - WazuhVpc
+            - CIDR
+      Tags:
+        - Key: client_name
+          Value: LendingClub
+  KibanaSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Kibana security group
+      VpcId: !Ref WazuhVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: !Ref KibanaPort
+          ToPort: !Ref KibanaPort
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9200
+          ToPort: 9400
+          CidrIp: !FindInMap
+            - SubnetConfig
+            - WazuhVpc
+            - CIDR
+      Tags:
+        - Key: client_name
+          Value: LendingClub
+  WazuhSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Wazuh security group
+      VpcId: !Ref WazuhVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3389
+          ToPort: 3389
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: !Ref WazuhServerPort
+          ToPort: !Ref WazuhServerPort
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: !Ref WazuhRegistrationPort
+          ToPort: !Ref WazuhRegistrationPort
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 1516
+          ToPort: 1516
+          CidrIp: !FindInMap
+            - SubnetConfig
+            - WazuhVpc
+            - CIDR
+        - IpProtocol: tcp
+          FromPort: !Ref WazuhApiPort
+          ToPort: !Ref WazuhApiPort
+          CidrIp: !FindInMap
+            - SubnetConfig
+            - WazuhVpc
+            - CIDR
+      Tags:
+        - Key: client_name
+          Value: LendingClub
+  
+  # Elasticsearch load balancer
+  ElbElasticSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: ELB Elasticsearch security group
+      VpcId: !Ref WazuhVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 9200
+          ToPort: 9200
+          CidrIp: !FindInMap
+            - SubnetConfig
+            - WazuhVpc
+            - CIDR
+      Tags:
+        - Key: client_name
+          Value: LendingClub
+
+  # Wazuh registration Listener for Network Load Balancer
+  ElasticBootstrap:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          ElasticInstallationSet:
+            - Elasticfiles
+            - ElasticInstall
+        Elasticfiles:
+          files:
+            /tmp/wazuh_cf_opendistro.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/opendistro-simple-arch/opendistro/wazuh_cf_opendistro.sh
+              mode: '000700'
+              owner: root
+              group: root
+        ElasticInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_opendistro.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVM64
+      InstanceType: !Ref ElasticInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "ElasticSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetElasticsearch"
+          PrivateIpAddress: "10.0.2.124"
+      Tags:
+        - Key: client_name
+          Value: LendingClub
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticBootstrap --configsets ElasticInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticBootstrap --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+  
+  ElasticMasterB:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          ElasticInstallationSet:
+            - Elasticfiles
+            - ElasticInstall
+        Elasticfiles:
+          files:
+            /tmp/wazuh_cf_opendistro.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/opendistro-simple-arch/opendistro/wazuh_cf_opendistro.sh
+              mode: '000700'
+              owner: root
+              group: root
+        ElasticInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_opendistro.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVM64
+      InstanceType: !Ref ElasticInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "ElasticSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetElasticsearch"
+          PrivateIpAddress: "10.0.2.123"
+      Tags:
+        - Key: client_name
+          Value: LendingClub
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticMasterB --configsets ElasticInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticMasterB --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+
+  ElasticMasterC:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          ElasticInstallationSet:
+            - Elasticfiles
+            - ElasticInstall
+        Elasticfiles:
+          files:
+            /tmp/wazuh_cf_opendistro.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/opendistro-simple-arch/opendistro/wazuh_cf_opendistro.sh
+              mode: '000700'
+              owner: root
+              group: root
+        ElasticInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_opendistro.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVM64
+      InstanceType: !Ref ElasticInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "ElasticSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetElasticsearch"
+          PrivateIpAddress: "10.0.2.125"
+      Tags:
+        - Key: client_name
+          Value: LendingClub
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticMasterC --configsets ElasticInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticMasterC --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+
   # Wazuh Network Load Balancer
-  Env1WazuhLb:
+  WazuhNetworkLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Name: !Sub '${AWS::StackName}-Wazuh'
       Scheme: internet-facing
       Subnets: 
-        - !Ref SubnetEnv1
+        - !Ref SubnetWazuh
       Type: network
       Tags:
-        - Key: Name
-          Value: nlbwazuh
+        - Key: client_name
+          Value: LendingClub
 
   # Wazuh registration Target Group for Network Load Balancer
   RegistrationTG:
@@ -340,11 +683,30 @@ Resources:
         - Key: deregistration_delay.timeout_seconds
           Value: 600
       Targets:
-      - Id: !Ref ManagerEnv1
+      - Id: !Ref WazuhMasterInstance
         Port: !Ref WazuhRegistrationPort
       Tags:
-        - Key: Name
-          Value: registrationTG
+        - Key: client_name
+          Value: LendingClub
+
+  # TLS Target Group for Network Load Balancer
+  TLSTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Condition: HasSslCert
+    Properties:
+      Name: !Sub '${AWS::StackName}-TLSTargetGroup'
+      Port: !Ref KibanaPort
+      Protocol: TCP
+      VpcId: !Ref WazuhVpc
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: 600
+      Targets:
+      - Id: !Ref KibanaInstance
+        Port: !Ref KibanaPort
+      Tags:
+        - Key: client_name
+          Value: LendingClub
 
   # Wazuh registration Listener for Network Load Balancer
   RegistrationListener:
@@ -353,7 +715,7 @@ Resources:
       DefaultActions:
       - Type: forward
         TargetGroupArn: !Ref RegistrationTG
-      LoadBalancerArn: !Ref Env1WazuhLb
+      LoadBalancerArn: !Ref WazuhNetworkLoadBalancer
       Port: !Ref WazuhRegistrationPort
       Protocol: TCP
   
@@ -369,11 +731,13 @@ Resources:
         - Key: deregistration_delay.timeout_seconds
           Value: 600
       Targets:
-      - Id: !Ref ManagerEnv1
+      - Id: !Ref WazuhMasterInstance
+        Port: !Ref WazuhServerPort
+      - Id: !Ref WazuhWorkerInstance
         Port: !Ref WazuhServerPort  
       Tags:
-        - Key: Name
-          Value: reportingTG
+        - Key: client_name
+          Value: LendingClub
 
   # Reporting Listener for Network LB.
   ReportingListener:
@@ -382,24 +746,23 @@ Resources:
       DefaultActions:
       - Type: forward
         TargetGroupArn: !Ref ReportingTG
-      LoadBalancerArn: !Ref Env1WazuhLb
+      LoadBalancerArn: !Ref WazuhNetworkLoadBalancer
       Port: '1514'
       Protocol: TCP
 
-
-  # Network resources
-  WazuhVpc:
-    Type: 'AWS::EC2::VPC'
+  # Listener for Kibana WUI
+  TLSListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: HasSslCert
     Properties:
-      CidrBlock: !FindInMap
-        - SubnetConfig
-        - WazuhVpc
-        - CIDR
-      EnableDnsSupport: 'true'
-      EnableDnsHostnames: 'true'
-      Tags:
-        - Key: Application
-          Value: !Ref 'AWS::StackId'
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref TLSTargetGroup
+      LoadBalancerArn: !Ref WazuhNetworkLoadBalancer
+      Port: !Ref KibanaPort
+      Protocol: TLS
+      Certificates:
+      - CertificateArn: !Ref SSLCertificateARN
 
   # IAM role and profile
   InstanceRole:
@@ -436,528 +799,8 @@ Resources:
     Properties:
       Roles:
         - !Ref InstanceRole
-  SubnetEnv1:
-      Type: 'AWS::EC2::Subnet'
-      Properties:
-        VpcId: !Ref WazuhVpc
-        CidrBlock: !FindInMap
-          - SubnetConfig
-          - SubnetEnv1
-          - CIDR
-        Tags:
-          - Key: Application
-            Value: !Ref 'AWS::StackId'
-          - Key: Name
-            Value: !Sub '${AWS::StackName}-SubnetEnv1'
-  SubnetEnv2:
-      Type: 'AWS::EC2::Subnet'
-      Properties:
-        VpcId: !Ref WazuhVpc
-        CidrBlock: !FindInMap
-          - SubnetConfig
-          - SubnetEnv2
-          - CIDR
-        Tags:
-          - Key: Application
-            Value: !Ref 'AWS::StackId'
-          - Key: Name
-            Value: !Sub '${AWS::StackName}-SubnetEnv2'
-  SubnetEnvCcs:
-      Type: 'AWS::EC2::Subnet'
-      Properties:
-        VpcId: !Ref WazuhVpc
-        CidrBlock: !FindInMap
-          - SubnetConfig
-          - SubnetEnvCcs
-          - CIDR
-        Tags:
-          - Key: Application
-            Value: !Ref 'AWS::StackId'
-          - Key: Name
-            Value: !Sub '${AWS::StackName}-SubnetEnvCcs'
-  
-  # Internet access and routing
-  InternetGateway:
-    Type: 'AWS::EC2::InternetGateway'
-    Properties:
-      Tags:
-        - Key: Application
-          Value: !Ref 'AWS::StackId'
-        - Key: Name
-          Value: !Sub '${AWS::StackName}-InternetGateway'
-  GatewayToInternet:
-    Type: 'AWS::EC2::VPCGatewayAttachment'
-    Properties:
-      VpcId: !Ref WazuhVpc
-      InternetGatewayId: !Ref InternetGateway
-  PublicRouteTable:
-    Type: 'AWS::EC2::RouteTable'
-    Properties:
-      VpcId: !Ref WazuhVpc
-      Tags:
-        - Key: Application
-          Value: !Ref 'AWS::StackId'
-        - Key: Name
-          Value: !Sub '${AWS::StackName}-PublicRouteTable'
-  PublicRoute:
-    Type: 'AWS::EC2::Route'
-    DependsOn: GatewayToInternet
-    Properties:
-      RouteTableId: !Ref PublicRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
-  SubnetEnv1PublicRouteTable:
-    Type: 'AWS::EC2::SubnetRouteTableAssociation'
-    Properties:
-      SubnetId: !Ref SubnetEnv1
-      RouteTableId: !Ref PublicRouteTable
-  SubnetEnv2PublicRouteTable:
-    Type: 'AWS::EC2::SubnetRouteTableAssociation'
-    Properties:
-      SubnetId: !Ref SubnetEnv2
-      RouteTableId: !Ref PublicRouteTable
-  SubnetEnvCcsPublicRouteTable:
-    Type: 'AWS::EC2::SubnetRouteTableAssociation'
-    Properties:
-      SubnetId: !Ref SubnetEnvCcs
-      RouteTableId: !Ref PublicRouteTable
 
-  # Wazuh Network Load Balancer
-  KibanaLb:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Name: !Sub '${AWS::StackName}-KibanaLb'
-      Scheme: internet-facing
-      Subnets: 
-        - !Ref SubnetEnvCcs
-      Type: network
-      Tags:
-        - Key: Name
-          Value: nlbwazuh
-
-  # Listener for Kibana WUI
-  TLSListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-      - Type: forward
-        TargetGroupArn: !Ref TLSTargetGroup
-      LoadBalancerArn: !Ref KibanaLb
-      Port: !Ref KibanaPort
-      Protocol: TLS
-      Certificates:
-      - CertificateArn: !Ref SSLCertificateARN
-
-  # TLS Target Group for Network Load Balancer
-  TLSTargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: !Sub '${AWS::StackName}-TLSTargetGroup'
-      Port: !Ref KibanaPort
-      Protocol: TCP
-      VpcId: !Ref WazuhVpc
-      TargetGroupAttributes:
-        - Key: deregistration_delay.timeout_seconds
-          Value: 600
-      Targets:
-      - Id: !Ref KibanaInstance
-        Port: !Ref KibanaPort
-      Tags:
-        - Key: Name
-          Value: TLSTargetGroup
-
-  # Security groups
-  ElasticSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupDescription: Elasticsearch security group
-      VpcId: !Ref WazuhVpc
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 9200
-          ToPort: 9400
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}-ElasticSecurityGroup'
-  KibanaSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupDescription: Kibana security group
-      VpcId: !Ref WazuhVpc
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: !Ref KibanaPort
-          ToPort: !Ref KibanaPort
-          CidrIp: 0.0.0.0/0
-
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}-KibanaSecurityGroup'
-  WazuhSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupDescription: Wazuh security group
-      VpcId: !Ref WazuhVpc
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: icmp
-          FromPort: -1
-          ToPort: -1
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: !Ref WazuhServerPort
-          ToPort: !Ref WazuhServerPort
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: !Ref WazuhRegistrationPort
-          ToPort: !Ref WazuhRegistrationPort
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 1516
-          ToPort: 1516
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
-        - IpProtocol: tcp
-          FromPort: !Ref WazuhApiPort
-          ToPort: !Ref WazuhApiPort
-          CidrIp: !FindInMap
-            - SubnetConfig
-            - WazuhVpc
-            - CIDR
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}-WazuhSecurityGroup'
-
-  # Wazuh Network Load Balancer
-  Env2WazuhLb:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Name: !Sub '${AWS::StackName}-nlb2'
-      Scheme: internet-facing
-      Subnets: 
-        - !Ref SubnetEnv2
-      Type: network
-      Tags:
-        - Key: Name
-          Value: nlbwazuh
-
-  # Wazuh registration Target Group for Network Load Balancer
-  RegistrationTG2:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: !Sub '${AWS::StackName}-registrationTG2'
-      Port: !Ref WazuhRegistrationPort
-      Protocol: TCP
-      VpcId: !Ref WazuhVpc
-      TargetGroupAttributes:
-        - Key: deregistration_delay.timeout_seconds
-          Value: 600
-      Targets:
-      - Id: !Ref ManagerEnv2
-        Port: !Ref WazuhRegistrationPort
-      Tags:
-        - Key: Name
-          Value: registrationTG2
-
-  # Wazuh registration Listener for Network Load Balancer
-  RegistrationListener2:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-      - Type: forward
-        TargetGroupArn: !Ref RegistrationTG2
-      LoadBalancerArn: !Ref Env2WazuhLb
-      Port: !Ref WazuhRegistrationPort
-      Protocol: TCP
-  
-  # Reporting Target Group for Wazuh master and worker nodes
-  ReportingTG2:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: !Sub '${AWS::StackName}-reportingTG2'
-      Port: !Ref WazuhServerPort
-      Protocol: TCP
-      VpcId: !Ref WazuhVpc
-      TargetGroupAttributes:
-        - Key: deregistration_delay.timeout_seconds
-          Value: 600
-      Targets:
-      - Id: !Ref ManagerEnv2
-        Port: !Ref WazuhServerPort  
-      Tags:
-        - Key: Name
-          Value: reportingTG2
-
-  # Reporting Listener for Network LB.
-  ReportingListener2:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      DefaultActions:
-      - Type: forward
-        TargetGroupArn: !Ref ReportingTG2
-      LoadBalancerArn: !Ref Env2WazuhLb
-      Port: '1514'
-      Protocol: TCP
-
-
-  # Environment 1
-  ElasticEnv1:
-    Type: AWS::EC2::Instance
-    Metadata:
-      'AWS::CloudFormation::Init':
-        configSets:
-          ElasticInstallationSet:
-            - Elasticfiles
-            - ElasticInstall
-        Elasticfiles:
-          files:
-            /tmp/wazuh_cf_settings:
-              content: !Sub |
-                SshUsername: ${SshUsername}
-                SshPassword: ${SshPassword}
-              mode: '000600'
-              owner: root
-              group: root
-            /tmp/wazuh_cf_opendistro.sh:
-              source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-ccs-opendistro/elastic/wazuh_cf_opendistro.sh
-              mode: '000700'
-              owner: root
-              group: root
-        ElasticInstall:
-          commands:
-            01_RunInstallationScript:
-              command: /tmp/wazuh_cf_opendistro.sh
-    Properties:
-      ImageId: !FindInMap
-        - "RegionMap"
-        - Ref: "AWS::Region"
-        - HVM64
-      InstanceType: !Ref ElasticInstanceType
-      IamInstanceProfile: !Ref InstanceProfile
-      KeyName: !Ref KeyPairName
-      NetworkInterfaces:
-        - AssociatePublicIpAddress: "true"
-          DeviceIndex: "0"
-          GroupSet: 
-            - Ref: "ElasticSecurityGroup"
-          SubnetId: 
-            Ref: "SubnetEnv1"
-      Tags:
-        - Key: Name
-          Value: ElasticEnv1
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticEnv1 --configsets ElasticInstallationSet --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticEnv1 --region ${AWS::Region}
-    DependsOn: GatewayToInternet
-  ManagerEnv1:
-    Type: AWS::EC2::Instance
-    Metadata:
-      'AWS::CloudFormation::Init':
-        configSets:
-          WazuhInstallationSet:
-            - WazuhFiles
-            - WazuhInstall
-        WazuhFiles:
-          files:
-            /tmp/wazuh_cf_settings:
-              content: !Sub |
-                SshUsername: ${SshUsername}
-                SshPassword: ${SshPassword}
-                Elastic_Wazuh: ${ElasticWazuhVersion}
-                WazuhApiAdminUsername: ${WazuhApiAdminUsername}
-                WazuhApiAdminPassword: ${WazuhApiAdminPassword}
-                WazuhApiPort: ${WazuhApiPort}
-                WazuhServerPort: ${WazuhServerPort}
-                WazuhRegistrationPort: ${WazuhRegistrationPort}
-                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
-                WazuhClusterKey: ${WazuhClusterKey}
-                EnvironmentType: ${EnvironmentType}
-                ElasticIp: ${ElasticEnv1.PrivateIp}
-              mode: '000600'
-              owner: root
-              group: root
-            /tmp/wazuh_cf_master.sh:
-              source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-ccs-opendistro/wazuh/cluster/wazuh_cf_master.sh
-              mode: '000700'
-              owner: root
-              group: root
-        WazuhInstall:
-          commands:
-            01_RunInstallationScript:
-              command: /tmp/wazuh_cf_master.sh
-    Properties:
-      ImageId: !FindInMap
-        - "RegionMap"
-        - Ref: "AWS::Region"
-        - HVM64
-      InstanceType: !Ref WazuhInstanceType
-      IamInstanceProfile: !Ref InstanceProfile
-      KeyName: !Ref KeyPairName
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeSize: 200
-            VolumeType: gp2
-      NetworkInterfaces:
-        - AssociatePublicIpAddress: "true"
-          DeviceIndex: "0"
-          GroupSet: 
-            - Ref: "WazuhSecurityGroup"
-          SubnetId: 
-            Ref: "SubnetEnv1"
-      Tags:
-        - Key: Name
-          Value: WazuhMaster
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ManagerEnv1 --configsets WazuhInstallationSet --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ManagerEnv1 --region ${AWS::Region}
-    DependsOn: GatewayToInternet
-
-  # Environment 2
-  ElasticEnv2:
-    Type: AWS::EC2::Instance
-    Metadata:
-      'AWS::CloudFormation::Init':
-        configSets:
-          ElasticInstallationSet:
-            - Elasticfiles
-            - ElasticInstall
-        Elasticfiles:
-          files:
-            /tmp/wazuh_cf_settings:
-              content: !Sub |
-                SshUsername: ${SshUsername}
-                SshPassword: ${SshPassword}
-                Elastic_Wazuh: ${ElasticWazuhVersion}
-                NodeName: 2
-              mode: '000600'
-              owner: root
-              group: root
-            /tmp/wazuh_cf_opendistro.sh:
-              source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-ccs-opendistro/elastic/wazuh_cf_opendistro.sh
-              mode: '000700'
-              owner: root
-              group: root
-        ElasticInstall:
-          commands:
-            01_RunInstallationScript:
-              command: /tmp/wazuh_cf_opendistro.sh
-    Properties:
-      ImageId: !FindInMap
-        - "RegionMap"
-        - Ref: "AWS::Region"
-        - HVM64
-      InstanceType: !Ref ElasticInstanceType
-      IamInstanceProfile: !Ref InstanceProfile
-      KeyName: !Ref KeyPairName
-      NetworkInterfaces:
-        - AssociatePublicIpAddress: "true"
-          DeviceIndex: "0"
-          GroupSet: 
-            - Ref: "ElasticSecurityGroup"
-          SubnetId: 
-            Ref: "SubnetEnv2"
-      Tags:
-        - Key: Name
-          Value: ElasticEnv2
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticEnv2 --configsets ElasticInstallationSet --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticEnv2 --region ${AWS::Region}
-    DependsOn: GatewayToInternet
-  ManagerEnv2:
-    Type: AWS::EC2::Instance
-    Metadata:
-      'AWS::CloudFormation::Init':
-        configSets:
-          WazuhInstallationSet:
-            - WazuhFiles
-            - WazuhInstall
-        WazuhFiles:
-          files:
-            /tmp/wazuh_cf_settings:
-              content: !Sub |
-                SshUsername: ${SshUsername}
-                SshPassword: ${SshPassword}
-                Elastic_Wazuh: ${ElasticWazuhVersion}
-                WazuhApiAdminUsername: ${WazuhApiAdminUsername}
-                WazuhApiAdminPassword: ${WazuhApiAdminPassword}
-                WazuhApiPort: ${WazuhApiPort}
-                WazuhServerPort: ${WazuhServerPort}
-                WazuhRegistrationPort: ${WazuhRegistrationPort}
-                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
-                WazuhClusterKey: ${WazuhClusterKey}
-                EnvironmentType: ${EnvironmentType}
-                ElasticIp: ${ElasticEnv2.PrivateIp}
-
-              mode: '000600'
-              owner: root
-              group: root
-            /tmp/wazuh_cf_master.sh:
-              source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-ccs-opendistro/wazuh/cluster/wazuh_cf_master.sh
-              mode: '000700'
-              owner: root
-              group: root
-        WazuhInstall:
-          commands:
-            01_RunInstallationScript:
-              command: /tmp/wazuh_cf_master.sh
-    Properties:
-      ImageId: !FindInMap
-        - "RegionMap"
-        - Ref: "AWS::Region"
-        - HVM64
-      InstanceType: !Ref WazuhInstanceType
-      IamInstanceProfile: !Ref InstanceProfile
-      KeyName: !Ref KeyPairName
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeSize: 200
-            VolumeType: gp2
-      NetworkInterfaces:
-        - AssociatePublicIpAddress: "true"
-          DeviceIndex: "0"
-          GroupSet: 
-            - Ref: "WazuhSecurityGroup"
-          SubnetId: 
-            Ref: "SubnetEnv2"
-      Tags:
-        - Key: Name
-          Value: WazuhMaster2
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ManagerEnv2 --configsets WazuhInstallationSet --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ManagerEnv2 --region ${AWS::Region}
-    DependsOn: GatewayToInternet
-
+  # Kibana instance
   KibanaInstance:
     Type: AWS::EC2::Instance
     Metadata:
@@ -968,28 +811,16 @@ Resources:
             - KibanaInstall
         KibanaFiles:
           files:
-            /tmp/wazuh_cf_settings:
-              content: !Sub |
-                SshUsername: ${SshUsername}
-                SshPassword: ${SshPassword}
-                Elastic_Wazuh: ${ElasticWazuhVersion}
-                WazuhApiAdminUsername: ${WazuhApiAdminUsername}
-                WazuhApiAdminPassword: ${WazuhApiAdminPassword}
-                WazuhApiPort: ${WazuhApiPort}
-                EnvironmentType: ${EnvironmentType}
-              mode: '000600'
-              owner: root
-              group: root
             /tmp/wazuh_cf_kibana.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/dev-ccs-opendistro/elastic/wazuh_cf_kibana.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/opendistro-simple-arch/opendistro/wazuh_cf_kibana.sh
               mode: '000700'
               owner: root
               group: root
         KibanaInstall:
           commands:
             01_RunInstallationScript:
-              command: /tmp/wazuh_cf_kibana.sh 
+              command: /tmp/wazuh_cf_kibana.sh
     Properties:
       ImageId: !FindInMap
         - "RegionMap"
@@ -998,24 +829,187 @@ Resources:
       InstanceType: !Ref KibanaInstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeSize: 200
-            VolumeType: gp2
       NetworkInterfaces:
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
           GroupSet: 
             - Ref: "KibanaSecurityGroup"
           SubnetId: 
-            Ref: "SubnetEnvCcs"
+            Ref: "SubnetWazuh"
       Tags:
-        - Key: Name
-          Value: KibanaInstance
+        - Key: client_name
+          Value: LendingClub
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource KibanaInstance --configsets KibanaInstallationSet --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource KibanaInstance --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Kibana --region ${AWS::Region}
     DependsOn: GatewayToInternet
+
+  # Wazuh master instance
+  WazuhMasterInstance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          WazuhInstallationSet:
+            - WazuhFiles
+            - WazuhInstall
+        WazuhFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                WazuhApiAdminUsername: ${WazuhApiAdminUsername}
+                WazuhApiAdminPassword: ${WazuhApiAdminPassword}
+                WazuhApiPort: ${WazuhApiPort}
+                WazuhServerPort: ${WazuhServerPort}
+                WazuhRegistrationPort: ${WazuhRegistrationPort}
+                WazuhRegistrationPassword: ${WazuhRegistrationPassword}
+                WazuhClusterKey: ${WazuhClusterKey}
+                WindowsPublicIp: ${Windows.PublicIp}
+                AwsSecretKey: ${AwsSecretKey}
+                AwsAccessKey: ${AwsAccessKey}
+                VirusTotalKey: ${VirusTotalKey}
+                SlackHook: ${SlackHook}
+                EnvironmentType: ${EnvironmentType}
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_master.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/opendistro-simple-arch/wazuh/cluster/wazuh_cf_master.sh
+              mode: '000700'
+              owner: root
+              group: root
+        WazuhInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_master.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVM64
+      InstanceType: !Ref WazuhInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "WazuhSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetWazuh"
+      Tags:
+        - Key: client_name
+          Value: LendingClub
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource WazuhMasterInstance --configsets WazuhInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WazuhMasterInstance --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+  WazuhMasterEth0: 
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetWazuh
+      GroupSet: [!Ref 'WazuhSecurityGroup']
+  WazuhMasterEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  WazuhMasterEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref WazuhMasterEth0
+      AllocationId: !GetAtt
+        - WazuhMasterEIP
+        - AllocationId
+
+  # Wazuh worker instance
+  WazuhWorkerInstance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          WazuhInstallationSet:
+            - WazuhFiles
+            - WazuhInstall
+        WazuhFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                WazuhServerPort: ${WazuhServerPort}
+                WazuhClusterKey: ${WazuhClusterKey}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                AwsSecretKey: ${AwsSecretKey}
+                AwsAccessKey: ${AwsAccessKey}
+                VirusTotalKey: ${VirusTotalKey}
+                SlackHook: ${SlackHook}
+                EnvironmentType: ${EnvironmentType}
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_worker.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/opendistro-simple-arch/wazuh/cluster/wazuh_cf_worker.sh
+              mode: '000700'
+              owner: root
+              group: root
+        WazuhInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_worker.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVM64
+      InstanceType: !Ref WazuhInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 200
+            VolumeType: gp2
+      NetworkInterfaces:
+        - NetworkInterfaceId: !Ref WazuhWorkerEth0
+          DeviceIndex: 0
+      Tags:
+        - Key: client_name
+          Value: LendingClub
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource WazuhWorkerInstance --configsets WazuhInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WazuhWorkerInstance --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+  WazuhWorkerEth0: 
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetWazuh
+      GroupSet: [!Ref 'WazuhSecurityGroup']
+  WazuhWorkerEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  WazuhWorkerEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref WazuhWorkerEth0
+      AllocationId: !GetAtt
+        - WazuhWorkerEIP
+        - AllocationId
