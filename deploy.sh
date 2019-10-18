@@ -9,7 +9,7 @@ PARAMS_FILE='parameters.json'
 TEMPLATE_FILE='simple_opendistro.yml'
 
 # Stack name
-STACK_NAME='lendingclub'
+STACK_NAME='simple-opendistro'
 
 # Bucket name
 BUCKET_NAME='demo-cloudformation-templates'
