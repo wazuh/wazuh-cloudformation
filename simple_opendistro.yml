@@ -321,7 +321,7 @@ Resources:
         - Key: Application
           Value: !Ref 'AWS::StackId'
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
   SubnetWazuh:
     Type: 'AWS::EC2::Subnet'
     Properties:
@@ -334,7 +334,7 @@ Resources:
         - Key: Application
           Value: !Ref 'AWS::StackId'
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
   SubnetAgents:
     Type: 'AWS::EC2::Subnet'
     Properties:
@@ -347,7 +347,7 @@ Resources:
         - Key: Application
           Value: !Ref 'AWS::StackId'
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
   SubnetElasticsearch:
       Type: 'AWS::EC2::Subnet'
       Properties:
@@ -360,7 +360,7 @@ Resources:
           - Key: Application
             Value: !Ref 'AWS::StackId'
           - Key: client_name
-            Value: LendingClub
+            Value: TestTemplate
 
   # Internet access and routing
   InternetGateway:
@@ -370,7 +370,7 @@ Resources:
         - Key: Application
           Value: !Ref 'AWS::StackId'
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
   GatewayToInternet:
     Type: 'AWS::EC2::VPCGatewayAttachment'
     Properties:
@@ -384,7 +384,7 @@ Resources:
         - Key: Application
           Value: !Ref 'AWS::StackId'
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
   PublicRoute:
     Type: 'AWS::EC2::Route'
     DependsOn: GatewayToInternet
@@ -428,7 +428,7 @@ Resources:
             - CIDR
       Tags:
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
   KibanaSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -452,7 +452,7 @@ Resources:
             - CIDR
       Tags:
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
   WazuhSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -499,7 +499,7 @@ Resources:
             - CIDR
       Tags:
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
   
   # Elasticsearch load balancer
   ElbElasticSecurityGroup:
@@ -517,7 +517,7 @@ Resources:
             - CIDR
       Tags:
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
 
   # Wazuh registration Listener for Network Load Balancer
   ElasticBootstrap:
@@ -558,7 +558,7 @@ Resources:
           PrivateIpAddress: "10.0.2.124"
       Tags:
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
@@ -604,7 +604,7 @@ Resources:
           PrivateIpAddress: "10.0.2.123"
       Tags:
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
@@ -650,7 +650,7 @@ Resources:
           PrivateIpAddress: "10.0.2.125"
       Tags:
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
@@ -669,7 +669,7 @@ Resources:
       Type: network
       Tags:
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
 
   # Wazuh registration Target Group for Network Load Balancer
   RegistrationTG:
@@ -687,7 +687,7 @@ Resources:
         Port: !Ref WazuhRegistrationPort
       Tags:
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
 
   # TLS Target Group for Network Load Balancer
   TLSTargetGroup:
@@ -706,7 +706,7 @@ Resources:
         Port: !Ref KibanaPort
       Tags:
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
 
   # Wazuh registration Listener for Network Load Balancer
   RegistrationListener:
@@ -737,7 +737,7 @@ Resources:
         Port: !Ref WazuhServerPort  
       Tags:
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
 
   # Reporting Listener for Network LB.
   ReportingListener:
@@ -838,7 +838,7 @@ Resources:
             Ref: "SubnetWazuh"
       Tags:
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
@@ -905,7 +905,7 @@ Resources:
             Ref: "SubnetWazuh"
       Tags:
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
@@ -979,7 +979,7 @@ Resources:
           DeviceIndex: 0
       Tags:
         - Key: client_name
-          Value: LendingClub
+          Value: TestTemplate
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
