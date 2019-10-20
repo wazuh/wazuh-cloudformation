@@ -27,6 +27,25 @@ install_opendistro(){
     # Installing OpenDistro
     yum install opendistroforelasticsearch-1.2.0 -y
     echo "Installed OpenDistro." >> /tmp/deploy.log
+    
+    # Calculating RAM for Elasticsearch
+    ram_gb=$[$(free -g | awk '/^Mem:/{print $2}')+1]
+    ram=$(( ${ram_gb} / 2 ))
+    if [ $ram -eq "0" ]; then ram=1; fi
+    echo "Setting RAM." >> /tmp/deploy.log
+
+# Configuring jvm.options
+cat > /etc/elasticsearch/jvm.options << EOF
+-Xms${ram}g
+-Xmx${ram}g
+-Dlog4j2.disable.jmx=true
+EOF
+    echo "Setting JVM options." >> /tmp/deploy.log
+
+
+    # Allowing unlimited memory allocation
+    echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
+    echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
 }
 
 install_java(){
