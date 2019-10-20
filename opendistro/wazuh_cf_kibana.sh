@@ -44,6 +44,12 @@ install_kibana(){
   echo "Kibana installed." >> /tmp/deploy.log
 }
 
+configure_kibana(){
+  echo "server.host: 0.0.0.0" >> /etc/kibana.yml
+  echo "server.port: 443" >> /etc/kibana.yml  
+  setcap 'CAP_NET_BIND_SERVICE=+eip' /usr/share/kibana/node/bin/node
+}
+
 start_kibana(){
   # Starting Kibana
   systemctl restart kibana
