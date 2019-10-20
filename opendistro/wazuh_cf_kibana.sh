@@ -65,6 +65,7 @@ main(){
   configuring_elasticsearch
   start_opendistro
   install_kibana
+  configure_kibana
   start_kibana
 }
 
