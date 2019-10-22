@@ -105,12 +105,6 @@ cp /tmp/blacklist-alienvault /var/ossec/etc/lists/
 chown ossec:ossec /var/ossec/etc/lists/blacklist-alienvault
 chmod 660 /var/ossec/etc/lists/blacklist-alienvault
 /var/ossec/bin/ossec-makelists
-# The ossec-makelists binary sometimes fails to generate the .cdb file
-if [! test -f "/var/ossec/etc/lists/blacklist-alienvault.cdb"]; then
-  sleep 3
-  /var/ossec/bin/ossec-makelists
-fi
-
 echo "Updated CDB list ,added Windows agent IP." >> /tmp/deploy.log
 
 # Change manager protocol to tcp, to be used by Amazon ELB
