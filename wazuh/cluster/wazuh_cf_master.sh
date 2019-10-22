@@ -235,7 +235,7 @@ cat >> ${local_rules} << EOF
 <group name="syscheck,">
   <rule id="100200" level="7">
     <if_sid>550,553,554</if_sid>
-    <field name="file">\S*/virus|\S*\\virus<</field>
+    <field name="file">\S*/virus|\S*\\virus</field>
     <description>File modified or created in /virus directory.</description>
   </rule>
 </group>
