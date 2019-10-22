@@ -105,6 +105,12 @@ cp /tmp/blacklist-alienvault /var/ossec/etc/lists/
 chown ossec:ossec /var/ossec/etc/lists/blacklist-alienvault
 chmod 660 /var/ossec/etc/lists/blacklist-alienvault
 /var/ossec/bin/ossec-makelists
+# The ossec-makelists binary sometimes fails to generate the .cdb file
+if [! test -f "/var/ossec/etc/lists/blacklist-alienvault.cdb"]; then
+  sleep 3
+  /var/ossec/bin/ossec-makelists
+fi
+
 echo "Updated CDB list ,added Windows agent IP." >> /tmp/deploy.log
 
 # Change manager protocol to tcp, to be used by Amazon ELB
@@ -235,8 +241,8 @@ cat >> ${local_rules} << EOF
 <group name="syscheck,">
   <rule id="100200" level="7">
     <if_sid>550,553,554</if_sid>
-    <field name="file">^/tmp</field>
-    <description>File modified or created in /tmp directory.</description>
+    <field name="file">\S*/virus</field>
+    <description>File modified or created in /virus directory.</description>
   </rule>
 </group>
 <group name="ossec,">
@@ -263,18 +269,18 @@ cat >> ${local_rules} << EOF
 EOF
 
 # Slack integration
-if [ "x${SlackHook}" != "x" ]; then
-cat >> ${manager_config} << EOF
-<ossec_config>
-  <integration>
-    <name>slack</name>
-    <hook_url>${SlackHook}</hook_url>
-    <level>12</level>
-    <alert_format>json</alert_format>
-  </integration>
-</ossec_config>
-EOF
-fi
+# if [ "x${SlackHook}" != "x" ]; then
+# cat >> ${manager_config} << EOF
+# <ossec_config>
+#   <integration>
+#     <name>slack</name>
+#     <hook_url>${SlackHook}</hook_url>
+#     <level>12</level>
+#     <alert_format>json</alert_format>
+#   </integration>
+# </ossec_config>
+# EOF
+# fi
 
 # AWS integration if key already set
 if [ "x${AwsAccessKey}" != "x" ]; then
