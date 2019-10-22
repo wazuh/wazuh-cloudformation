@@ -354,6 +354,8 @@ echo "output.elasticsearch.protocol: https" >> /etc/filebeat/filebeat.yml
 echo "output.elasticsearch.ssl.certificate: "/etc/filebeat/certs/wazuh-worker.crt"" >> /etc/filebeat/filebeat.yml
 echo "output.elasticsearch.ssl.key: "/etc/filebeat/certs/wazuh-worker.key"" >> /etc/filebeat/filebeat.yml
 echo "output.elasticsearch.ssl.certificate_authorities: ["/etc/filebeat/certs/ca/ca.crt"]" >> /etc/filebeat/filebeat.yml
+systemctl enable filebeat
+echo "Enabled Filebeat" >> /tmp/log
 systemctl restart filebeat
 echo "Started Filebeat" >> /tmp/log
 echo "Done" >> /tmp/log
