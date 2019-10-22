@@ -302,7 +302,7 @@ echo "Configured API" >> /tmp/deploy.log
 enable_kibana(){
     echo "Enabling Kibana..." >> /tmp/deploy.log
     systemctl enable kibana
-    if [ $? -eq0 ] then
+    if [ $? -eq0 ]; then
         echo "Kibana enabled." >> /tmp/deploy.log
     else
         echo "Could not enable Kibana" >> /tmp/deploy.log

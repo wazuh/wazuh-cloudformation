@@ -82,6 +82,7 @@ discovery.seed_hosts:
   - "10.0.2.123"
   - "10.0.2.124"
   - "10.0.2.125"
+
 EOF
 
 echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
@@ -169,7 +170,7 @@ start_elasticsearch(){
 enable_elasticsearch(){
     echo "Enabling elasticsearch..." >> /tmp/deploy.log
     systemctl enable elasticsearch
-    if [ $? -eq0 ] then
+    if [ $? -eq0 ]; then
         echo "Elasticsearch enabled." >> /tmp/deploy.log
     else
         echo "Could not enable Elasticsearch" >> /tmp/deploy.log
