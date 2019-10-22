@@ -114,6 +114,7 @@ echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
 echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
 echo "Setting memory lock options." >> /tmp/deploy.log
 echo "Setting permissions." >> /tmp/deploy.log
+enable_elasticsearch
 start_elasticsearch
 }
 
@@ -150,6 +151,17 @@ EOF
   curl -XPOST "https://$eth0_ip:9200/_security/user/wazuh" -k -u elastic:${ssh_password} -d@${user_config} -H 'Content-Type: application/json'
 
 }
+
+enable_elasticsearch(){
+    echo "Enabling elasticsearch..." >> /tmp/deploy.log
+    systemctl enable elasticsearch
+    if [ $? -eq0 ]; then
+        echo "Elasticsearch enabled." >> /tmp/deploy.log
+    else
+        echo "Could not enable Elasticsearch" >> /tmp/deploy.log
+    fi
+}
+
 start_elasticsearch(){
     echo "Starting Elasticsearch and setting permissions" >> /tmp/deploy.log
     chown elasticsearch:elasticsearch -R /etc/elasticsearch
