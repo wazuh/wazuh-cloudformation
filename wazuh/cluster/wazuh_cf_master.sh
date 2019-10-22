@@ -401,6 +401,7 @@ echo "Installed NodeJS." >> /tmp/deploy.log
 
 # Installing wazuh-api
 yum -y install wazuh-api
+systemctl enable wazuh-api
 chkconfig --add wazuh-api
 echo "Installed Wazuh API." >> /tmp/deploy.log
 
