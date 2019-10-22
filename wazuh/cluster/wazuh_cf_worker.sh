@@ -73,6 +73,7 @@ EOF
 
 # Installing wazuh-manager
 yum -y install wazuh-manager
+systemctl enable wazuh-manager
 chkconfig --add wazuh-manager
 manager_config="/var/ossec/etc/ossec.conf"
 # Install dependencies

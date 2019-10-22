@@ -391,6 +391,7 @@ EOF
 
 # Restart wazuh-manager
 systemctl restart wazuh-manager
+systemctl enable wazuh-manager
 echo "Restarted Wazuh manager." >> /tmp/deploy.log
 
 # Installing NodeJS
