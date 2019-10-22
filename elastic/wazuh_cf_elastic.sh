@@ -166,6 +166,16 @@ start_elasticsearch(){
     echo "done with starting elasticsearch service." >> /tmp/deploy.log
 }
 
+enable_elasticsearch(){
+    echo "Enabling elasticsearch..." >> /tmp/deploy.log
+    systemctl enable elasticsearch
+    if [ $? -eq0 ] then
+        echo "Elasticsearch enabled." >> /tmp/deploy.log
+    else
+        echo "Could not enable Elasticsearch" >> /tmp/deploy.log
+    fi
+}
+
 disable_elk_repos(){
     # Disable repositories
     sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
@@ -186,6 +196,7 @@ main(){
     install_elasticsearch
     configuring_elasticsearch
     set_security
+    enable_elasticsearch
     start_elasticsearch
     disable_elk_repos
     set_elk_password
