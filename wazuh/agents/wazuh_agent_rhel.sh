@@ -70,8 +70,8 @@ yum install nc vim lsof openscap-scanner -y
 
 ### Use case 6: Suricata
 # Install Suricata
-yum -y install suricata-4.1.4
-wget https://rules.emergingthreats.net/open/suricata-4.1.4/emerging.rules.tar.gz
+yum -y install suricata-4.1.5
+wget https://rules.emergingthreats.net/open/suricata-4.1.5/emerging.rules.tar.gz
 tar zxvf emerging.rules.tar.gz
 rm -f /etc/suricata/suricata.yaml
 wget -O /etc/suricata/suricata.yaml http://www.branchnetconsulting.com/wazuh/suricata.yaml
