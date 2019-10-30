@@ -506,11 +506,9 @@ sed -i "s:MANAGER_HOSTNAME:$(hostname):g" /opt/splunkforwarder/etc/system/local/
 touch /opt/splunkforwarder/etc/system/local/user-seed.conf
 
 # add admin user
-cat > /opt/splunkforwarder/etc/system/local/user-seed.conf <<\EOF
-[user_info]
-USERNAME = ${splunk_username}
-PASSWORD = ${splunk_password}
-EOF
+echo "[user_info]" > /opt/splunkforwarder/etc/system/local/user-seed.conf
+echo "USERNAME = $splunk_username" >> /opt/splunkforwarder/etc/system/local/user-seed.conf
+echo "PASSWORD = $splunk_password" >> /opt/splunkforwarder/etc/system/local/user-seed.conf
 
 echo "Starting Splunk..."
 # accept license
