@@ -312,7 +312,7 @@ Resources:
           GroupSet: 
             - Ref: "KibanaSecurityGroup"
           SubnetId: 
-            Ref: "SubnetElastic"
+            Ref: "SubnetElasticsearch"
       Tags:
         - Key: service_name
           Value: Opendistro-SAML-test
