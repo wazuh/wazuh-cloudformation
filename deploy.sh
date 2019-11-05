@@ -6,10 +6,10 @@
 PARAMS_FILE='parameters.json'
 
 # Path of the template file
-TEMPLATE_FILE='simple_opendistro.yml'
+TEMPLATE_FILE='singlehost_odfe.yml'
 
 # Stack name
-STACK_NAME='simple-opendistro'
+STACK_NAME='singlehost-odfe'
 
 # Bucket name
 BUCKET_NAME='demo-cloudformation-templates'
