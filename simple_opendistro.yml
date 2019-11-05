@@ -290,7 +290,7 @@ Resources:
           files:
             /tmp/wazuh_cf_opendistro.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/opendistro-simple-host/opendistro/wazuh_cf_opendistro.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/opendistro-single-host/opendistro/wazuh_cf_opendistro.sh
               mode: '000700'
               owner: root
               group: root
