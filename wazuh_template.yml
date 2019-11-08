@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Provides a demo environment with a Wazuh cluster of two nodes, Elasticsearch cluster of three nodes with xpack security and SSL enabled, a Splunk instance and several agents.
+Description: Mitre temporal demo environment
 Mappings:
   RegionMap:
     us-east-1:
@@ -134,7 +134,6 @@ Metadata:
           - WazuhInstanceType
           - ElasticInstanceType
           - KibanaInstanceType
-          - SplunkInstanceType
           - SshUsername
           - SshPassword
       - 
@@ -142,11 +141,6 @@ Metadata:
           default: "Wazuh Amazon Linux agent instance type"
         Parameters:
           - AgentInstanceType
-          - CentosAgentInstanceType
-          - WindowsInstanceType
-          - RedHatInstanceType
-          - DebianInstanceType
-          - UbuntuInstanceType
           
       - 
         Label:
@@ -164,20 +158,7 @@ Metadata:
           default: "Kibana configuration"
         Parameters:
           - KibanaPort
-      -
-        Label:
-          default: "Splunk configuration"
-        Parameters:
-          - SplunkUsername
-          - SplunkPassword
-      -
-        Label:
-          default: "Integration keys"
-        Parameters:
-          - AwsSecretKey
-          - AwsAccessKey
-          - VirusTotalKey
-          - SlackHook
+
       -
         Label:
           default: "SSL Certificate"
@@ -354,18 +335,6 @@ Parameters:
     Description: Type of EC2 instance for Kibana instance
     Type: String
 
-  SplunkInstanceType:
-    AllowedValues:
-      - t2.micro
-      - t2.medium
-      - t2.large
-      - m5.large
-      - r5.large
-    ConstraintDescription: Must contain valid instance type
-    Default: t2.medium
-    Description: Type of EC2 instance for Splunk instance
-    Type: String
-
   # Wazuh configuration
   WazuhServerPort:
     Default: '1514'
@@ -416,37 +385,7 @@ Parameters:
     Default: '443'
     Description: Port for Kibana WUI
     Type: String
-  SplunkUsername:
-    Default: wazuh
-    Description: Username for Splunk access
-    Type: String
-    MinLength: '1'
-    MaxLength: '16'
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Only alphanumeric characters
-  SplunkPassword:
-    Description: Password for Splunk access
-    NoEcho: 'True'
-    Type: String
-    MinLength: '1'
-    MaxLength: '48'
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Only alphanumeric characters
-  AwsSecretKey:
-    Description: (Optional) Secret key for AWS integration
-    Type: String
 
-  AwsAccessKey:
-    Description: (Optional) Access key for AWS integration
-    Type: String
-
-  VirusTotalKey:
-    Description: (Optional) Key for VirusTotal integration
-    Type: String
-
-  SlackHook:
-    Description: (Optional) Webhook for Slack integration
-    Type: String
 
   SSLCertificateARN:
     Description: 'Used for HTTPS access to WUI. Existent certificate, identified by its Amazon Resource Name (ARN).'
@@ -650,28 +589,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-WazuhSecurityGroup'
-  SplunkSecurityGroup:
-    Type: 'AWS::EC2::SecurityGroup'
-    Properties:
-      GroupDescription: Splunk security group
-      VpcId: !Ref WazuhVpc
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 8000
-          ToPort: 8000
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 9997
-          ToPort: 9997
-          CidrIp: 0.0.0.0/0
-      Tags:
-        - Key: Name
-          Value: !Sub '${AWS::StackName}-SplunkSecurityGroup'
-  
+
   # Elasticsearch load balancer
   ElbElasticSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -1080,8 +998,6 @@ Resources:
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
                 WazuhServerPort: ${WazuhServerPort}
-                SplunkUsername: ${SplunkUsername}
-                SplunkPassword: ${SplunkPassword}
                 WazuhRegistrationPort: ${WazuhRegistrationPort}
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
@@ -1090,7 +1006,6 @@ Resources:
                 VirusTotalKey: ${VirusTotalKey}
                 SlackHook: ${SlackHook}
                 EnvironmentType: ${EnvironmentType}
-                SplunkIp: ${SplunkInstance.PrivateIp}
               mode: '000600'
               owner: root
               group: root
@@ -1166,8 +1081,6 @@ Resources:
               content: !Sub |
                 SshUsername: ${SshUsername}
                 SshPassword: ${SshPassword}
-                SplunkUsername: ${SplunkUsername}
-                SplunkPassword: ${SplunkPassword}
                 Elastic_Wazuh: ${ElasticWazuhVersion}
                 WazuhServerPort: ${WazuhServerPort}
                 WazuhClusterKey: ${WazuhClusterKey}
@@ -1177,7 +1090,6 @@ Resources:
                 VirusTotalKey: ${VirusTotalKey}
                 SlackHook: ${SlackHook}
                 EnvironmentType: ${EnvironmentType}
-                SplunkIp: ${SplunkInstance.PrivateIp}
               mode: '000600'
               owner: root
               group: root
