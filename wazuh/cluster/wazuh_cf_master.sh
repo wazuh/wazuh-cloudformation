@@ -67,7 +67,7 @@ elif [[ ${EnvironmentType} == 'sources' ]]
 then
 
   # Compile Wazuh manager from sources
-  BRANCH="3.11"
+  BRANCH="3.10-mitre"
 
   yum install make gcc policycoreutils-python automake autoconf libtool -y
   curl -Ls https://github.com/wazuh/wazuh/archive/$BRANCH.tar.gz | tar zx
@@ -125,11 +125,12 @@ then
   chkconfig --add wazuh-api
   echo "Installed Wazuh API." >> /tmp/deploy.log
 else
+  API_BRANCH="dev-mitre-framework-4036"
   npm config set user 0
-  curl -LO https://github.com/wazuh/wazuh-api/archive/$BRANCH.zip
-  unzip $BRANCH.zip
-  rm -f $BRANCH.zip
-  cd wazuh-api-$BRANCH
+  curl -LO https://github.com/wazuh/wazuh-api/archive/$API_BRANCH.zip
+  unzip $API_BRANCH.zip
+  rm -f $API_BRANCH.zip
+  cd wazuh-api-$API_BRANCH
   ./install_api.sh
 fi
 
