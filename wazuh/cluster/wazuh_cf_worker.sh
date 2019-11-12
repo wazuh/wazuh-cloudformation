@@ -53,6 +53,34 @@ EOF
 elif [[ ${EnvironmentType} == 'devel' ]]
 then
 	echo -e '[wazuh_staging]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/staging/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_staging.repo
+elif [[ ${EnvironmentType} == 'sources' ]]
+then
+
+  # Compile Wazuh manager from sources
+  BRANCH="3.11"
+
+  yum install make gcc policycoreutils-python automake autoconf libtool -y
+  curl -Ls https://github.com/wazuh/wazuh/archive/$BRANCH.tar.gz | tar zx
+  rm -f $BRANCH.tar.gz
+  cd wazuh-$BRANCH/src
+  make TARGET=agent DEBUG=1 -j8
+
+  USER_LANGUAGE="en" \
+  USER_NO_STOP="y" \
+  USER_INSTALL_TYPE="server" \
+  USER_DIR="/var/ossec" \
+  USER_ENABLE_EMAIL="n" \
+  USER_ENABLE_SYSCHECK="y" \
+  USER_ENABLE_ROOTCHECK="y" \
+  USER_ENABLE_OPENSCAP="n" \
+  USER_WHITE_LIST="n" \
+  USER_ENABLE_SYSLOG="n" \
+  USER_ENABLE_AUTHD="y" \
+  USER_AUTO_START="y" \
+  THREADS=2 \
+  ../install.sh
+  echo "Compiled wazuh" >> /tmp/deploy.log
+
 else
 	echo 'no repo' >> /tmp/stage
 fi
