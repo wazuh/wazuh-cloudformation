@@ -326,6 +326,16 @@ rm -f ${api_config}
 echo "Configured API" >> /tmp/deploy.log
 }
 
+enable_kibana(){
+    echo "Enabling Kibana..." >> /tmp/deploy.log
+    systemctl enable kibana
+    if [ $? -eq0 ]; then
+        echo "Kibana enabled." >> /tmp/deploy.log
+    else
+        echo "Could not enable Kibana" >> /tmp/deploy.log
+    fi
+}
+
 start_kibana(){
   # Starting Kibana
   systemctl restart kibana
@@ -430,6 +440,7 @@ main(){
   kibana_certs
   get_plugin_url
   install_plugin
+  enable_kibana
   start_kibana
   add_api
   kibana_optional_configs

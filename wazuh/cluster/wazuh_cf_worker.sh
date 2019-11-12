@@ -101,6 +101,7 @@ EOF
 
 # Installing wazuh-manager
 yum -y install wazuh-manager
+systemctl enable wazuh-manager
 chkconfig --add wazuh-manager
 manager_config="/var/ossec/etc/ossec.conf"
 # Install dependencies
@@ -347,11 +348,9 @@ sed -i "s:MANAGER_HOSTNAME:$(hostname):g" /opt/splunkforwarder/etc/system/local/
 touch /opt/splunkforwarder/etc/system/local/user-seed.conf
 
 # add admin user
-cat > /opt/splunkforwarder/etc/system/local/user-seed.conf <<\EOF
-[user_info]
-USERNAME = ${splunk_username}
-PASSWORD = ${splunk_password}
-EOF
+echo "[user_info]" > /opt/splunkforwarder/etc/system/local/user-seed.conf
+echo "USERNAME = $splunk_username" >> /opt/splunkforwarder/etc/system/local/user-seed.conf
+echo "PASSWORD = $splunk_password" >> /opt/splunkforwarder/etc/system/local/user-seed.conf
 
 echo "Starting Splunk..."
 # accept license
@@ -381,6 +380,8 @@ echo "output.elasticsearch.protocol: https" >> /etc/filebeat/filebeat.yml
 echo "output.elasticsearch.ssl.certificate: "/etc/filebeat/certs/wazuh-worker.crt"" >> /etc/filebeat/filebeat.yml
 echo "output.elasticsearch.ssl.key: "/etc/filebeat/certs/wazuh-worker.key"" >> /etc/filebeat/filebeat.yml
 echo "output.elasticsearch.ssl.certificate_authorities: ["/etc/filebeat/certs/ca/ca.crt"]" >> /etc/filebeat/filebeat.yml
+systemctl enable filebeat
+echo "Enabled Filebeat" >> /tmp/log
 systemctl restart filebeat
 echo "Started Filebeat" >> /tmp/log
 echo "Done" >> /tmp/log

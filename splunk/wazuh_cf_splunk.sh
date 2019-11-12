@@ -12,7 +12,7 @@ wazuh_api_user=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminUsername:' | c
 wazuh_api_password=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminPassword:' | cut -d' ' -f2)
 wazuh_api_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiPort:' | cut -d' ' -f2)
 TAG="v3.10.2"
-
+APP_TAG="v3.10.2-7.3.2"
 # Creating SSH user
 adduser ${ssh_username}
 echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
@@ -39,7 +39,7 @@ curl -so /opt/splunk/etc/system/local/inputs.conf https://raw.githubusercontent.
 curl -so /opt/splunk/etc/system/local/indexes.conf https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/splunk/peer-indexes.conf &> /dev/null
 
 # clone app
-git clone -b $TAG --single-branch git://github.com/wazuh/wazuh-splunk.git &> /dev/null
+git clone -b $APP_TAG --single-branch git://github.com/wazuh/wazuh-splunk.git &> /dev/null
 
 # install app
 cp -R ./wazuh-splunk/SplunkAppForWazuh/ /opt/splunk/etc/apps/
@@ -47,4 +47,4 @@ cp -R ./wazuh-splunk/SplunkAppForWazuh/ /opt/splunk/etc/apps/
 # restart splunk
 /opt/splunk/bin/splunk start --accept-license --answer-yes --no-prompt &> /dev/null
 
-curl -XPOST http://${eth0_ip}:${splunk_port}/custom/SplunkAppForWazuh/manager/add_api?url=${wazuh_master_ip}&portapi=${wazuh_api_port}&userapi=${wazuh_api_user}&passapi=${wazuh_api_password}
+# curl -XPOST http://${eth0_ip}:${splunk_port}/custom/SplunkAppForWazuh/manager/add_api?url=${wazuh_master_ip}&portapi=${wazuh_api_port}&userapi=${wazuh_api_user}&passapi=${wazuh_api_password}
