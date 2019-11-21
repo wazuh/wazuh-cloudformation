@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Provides a demo environment with a Wazuh cluster of two nodes, Elasticsearch cluster of three nodes with opendistro.
+Description: Dev environment - 1 Wazuh Manager + Filebeat + Elasticsearch , 1 Wazuh worker + Kibana
 Mappings:
   RegionMap:
     us-east-1:
@@ -106,7 +106,7 @@ Mappings:
     WazuhVpc:
       CIDR: 10.0.0.0/16
     SubnetElasticsearch:
-      CIDR: 10.0.2.0/24
+      CIDR: 10.0.0.0/24
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -170,7 +170,7 @@ Resources:
       EnableDnsHostnames: 'true'
       Tags:
         - Key: service_name
-          Value: Opendistro-SAML-test
+          Value: kibana_dev
 
   SubnetElasticsearch:
       Type: 'AWS::EC2::Subnet'
@@ -182,7 +182,7 @@ Resources:
           - CIDR
         Tags:
           - Key: service_name
-            Value: Opendistro-SAML-test
+            Value: kibana_dev
 
   # Internet access and routing
   InternetGateway:
@@ -190,7 +190,7 @@ Resources:
     Properties:
       Tags:
         - Key: service_name
-          Value: Opendistro-SAML-test
+          Value: kibana_dev
   GatewayToInternet:
     Type: 'AWS::EC2::VPCGatewayAttachment'
     Properties:
@@ -202,7 +202,7 @@ Resources:
       VpcId: !Ref WazuhVpc
       Tags:
         - Key: service_name
-          Value: Opendistro-SAML-test
+          Value: kibana_dev
   PublicRoute:
     Type: 'AWS::EC2::Route'
     DependsOn: GatewayToInternet
@@ -227,6 +227,14 @@ Resources:
           ToPort: 22
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
+          FromPort: 1515
+          ToPort: 1515
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 1514
+          ToPort: 1514
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
           FromPort: !Ref KibanaPort
           ToPort: !Ref KibanaPort
           CidrIp: 0.0.0.0/0
@@ -239,7 +247,7 @@ Resources:
             - CIDR
       Tags:
         - Key: service_name
-          Value: Opendistro-SAML-test
+          Value: kibana_dev
  
   # IAM role and profile
   InstanceRole:
@@ -277,7 +285,55 @@ Resources:
       Roles:
         - !Ref InstanceRole
 
+
   # Kibana instance
+  Elasticsearch:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          KibanaInstallationSet:
+            - KibanaFiles
+            - KibanaInstall
+        KibanaFiles:
+          files:
+            /tmp/kibana-dev-elasticsearch.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/kibana-dev/elastic/kibana-dev-elasticsearch.sh
+              mode: '000700'
+              owner: root
+              group: root
+        KibanaInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/kibana-dev-elasticsearch.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVM64
+      InstanceType: !Ref KibanaInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "KibanaSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetElasticsearch"
+          PrivateIpAddress: "10.0.0.15"
+      Tags:
+        - Key: service_name
+          Value: kibana_dev
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elasticsearch --configsets KibanaInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Elasticsearch --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+
+      # Kibana instance
   KibanaInstance:
     Type: AWS::EC2::Instance
     Metadata:
@@ -288,16 +344,16 @@ Resources:
             - KibanaInstall
         KibanaFiles:
           files:
-            /tmp/wazuh_cf_opendistro.sh:
+            /tmp/kibana-dev-kibana.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/opendistro-single-host/opendistro/wazuh_cf_opendistro.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/kibana-dev/elastic/kibana-dev-kibana.sh
               mode: '000700'
               owner: root
               group: root
         KibanaInstall:
           commands:
             01_RunInstallationScript:
-              command: /tmp/wazuh_cf_opendistro.sh
+              command: /tmp/kibana-dev-kibana.sh
     Properties:
       ImageId: !FindInMap
         - "RegionMap"
@@ -315,10 +371,10 @@ Resources:
             Ref: "SubnetElasticsearch"
       Tags:
         - Key: service_name
-          Value: Opendistro-SAML-test
+          Value: kibana_dev
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource KibanaInstance --configsets KibanaInstallationSet --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Kibana --region ${AWS::Region}
-    DependsOn: GatewayToInternet
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource KibanaInstance --region ${AWS::Region}
+    DependsOn: Elasticsearch
