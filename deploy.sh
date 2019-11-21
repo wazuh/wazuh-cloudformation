@@ -6,10 +6,10 @@
 PARAMS_FILE='parameters.json'
 
 # Path of the template file
-TEMPLATE_FILE='singlehost_odfe.yml'
+TEMPLATE_FILE='kibana_dev.yml'
 
 # Stack name
-STACK_NAME='singlehost-odfe'
+STACK_NAME='kibana_dev'
 
 # Bucket name
 BUCKET_NAME='demo-cloudformation-templates'
@@ -33,6 +33,6 @@ aws s3 cp $TEMPLATE_FILE s3://$BUCKET_NAME
 URL="https://$BUCKET_NAME.s3-us-west-1.amazonaws.com/$TEMPLATE_FILE"
 echo "Template URL: $URL"
 
-aws cloudformation create-stack --stack-name ${STACK_NAME} --template-url $URL --parameters file://$PARAMS_FILE --capabilities CAPABILITY_IAM
+aws cloudformation create-stack --stack-name ${STACK_NAME} --template-url $URL --parameters file://$PARAMS_FILE --capabilities CAPABILITY_IAM --tags Key=team,Value=Frontend
 
 echo "Done"
