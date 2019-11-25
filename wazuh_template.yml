@@ -300,7 +300,7 @@ Parameters:
       - t2.large
       - m5.large
     ConstraintDescription: Must contain valid instance type
-    Default: t2.micro
+    Default: t2.medium
     Description: Type of EC2 instance for Windows Wazuh agent instance
     Type: String
 
