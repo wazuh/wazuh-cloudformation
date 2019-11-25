@@ -170,7 +170,7 @@ elif [[ ${EnvironmentType} == 'sources' ]]
 then
 
   # Compile Wazuh manager from sources
-  branch="3319-fim-rework"
+  BRANCH="3319-fim-rework"
 
   yum install make gcc policycoreutils-python automake autoconf libtool -y
   curl -Ls https://github.com/wazuh/wazuh/archive/$BRANCH.tar.gz | tar zx
