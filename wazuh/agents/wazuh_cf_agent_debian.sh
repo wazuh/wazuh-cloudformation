@@ -48,6 +48,9 @@ then
 elif [[ ${EnvironmentType} == 'sources' ]]
 then
 
+  # Fix Debian AMI corrupted sources.list
+  sed -i -e 's/jessie:stretch/g' /etc/apt/sources.list
+  apt update -y
   # Compile Wazuh manager from sources
   BRANCH="3319-fim-rework"
 
