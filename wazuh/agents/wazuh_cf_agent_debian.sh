@@ -19,6 +19,11 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
+
+# Fix Debian AMI corrupted sources.list
+sed -i -e 's/jessie:stretch/g' /etc/apt/sources.list
+apt update -y
+
 # Installing dependencies
 apt-get install curl apt-transport-https lsb-release -y
 echo "Installed dependencies." >> /tmp/deploy.log
@@ -48,9 +53,6 @@ then
 elif [[ ${EnvironmentType} == 'sources' ]]
 then
 
-  # Fix Debian AMI corrupted sources.list
-  sed -i -e 's/jessie:stretch/g' /etc/apt/sources.list
-  apt update -y
   # Compile Wazuh manager from sources
   BRANCH="3319-fim-rework"
 
@@ -79,8 +81,7 @@ else
 	echo 'no repo' >> /tmp/stage
 fi
 
-# Install Wazuh agent
-apt-get update
+
 
 # Install Wazuh agent
 apt-get install wazuh-agent -y
