@@ -9,7 +9,7 @@ PARAMS_FILE='./parameters.json'
 TEMPLATE_FILE='./wazuh_template.yml'
 
 # Stack name
-STACK_NAME='sources-311dev'
+STACK_NAME='demo-rework-fim'
 
 # Bucket name
 BUCKET_NAME='demo-cloudformation-templates'
@@ -33,6 +33,6 @@ aws s3 cp $TEMPLATE_FILE s3://$BUCKET_NAME
 URL="https://demo-cloudformation-templates.s3-us-west-1.amazonaws.com/wazuh_template.yml"
 echo "Template URL: $URL"
 
-aws cloudformation create-stack --stack-name ${STACK_NAME} --template-url $URL --parameters file://$PARAMS_FILE --capabilities CAPABILITY_IAM
+aws cloudformation create-stack --stack-name ${STACK_NAME} --template-url $URL --parameters file://$PARAMS_FILE --capabilities CAPABILITY_IAM --tags Key=service_name,Value=dev_demo
 
 echo "Done"
