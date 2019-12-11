@@ -331,6 +331,7 @@ Parameters:
       - i3.large
       - i3.xlarge
       - i3.2xlarge
+      - m4.large
 
     ConstraintDescription: Must contain valid instance type
     Default: t2.medium
@@ -1526,7 +1527,7 @@ Resources:
     Properties:
       NetworkInterfaceId: !Ref Windows2019Eth0
       AllocationId: !GetAtt
-        - WindowsEIP
+        - Windows2019EIP
         - AllocationId
 
   # RHEL7 agent instance and networking requirements
@@ -1647,26 +1648,13 @@ Outputs:
     Value: !GetAtt
       - KibanaInstance
       - PublicIp
-  Amazon:
-    Description: Elastic Stack and Wazuh versions
-    Value: !GetAtt
-      - Amazon
-      - PublicIp
+
   Centos:
     Description: Elastic Stack and Wazuh versions
     Value: !GetAtt
       - Centos
       - PublicIp
-  Debian:
-    Description: Elastic Stack and Wazuh versions
-    Value: !GetAtt
-      - Debian
-      - PublicIp
-  Ubuntu:
-    Description: Elastic Stack and Wazuh versions
-    Value: !GetAtt
-      - Ubuntu
-      - PublicIp
+
   Windows:
     Description: Elastic Stack and Wazuh versions
     Value: !GetAtt
