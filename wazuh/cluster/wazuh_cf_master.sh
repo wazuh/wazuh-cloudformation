@@ -313,18 +313,18 @@ cat >> ${local_rules} << EOF
 EOF
 
 # Slack integration
-# if [ "x${SlackHook}" != "x" ]; then
-# cat >> ${manager_config} << EOF
-# <ossec_config>
-#   <integration>
-#     <name>slack</name>
-#     <hook_url>${SlackHook}</hook_url>
-#     <level>12</level>
-#     <alert_format>json</alert_format>
-#   </integration>
-# </ossec_config>
-# EOF
-# fi
+if [ "x${SlackHook}" != "x" ]; then
+cat >> ${manager_config} << EOF
+<ossec_config>
+  <integration>
+    <name>slack</name>
+    <hook_url>${SlackHook}</hook_url>
+    <level>12</level>
+    <alert_format>json</alert_format>
+  </integration>
+</ossec_config>
+EOF
+fi
 
 # AWS integration if key already set
 if [ "x${AwsAccessKey}" != "x" ]; then
