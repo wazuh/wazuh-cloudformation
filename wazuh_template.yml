@@ -1067,8 +1067,6 @@ Resources:
             - Ref: "KibanaSecurityGroup"
           SubnetId: 
             Ref: "SubnetWazuh"
-
-
       Tags:
         - Key: Name
           Value: WazuhKibana
@@ -1076,8 +1074,77 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource KibanaInstance --configsets KibanaInstallationSet --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Kibana --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource KibanaInstance --region ${AWS::Region}
     DependsOn: GatewayToInternet
+
+
+
+
+  # Kibana instance
+  KibanaInstanceDev:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          KibanaInstallationSet:
+            - KibanaFiles
+            - KibanaInstall
+        KibanaFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                KibanaPort: ${KibanaPort}
+                WazuhApiAdminUsername: ${WazuhApiAdminUsername}
+                WazuhApiAdminPassword: ${WazuhApiAdminPassword}
+                WazuhApiPort: ${WazuhApiPort}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                EnvironmentType: ${EnvironmentType}
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_kibana.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/elastic/wazuh_cf_kibana.sh
+              mode: '000700'
+              owner: root
+              group: root
+        KibanaInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_kibana.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVM64
+      InstanceType: !Ref KibanaInstanceDevType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "KibanaSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetWazuh"
+      Tags:
+        - Key: Name
+          Value: WazuhKibanaDev
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource KibanaInstanceDev --configsets KibanaInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource KibanaInstanceDev --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+
+
+
+
+
+
 
   # Kibana instance
   SplunkInstance:
