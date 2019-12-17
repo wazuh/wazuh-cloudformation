@@ -1120,7 +1120,7 @@ Resources:
         - "RegionMap"
         - Ref: "AWS::Region"
         - HVM64
-      InstanceType: !Ref KibanaInstanceDevType
+      InstanceType: !Ref KibanaInstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
       NetworkInterfaces:
