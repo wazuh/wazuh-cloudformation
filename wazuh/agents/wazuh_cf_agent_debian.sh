@@ -21,7 +21,7 @@ fi
 
 
 # Fix Debian AMI corrupted sources.list
-sed -i -e 's/jessie:stretch/g' /etc/apt/sources.list
+sed -i -e 's/jessie/stretch/g' /etc/apt/sources.list
 apt update -y
 
 # Installing dependencies
