@@ -96,8 +96,8 @@ echo "Kibana installed." >> /tmp/deploy.log
 kibana_certs(){
   mkdir /etc/kibana/certs/ca -p
   cp ca/ca.crt /etc/kibana/certs/ca
-  cp kibana/kibana.crt /etc/kibana/certs
-  cp kibana/kibana.key /etc/kibana/certs
+  cp kibana-dev/kibana-dev.crt /etc/kibana/certs
+  cp kibana-dev/kibana-dev.key /etc/kibana/certs
   chown -R kibana: /etc/kibana/certs
   chmod -R 770 /etc/kibana/certs
   echo "# Elasticsearch from/to Kibana" >> /etc/kibana/kibana.yml
