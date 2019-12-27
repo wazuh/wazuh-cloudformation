@@ -9,7 +9,7 @@ PARAMS_FILE='./parameters.json'
 TEMPLATE_FILE='./wazuh_template.yml'
 
 # Stack name
-STACK_NAME='demo-info'
+STACK_NAME='wazuh-environment'
 
 # Bucket name
 BUCKET_NAME='demo-cloudformation-templates'
