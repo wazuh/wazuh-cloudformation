@@ -296,33 +296,15 @@ install_plugin(){
 
 add_api(){
 echo "Adding Wazuh API" >> /tmp/deploy.log
-api_config="/tmp/api_config.json"
-api_time=$(($(date +%s%N)/1000000))
-wazuh_api_password_base64=`echo -n ${wazuh_api_password} | base64`
-
-cat > ${api_config} << EOF
-{
-  "api_user": "${wazuh_api_user}",
-  "api_password": "${wazuh_api_password_base64}",
-  "url": "https://${wazuh_master_ip}",
-  "api_port": "${wazuh_api_port}",
-  "insecure": "false",
-  "component": "API",
-  "cluster_info": {
-    "manager": "wazuh-manager",
-    "cluster": "disabled",
-    "status": "disabled"
-  }
-}
+sed -ie '/- default:/,+4d' /usr/share/kibana/plugins/wazuh/wazuh.yml
+cat > /usr/share/kibana/plugins/wazuh/wazuh.yml << EOF
+hosts:
+  - default:
+      url: https://${wazuh_master_ip}
+      port: ${wazuh_api_port}
+      user: ${wazuh_api_user}
+      password: ${wazuh_api_password}
 EOF
-
-CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "https://10.0.2.124:9200/.wazuh/_doc/${api_time}" -u elastic:${ssh_password} -k)
-if [ "x$CONFIG_CODE" != "x200" ]; then
-  curl -s -XPUT "https://10.0.2.124:9200/.wazuh/_doc/${api_time}" -u elastic:${ssh_password} -k -H 'Content-Type: application/json' -d@${api_config}
-  echo "Loaded Wazuh API to an Elasticsearch >=v7 cluster" >> /tmp/deploy.log
-fi
-
-rm -f ${api_config}
 echo "Configured API" >> /tmp/deploy.log
 }
 
@@ -445,7 +427,7 @@ main(){
   add_api
   kibana_optional_configs
   add_nginx
-  custom_welcome
+  #custom welcome # Disabled until fixing welcome screen in 3.11.0
 }
 
 main
