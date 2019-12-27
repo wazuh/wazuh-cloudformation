@@ -19,7 +19,7 @@ worker_ip=$(cat /tmp/wazuh_cf_settings | grep '^WorkerIp:' | cut -d' ' -f2)
 kibana_ip=$(cat /tmp/wazuh_cf_settings | grep '^KibanaIp:' | cut -d' ' -f2)
 kibana_dev_ip=$(cat /tmp/wazuh_cf_settings | grep '^KibanaDevIp:' | cut -d' ' -f2)
 
-TAG="3.11"
+TAG="v3.11.0"
 echo "Added env vars." >> /tmp/deploy.log
 echo "eth0_ip: $eth0_ip" >> /tmp/deploy.log
 
