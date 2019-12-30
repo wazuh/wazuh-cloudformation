@@ -26,7 +26,7 @@ AwsSecretKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsSecretKey:' | cut -d' ' -f
 AwsAccessKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsAccessKey:' | cut -d' ' -f2)
 SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
-TAG='v3.10.2'
+TAG='v3.11.0'
 
 echo "Added env vars." >> /tmp/deploy.log
 
@@ -63,6 +63,34 @@ EOF
 elif [[ ${EnvironmentType} == 'devel' ]]
 then
 	echo -e '[wazuh_staging]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/staging/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_staging.repo
+elif [[ ${EnvironmentType} == 'sources' ]]
+then
+
+  # Compile Wazuh manager from sources
+  BRANCH="3.11"
+
+  yum install make gcc policycoreutils-python automake autoconf libtool -y
+  curl -Ls https://github.com/wazuh/wazuh/archive/$BRANCH.tar.gz | tar zx
+  rm -f $BRANCH.tar.gz
+  cd wazuh-$BRANCH/src
+  make TARGET=agent DEBUG=1 -j8
+
+  USER_LANGUAGE="en" \
+  USER_NO_STOP="y" \
+  USER_INSTALL_TYPE="server" \
+  USER_DIR="/var/ossec" \
+  USER_ENABLE_EMAIL="n" \
+  USER_ENABLE_SYSCHECK="y" \
+  USER_ENABLE_ROOTCHECK="y" \
+  USER_ENABLE_OPENSCAP="n" \
+  USER_WHITE_LIST="n" \
+  USER_ENABLE_SYSLOG="n" \
+  USER_ENABLE_AUTHD="y" \
+  USER_AUTO_START="y" \
+  THREADS=2 \
+  ../install.sh
+  echo "Compiled wazuh" >> /tmp/deploy.log
+
 else
 	echo 'no repo' >> /tmp/stage
 fi
@@ -81,9 +109,31 @@ autorefresh=1
 type=rpm-md
 EOF
 
-# Installing wazuh-manager
-yum -y install wazuh-manager
-chkconfig --add wazuh-manager
+curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
+# Installing NodeJS
+yum -y install nodejs
+echo "Installed NodeJS." >> /tmp/deploy.log
+
+if [[ ${EnvironmentType} != 'sources' ]]
+then
+
+  # Installing wazuh-manager
+  yum -y install wazuh-manager
+  chkconfig --add wazuh-manager
+  # Installing wazuh-api
+  yum -y install wazuh-api
+  chkconfig --add wazuh-api
+  echo "Installed Wazuh API." >> /tmp/deploy.log
+else
+  API_BRANCH="3.11"
+  npm config set user 0
+  curl -LO https://github.com/wazuh/wazuh-api/archive/$API_BRANCH.zip
+  unzip $API_BRANCH.zip
+  rm -f $API_BRANCH.zip
+  cd wazuh-api-$API_BRANCH
+  ./install_api.sh
+fi
+
 manager_config="/var/ossec/etc/ossec.conf"
 local_rules="/var/ossec/etc/rules/local_rules.xml"
 # Enable registration service (only for master node)
@@ -139,7 +189,7 @@ EOF
 
 # Setting password for agents registration
 echo "${wazuh_registration_password}" > /var/ossec/etc/authd.pass
-echo "Set registration password." > /tmp/deploy.log
+echo "Set registration password." >> /tmp/deploy.log
 
 # Installing Python Cryptography module for the cluster
 pip install cryptography
@@ -235,8 +285,8 @@ cat >> ${local_rules} << EOF
 <group name="syscheck,">
   <rule id="100200" level="7">
     <if_sid>550,553,554</if_sid>
-    <field name="file">^/tmp</field>
-    <description>File modified or created in /tmp directory.</description>
+    <field name="file">\S*/virus|\S*\\\\virus</field>
+    <description>File modified or created in /virus directory.</description>
   </rule>
 </group>
 <group name="ossec,">
@@ -385,17 +435,8 @@ EOF
 
 # Restart wazuh-manager
 systemctl restart wazuh-manager
+systemctl enable wazuh-manager
 echo "Restarted Wazuh manager." >> /tmp/deploy.log
-
-# Installing NodeJS
-curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
-yum -y install nodejs
-echo "Installed NodeJS." >> /tmp/deploy.log
-
-# Installing wazuh-api
-yum -y install wazuh-api
-chkconfig --add wazuh-api
-echo "Installed Wazuh API." >> /tmp/deploy.log
 
 # Configuring Wazuh API user and password
 cd /var/ossec/api/configuration/auth
@@ -504,11 +545,9 @@ sed -i "s:MANAGER_HOSTNAME:$(hostname):g" /opt/splunkforwarder/etc/system/local/
 touch /opt/splunkforwarder/etc/system/local/user-seed.conf
 
 # add admin user
-cat > /opt/splunkforwarder/etc/system/local/user-seed.conf <<\EOF
-[user_info]
-USERNAME = ${splunk_username}
-PASSWORD = ${splunk_password}
-EOF
+echo "[user_info]" > /opt/splunkforwarder/etc/system/local/user-seed.conf
+echo "USERNAME = $splunk_username" >> /opt/splunkforwarder/etc/system/local/user-seed.conf
+echo "PASSWORD = $splunk_password" >> /opt/splunkforwarder/etc/system/local/user-seed.conf
 
 echo "Starting Splunk..."
 # accept license

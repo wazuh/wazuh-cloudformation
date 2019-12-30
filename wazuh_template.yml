@@ -24,7 +24,7 @@ Mappings:
       HVMCENTOS7: ami-074e2d6769f445be5
       HVMREDHAT7: ami-18726478
       HVMDEBIAN: ami-0adbaf2e0ce044437
-      HVMWINDOWS: ami-0069635df219ce9e5
+      HVMWINDOWS: ami-0052629573c8e3eda
     us-west-2:
       HVM64: ami-0cb72367e98845d43
       HVMUBUNTU64: ami-0196ce5c34425a906
@@ -230,8 +230,12 @@ Parameters:
       - 7.3.0_3.9.5
       - 7.3.2_3.10.0
       - 7.3.2_3.10.2
+      - 7.3.2_3.11.0
+      - 7.4.2_3.11.0
+      - 7.5.0_3.11.0
+      - 7.5.1_3.11.0
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
-    Default: 7.3.2_3.10.2
+    Default: 7.5.1_3.11.0
     Description: Elastic and Wazuh versions to be installed
     Type: String
   WazuhInstanceType:
@@ -251,7 +255,8 @@ Parameters:
     AllowedValues:
       - production
       - staging
-      - devel    
+      - devel   
+      - sources 
     ConstraintDescription: Must contain valid instance type
     Default: staging
     Description: Select a stage
@@ -297,7 +302,7 @@ Parameters:
       - t2.large
       - m5.large
     ConstraintDescription: Must contain valid instance type
-    Default: t2.micro
+    Default: t2.medium
     Description: Type of EC2 instance for Windows Wazuh agent instance
     Type: String
 
@@ -706,13 +711,15 @@ Resources:
                 MasterIp: ${WazuhMasterInstance.PrivateIp}
                 WorkerIp: ${WazuhWorkerInstance.PrivateIp}
                 KibanaIp: ${KibanaInstance.PrivateIp}
+                KibanaDevIp: ${KibanaInstanceDev.PrivateIp}
+
                 NodeName: 3
               mode: '000600'
               owner: root
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.10.2_7.3.2/elastic/wazuh_cf_bootstrap_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.11.0_7.5.1/elastic/wazuh_cf_bootstrap_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -728,6 +735,11 @@ Resources:
       InstanceType: !Ref ElasticInstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 100
+            VolumeType: gp2
       NetworkInterfaces:
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
@@ -767,7 +779,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.10.2_7.3.2/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.11.0_7.5.1/elastic/wazuh_cf_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -783,6 +795,11 @@ Resources:
       InstanceType: !Ref ElasticInstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 100
+            VolumeType: gp2
       NetworkInterfaces:
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
@@ -822,7 +839,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.10.2_7.3.2/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.11.0_7.5.1/elastic/wazuh_cf_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -838,6 +855,11 @@ Resources:
       InstanceType: !Ref ElasticInstanceType
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 100
+            VolumeType: gp2
       NetworkInterfaces:
         - AssociatePublicIpAddress: "true"
           DeviceIndex: "0"
@@ -1025,7 +1047,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_kibana.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.10.2_7.3.2/elastic/wazuh_cf_kibana.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.11.0_7.5.1/elastic/wazuh_cf_kibana.sh
               mode: '000700'
               owner: root
               group: root
@@ -1048,8 +1070,6 @@ Resources:
             - Ref: "KibanaSecurityGroup"
           SubnetId: 
             Ref: "SubnetWazuh"
-
-
       Tags:
         - Key: Name
           Value: WazuhKibana
@@ -1057,8 +1077,77 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource KibanaInstance --configsets KibanaInstallationSet --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Kibana --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource KibanaInstance --region ${AWS::Region}
     DependsOn: GatewayToInternet
+
+
+
+
+  # Kibana instance
+  KibanaInstanceDev:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          KibanaInstallationSet:
+            - KibanaFiles
+            - KibanaInstall
+        KibanaFiles:
+          files:
+            /tmp/wazuh_cf_settings:
+              content: !Sub |
+                SshUsername: ${SshUsername}
+                SshPassword: ${SshPassword}
+                Elastic_Wazuh: ${ElasticWazuhVersion}
+                KibanaPort: ${KibanaPort}
+                WazuhApiAdminUsername: ${WazuhApiAdminUsername}
+                WazuhApiAdminPassword: ${WazuhApiAdminPassword}
+                WazuhApiPort: ${WazuhApiPort}
+                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
+                EnvironmentType: ${EnvironmentType}
+              mode: '000600'
+              owner: root
+              group: root
+            /tmp/wazuh_cf_kibana.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.11.0_7.5.1/elastic/wazuh_cf_kibana_dev.sh
+              mode: '000700'
+              owner: root
+              group: root
+        KibanaInstall:
+          commands:
+            01_RunInstallationScript:
+              command: /tmp/wazuh_cf_kibana.sh
+    Properties:
+      ImageId: !FindInMap
+        - "RegionMap"
+        - Ref: "AWS::Region"
+        - HVM64
+      InstanceType: !Ref KibanaInstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      KeyName: !Ref KeyPairName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet: 
+            - Ref: "KibanaSecurityGroup"
+          SubnetId: 
+            Ref: "SubnetWazuh"
+      Tags:
+        - Key: Name
+          Value: WazuhKibanaDev
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource KibanaInstanceDev --configsets KibanaInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource KibanaInstanceDev --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+
+
+
+
+
+
 
   # Kibana instance
   SplunkInstance:
@@ -1086,7 +1175,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_splunk.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.10.2_7.3.2/splunk/wazuh_cf_splunk.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.11.0_7.5.1/splunk/wazuh_cf_splunk.sh
               mode: '000700'
               owner: root
               group: root
@@ -1105,7 +1194,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 100
+            VolumeSize: 10
             VolumeType: gp2
       NetworkInterfaces:
         - AssociatePublicIpAddress: "true"
@@ -1161,7 +1250,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_master.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.10.2_7.3.2/wazuh/cluster/wazuh_cf_master.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.11.0_7.5.1/wazuh/cluster/wazuh_cf_master.sh
               mode: '000700'
               owner: root
               group: root
@@ -1180,7 +1269,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 200
+            VolumeSize: 10
             VolumeType: gp2
 
       NetworkInterfaces:
@@ -1248,7 +1337,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_worker.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.10.2_7.3.2/wazuh/cluster/wazuh_cf_worker.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.11.0_7.5.1/wazuh/cluster/wazuh_cf_worker.sh
               mode: '000700'
               owner: root
               group: root
@@ -1267,7 +1356,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 200
+            VolumeSize: 10
             VolumeType: gp2
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref WazuhWorkerEth0
@@ -1326,7 +1415,7 @@ Resources:
               group: root
             /tmp/wazuh_agent_amazon.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.10.2_7.3.2/wazuh/agents/wazuh_agent_amazon.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.11.0_7.5.1/wazuh/agents/wazuh_agent_amazon.sh
               mode: '000700'
               owner: root
               group: root
@@ -1345,7 +1434,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 200
+            VolumeSize: 10
             VolumeType: gp2
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref AmazonEth0
@@ -1404,7 +1493,7 @@ Resources:
               group: root
             /tmp/wazuh_agent_centos.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.10.2_7.3.2/wazuh/agents/wazuh_agent_centos.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.11.0_7.5.1/wazuh/agents/wazuh_agent_centos.sh
               mode: '000700'
               owner: root
               group: root
@@ -1423,7 +1512,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 200
+            VolumeSize: 10
             VolumeType: gp2
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref CentosEth0
@@ -1477,7 +1566,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 200
+            VolumeSize: 10
             VolumeType: gp2
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref WindowsEth0
@@ -1488,12 +1577,13 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           <powershell>
+          Start-Sleep -s 400
           $Password = (convertto-securestring -asplaintext ${SshPassword} -force)
           New-LocalUser "wazuh" -Password $Password -FullName "wazuh" -Description "Wazuh user for remote desktop"
           Add-LocalGroupMember -Group "Remote Desktop Users" -Member "wazuh"
           net user Administrator ${SshPassword}
           $master_ip=${WazuhNetworkLoadBalancer.DNSName}
-          $url = "https://packages.wazuh.com/3.x/windows/wazuh-agent-3.10.2-1.msi"
+          $url = "https://packages.wazuh.com/3.x/windows/wazuh-agent-3.11.0-1.msi"
           $path = "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi" 
           $url_osquery = "https://pkg.osquery.io/windows/osquery-3.3.2.msi"
           $path_osquery = "C:\\Users\\Administrator\\Desktop\\osquery.msi" 
@@ -1570,7 +1660,7 @@ Resources:
               group: root
             /tmp/wazuh_agent_debian.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.10.2_7.3.2/wazuh/agents/wazuh_cf_agent_debian.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.11.0_7.5.1/wazuh/agents/wazuh_cf_agent_debian.sh
               mode: '000700'
               owner: root
               group: root
@@ -1655,7 +1745,7 @@ Resources:
               group: root
             /tmp/wazuh_agent_ubuntu.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.10.2_7.3.2/wazuh/agents/wazuh_cf_agent_ubuntu.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.11.0_7.5.1/wazuh/agents/wazuh_cf_agent_ubuntu.sh
               mode: '000700'
               owner: root
               group: root
@@ -1674,7 +1764,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 200
+            VolumeSize: 10
             VolumeType: gp2
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref UbuntuEth0
@@ -1740,7 +1830,7 @@ Resources:
               group: root
             /tmp/wazuh_agent_rhel.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/3.10.2_7.3.2/wazuh/agents/wazuh_agent_rhel.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.11.0_7.5.1/wazuh/agents/wazuh_agent_rhel.sh
               mode: '000700'
               owner: root
               group: root
@@ -1759,7 +1849,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 200
+            VolumeSize: 10
             VolumeType: gp2
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref RHELEth0

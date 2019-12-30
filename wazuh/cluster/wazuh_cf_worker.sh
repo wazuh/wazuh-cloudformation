@@ -19,7 +19,7 @@ SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
 splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^SplunkUsername:' | cut -d' ' -f2)
 splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^SplunkPassword:' | cut -d' ' -f2)
-TAG='v3.10.2'
+TAG='v3.11.0'
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -53,6 +53,34 @@ EOF
 elif [[ ${EnvironmentType} == 'devel' ]]
 then
 	echo -e '[wazuh_staging]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/staging/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_staging.repo
+elif [[ ${EnvironmentType} == 'sources' ]]
+then
+
+  # Compile Wazuh manager from sources
+  BRANCH="3.11"
+
+  yum install make gcc policycoreutils-python automake autoconf libtool -y
+  curl -Ls https://github.com/wazuh/wazuh/archive/$BRANCH.tar.gz | tar zx
+  rm -f $BRANCH.tar.gz
+  cd wazuh-$BRANCH/src
+  make TARGET=agent DEBUG=1 -j8
+
+  USER_LANGUAGE="en" \
+  USER_NO_STOP="y" \
+  USER_INSTALL_TYPE="server" \
+  USER_DIR="/var/ossec" \
+  USER_ENABLE_EMAIL="n" \
+  USER_ENABLE_SYSCHECK="y" \
+  USER_ENABLE_ROOTCHECK="y" \
+  USER_ENABLE_OPENSCAP="n" \
+  USER_WHITE_LIST="n" \
+  USER_ENABLE_SYSLOG="n" \
+  USER_ENABLE_AUTHD="y" \
+  USER_AUTO_START="y" \
+  THREADS=2 \
+  ../install.sh
+  echo "Compiled wazuh" >> /tmp/deploy.log
+
 else
 	echo 'no repo' >> /tmp/stage
 fi
@@ -73,6 +101,7 @@ EOF
 
 # Installing wazuh-manager
 yum -y install wazuh-manager
+systemctl enable wazuh-manager
 chkconfig --add wazuh-manager
 manager_config="/var/ossec/etc/ossec.conf"
 # Install dependencies
@@ -319,11 +348,9 @@ sed -i "s:MANAGER_HOSTNAME:$(hostname):g" /opt/splunkforwarder/etc/system/local/
 touch /opt/splunkforwarder/etc/system/local/user-seed.conf
 
 # add admin user
-cat > /opt/splunkforwarder/etc/system/local/user-seed.conf <<\EOF
-[user_info]
-USERNAME = ${splunk_username}
-PASSWORD = ${splunk_password}
-EOF
+echo "[user_info]" > /opt/splunkforwarder/etc/system/local/user-seed.conf
+echo "USERNAME = $splunk_username" >> /opt/splunkforwarder/etc/system/local/user-seed.conf
+echo "PASSWORD = $splunk_password" >> /opt/splunkforwarder/etc/system/local/user-seed.conf
 
 echo "Starting Splunk..."
 # accept license
@@ -353,6 +380,8 @@ echo "output.elasticsearch.protocol: https" >> /etc/filebeat/filebeat.yml
 echo "output.elasticsearch.ssl.certificate: "/etc/filebeat/certs/wazuh-worker.crt"" >> /etc/filebeat/filebeat.yml
 echo "output.elasticsearch.ssl.key: "/etc/filebeat/certs/wazuh-worker.key"" >> /etc/filebeat/filebeat.yml
 echo "output.elasticsearch.ssl.certificate_authorities: ["/etc/filebeat/certs/ca/ca.crt"]" >> /etc/filebeat/filebeat.yml
+systemctl enable filebeat
+echo "Enabled Filebeat" >> /tmp/log
 systemctl restart filebeat
 echo "Started Filebeat" >> /tmp/log
 echo "Done" >> /tmp/log

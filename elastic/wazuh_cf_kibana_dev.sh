@@ -86,106 +86,6 @@ EOF
 echo "Added Elasticsearch repo." >> /tmp/deploy.log
 }
 
-# Installing ELK coordinating only mode
-install_elasticsearch(){
-    echo "Installing Elasticsearch." >> /tmp/deploy.log
-    # Installing Elasticsearch
-    yum -y install elasticsearch-${elastic_version}
-    chkconfig --add elasticsearch
-    echo "Installed Elasticsearch." >> /tmp/deploy.log
-}
-
-configuring_elasticsearch(){
-mkdir -p /mnt/ephemeral/elasticsearch/lib
-mkdir -p /mnt/ephemeral/elasticsearch/log
-chown -R elasticsearch:elasticsearch /mnt/ephemeral/elasticsearch
-
-echo "Created volumes in ephemeral." >> /tmp/deploy.log
-cat > /etc/elasticsearch/elasticsearch.yml << EOF
-cluster.name: "wazuh_elastic"
-node.name: "coordinating_node"
-path.data: /mnt/ephemeral/elasticsearch/lib
-path.logs: /mnt/ephemeral/elasticsearch/log
-node.master: false
-node.data: false
-node.ingest: false
-discovery.seed_hosts: 
-  - "10.0.2.123"
-  - "10.0.2.124"
-  - "10.0.2.125"
-EOF
-
-echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
-
-# Calculating RAM for Elasticsearch
-ram_gb=$[$(free -g | awk '/^Mem:/{print $2}')+1]
-ram=$(( ${ram_gb} / 2 ))
-if [ $ram -eq "0" ]; then ram=1; fi
-echo "Setting RAM." >> /tmp/deploy.log
-
-# Configuring jvm.options
-cat > /etc/elasticsearch/jvm.options << EOF
--Xms${ram}g
--Xmx${ram}g
--Dlog4j2.disable.jmx=true
-EOF
-echo "Setting JVM options." >> /tmp/deploy.log
-
-mkdir -p /etc/systemd/system/elasticsearch.service.d/
-echo '[Service]' > /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
-echo 'LimitMEMLOCK=infinity' >> /etc/systemd/system/elasticsearch.service.d/elasticsearch.conf
-
-# Allowing unlimited memory allocation
-echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
-echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
-echo "Setting memory lock options." >> /tmp/deploy.log
-echo "Setting permissions." >> /tmp/deploy.log
-# restarting elasticsearch after changes
-}
-
-set_security(){
-
-    mkdir -p /etc/elasticsearch/certs
-    cp /kibana/* /etc/elasticsearch/certs/ -R
-    cp /ca /etc/elasticsearch/certs/ -R
-    echo "xpack.security.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.transport.ssl.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.transport.ssl.verification_mode: certificate" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.transport.ssl.key: "/etc/elasticsearch/certs/kibana.key"" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.transport.ssl.certificate: /etc/elasticsearch/certs/kibana.crt" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.transport.ssl.certificate_authorities: [ "/etc/elasticsearch/certs/ca/ca.crt" ]" >> /etc/elasticsearch/elasticsearch.yml
-    echo "# HTTP layer" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.http.ssl.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.http.ssl.verification_mode: certificate" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.http.ssl.key: "/etc/elasticsearch/certs/kibana.key"" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.http.ssl.certificate: /etc/elasticsearch/certs/kibana.crt" >> /etc/elasticsearch/elasticsearch.yml
-    echo "xpack.security.http.ssl.certificate_authorities: [ "/etc/elasticsearch/certs/ca/ca.crt" ]" >> /etc/elasticsearch/elasticsearch.yml
-    echo "Configured security." >> /tmp/deploy.log
-    chown -R elasticsearch:elasticsearch /etc/elasticsearch/certs
-    echo "Changed permissions certs directory." >> /tmp/deploy.log
-}
-
-create_bootstrap_user(){
-    echo "Creating elk user with password $ssh_password" >> /tmp/deploy.log
-    echo $ssh_password | /usr/share/elasticsearch/bin/elasticsearch-keystore add -x 'bootstrap.password'
-    systemctl restart elasticsearch
-    echo 'Done' >> /tmp/deploy.log
-}
-
-start_elasticsearch(){
-    echo "start_elasticsearch." >> /tmp/deploy.log
-    # Correct owner for Elasticsearch directories
-    chown elasticsearch:elasticsearch -R /etc/elasticsearch
-    chown elasticsearch:elasticsearch -R /usr/share/elasticsearch
-    chown elasticsearch:elasticsearch -R /var/lib/elasticsearch
-    systemctl daemon-reload
-    # Starting Elasticsearch
-    echo "daemon-reload." >> /tmp/deploy.log
-    systemctl restart elasticsearch
-    echo "done with starting elasticsearch service." >> /tmp/deploy.log
-}
-
-
 install_kibana(){
 # Installing Kibana
 yum -y install kibana-${elastic_version}
@@ -196,8 +96,8 @@ echo "Kibana installed." >> /tmp/deploy.log
 kibana_certs(){
   mkdir /etc/kibana/certs/ca -p
   cp ca/ca.crt /etc/kibana/certs/ca
-  cp kibana/kibana.crt /etc/kibana/certs
-  cp kibana/kibana.key /etc/kibana/certs
+  cp kibana-dev/kibana-dev.crt /etc/kibana/certs
+  cp kibana-dev/kibana-dev.key /etc/kibana/certs
   chown -R kibana: /etc/kibana/certs
   chmod -R 770 /etc/kibana/certs
   echo "# Elasticsearch from/to Kibana" >> /etc/kibana/kibana.yml
@@ -213,7 +113,7 @@ kibana_certs(){
 configure_kibana(){
 # Configuring kibana.yml
 cat > /etc/kibana/kibana.yml << EOF
-elasticsearch.hosts: ["https://$eth0_ip:9200"]
+elasticsearch.hosts: ["https://10.0.2.124:9200"]
 server.port: 5601
 server.host: "$eth0_ip"
 xpack.security.enabled: true
@@ -296,15 +196,33 @@ install_plugin(){
 
 add_api(){
 echo "Adding Wazuh API" >> /tmp/deploy.log
-sed -ie '/- default:/,+4d' /usr/share/kibana/plugins/wazuh/wazuh.yml
-cat > /usr/share/kibana/plugins/wazuh/wazuh.yml << EOF
-hosts:
-  - default:
-      url: https://${wazuh_master_ip}
-      port: ${wazuh_api_port}
-      user: ${wazuh_api_user}
-      password: ${wazuh_api_password}
+api_config="/tmp/api_config.json"
+api_time=$(($(date +%s%N)/1000000))
+wazuh_api_password_base64=`echo -n ${wazuh_api_password} | base64`
+
+cat > ${api_config} << EOF
+{
+  "api_user": "${wazuh_api_user}",
+  "api_password": "${wazuh_api_password_base64}",
+  "url": "https://${wazuh_master_ip}",
+  "api_port": "${wazuh_api_port}",
+  "insecure": "false",
+  "component": "API",
+  "cluster_info": {
+    "manager": "wazuh-manager",
+    "cluster": "disabled",
+    "status": "disabled"
+  }
+}
 EOF
+
+CONFIG_CODE=$(curl -s -o /dev/null -w "%{http_code}" -XGET "https://10.0.2.124:9200/.wazuh/_doc/${api_time}" -u elastic:${ssh_password} -k)
+if [ "x$CONFIG_CODE" != "x200" ]; then
+  curl -s -XPUT "https://10.0.2.124:9200/.wazuh/_doc/${api_time}" -u elastic:${ssh_password} -k -H 'Content-Type: application/json' -d@${api_config}
+  echo "Loaded Wazuh API to an Elasticsearch >=v7 cluster" >> /tmp/deploy.log
+fi
+
+rm -f ${api_config}
 echo "Configured API" >> /tmp/deploy.log
 }
 
@@ -411,23 +329,18 @@ main(){
   check_root
   create_ssh_user
   import_elk_repo
-  install_elasticsearch
   extract_certs
-  configuring_elasticsearch
-  create_bootstrap_user
-  set_security
-  start_elasticsearch
   install_kibana
   configure_kibana
   kibana_certs
   get_plugin_url
   install_plugin
-  add_api
   enable_kibana
   start_kibana
+  add_api
   kibana_optional_configs
   add_nginx
-  #custom welcome # Disabled until fixing welcome screen in 3.11.0
+  custom_welcome
 }
 
 main

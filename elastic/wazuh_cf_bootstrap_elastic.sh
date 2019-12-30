@@ -17,7 +17,9 @@ node_name=$(cat /tmp/wazuh_cf_settings | grep '^NodeName:' | cut -d' ' -f2)
 master_ip=$(cat /tmp/wazuh_cf_settings | grep '^MasterIp:' | cut -d' ' -f2)
 worker_ip=$(cat /tmp/wazuh_cf_settings | grep '^WorkerIp:' | cut -d' ' -f2)
 kibana_ip=$(cat /tmp/wazuh_cf_settings | grep '^KibanaIp:' | cut -d' ' -f2)
-TAG="v3.10.2"
+kibana_dev_ip=$(cat /tmp/wazuh_cf_settings | grep '^KibanaDevIp:' | cut -d' ' -f2)
+
+TAG="v3.11.0"
 echo "Added env vars." >> /tmp/deploy.log
 echo "eth0_ip: $eth0_ip" >> /tmp/deploy.log
 
@@ -114,6 +116,7 @@ echo 'elasticsearch soft memlock unlimited' >> /etc/security/limits.conf
 echo 'elasticsearch hard memlock unlimited' >> /etc/security/limits.conf
 echo "Setting memory lock options." >> /tmp/deploy.log
 echo "Setting permissions." >> /tmp/deploy.log
+enable_elasticsearch
 start_elasticsearch
 }
 
@@ -150,6 +153,17 @@ EOF
   curl -XPOST "https://$eth0_ip:9200/_security/user/wazuh" -k -u elastic:${ssh_password} -d@${user_config} -H 'Content-Type: application/json'
 
 }
+
+enable_elasticsearch(){
+    echo "Enabling elasticsearch..." >> /tmp/deploy.log
+    systemctl enable elasticsearch
+    if [ $? -eq0 ]; then
+        echo "Elasticsearch enabled." >> /tmp/deploy.log
+    else
+        echo "Could not enable Elasticsearch" >> /tmp/deploy.log
+    fi
+}
+
 start_elasticsearch(){
     echo "Starting Elasticsearch and setting permissions" >> /tmp/deploy.log
     chown elasticsearch:elasticsearch -R /etc/elasticsearch
@@ -193,6 +207,9 @@ instances:
     - name: "elasticsearch"
       ip:
         - "$eth0_ip"
+    - name: "kibana-dev"
+      ip:
+        - "$kibana_dev_ip"
 EOF
 /usr/share/elasticsearch/bin/elasticsearch-certutil cert ca --pem --in /usr/share/elasticsearch/instances.yml --out /usr/share/elasticsearch/certs.zip
 echo "Generated certs" >> /tmp/deploy.log
