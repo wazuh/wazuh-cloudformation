@@ -422,9 +422,9 @@ main(){
   kibana_certs
   get_plugin_url
   install_plugin
+  add_api
   enable_kibana
   start_kibana
-  add_api
   kibana_optional_configs
   add_nginx
   #custom welcome # Disabled until fixing welcome screen in 3.11.0
