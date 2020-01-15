@@ -763,7 +763,7 @@ Resources:
       Domain: vpc
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}-ElasticBootstrapEIP'
+          Value: !Sub 'ElasticBootstrapEIP-${AWS::StackName}'
   ElasticBootstrapEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -837,7 +837,7 @@ Resources:
       Domain: vpc
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}-ElasticMasterBEIP'
+          Value: !Sub 'ElasticMasterBEIP-${AWS::StackName}'
   ElasticMasterBEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -911,7 +911,7 @@ Resources:
       Domain: vpc
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}-ElasticMasterCEIP'
+          Value: !Sub 'ElasticMasterCEIP-${AWS::StackName}'
   ElasticMasterCEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1128,7 +1128,7 @@ Resources:
       Domain: vpc
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}-KibanaEIP'
+          Value: !Sub 'KibanaEIP-${AWS::StackName}'
   KibanaEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1274,7 +1274,7 @@ Resources:
       Domain: vpc
       Tags:
         - Key: Name
-          Value: !Sub '${AWS::StackName}-SplunkEIP'
+          Value: !Sub 'SplunkEIP-${AWS::StackName}'
   SplunkEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1363,6 +1363,9 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'MasterEIP-${AWS::StackName}'
   WazuhMasterEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1445,6 +1448,9 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'WorkerEIP-${AWS::StackName}'
   WazuhWorkerEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1523,6 +1529,9 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'AmazonEIP-${AWS::StackName}'
   AmazonEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1610,6 +1619,9 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'CentosEIP-${AWS::StackName}'
   CentosEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1690,6 +1702,9 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'Windows-${AWS::StackName}'
   WindowsEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1775,6 +1790,9 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'DebianEIP-${AWS::StackName}'
   DebianEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1860,6 +1878,9 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'UbuntuEIP-${AWS::StackName}'
   UbuntuEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1947,6 +1968,9 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'RhelEIP-${AWS::StackName}'
   RHELEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
