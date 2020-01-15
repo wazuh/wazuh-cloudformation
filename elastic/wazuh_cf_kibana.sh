@@ -427,7 +427,7 @@ main(){
   start_kibana
   kibana_optional_configs
   add_nginx
-  #custom welcome # Disabled until fixing welcome screen in 3.11.0
+  custom_welcome
 }
 
 main
