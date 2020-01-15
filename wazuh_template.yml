@@ -1705,7 +1705,7 @@ Resources:
       Domain: vpc
       Tags:
         - Key: Name
-          Value: !Sub 'Windows-${AWS::StackName}'
+          Value: !Sub 'WindowsEIP-${AWS::StackName}'
   WindowsEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
