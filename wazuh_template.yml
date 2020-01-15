@@ -742,13 +742,8 @@ Resources:
             VolumeSize: 100
             VolumeType: gp2
       NetworkInterfaces:
-        - AssociatePublicIpAddress: "true"
-          DeviceIndex: "0"
-          GroupSet: 
-            - Ref: "ElasticSecurityGroup"
-          SubnetId: 
-            Ref: "SubnetElasticsearch"
-          PrivateIpAddress: "10.0.2.124"
+        - NetworkInterfaceId: !Ref ElasticBootstrapEth0
+          DeviceIndex: 0
       Tags:
         - Key: Name
           Value: ElasticBootstrap
@@ -758,6 +753,25 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticBootstrap --configsets ElasticInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticBootstrap --region ${AWS::Region}
     DependsOn: GatewayToInternet
+  ElasticBootstrapEth0:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetElasticsearch
+      GroupSet: [!Ref 'ElasticSecurityGroup']
+  ElasticBootstrapEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'ElasticBootstrapEIP-${AWS::StackName}'
+  ElasticBootstrapEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref ElasticBootstrapEth0
+      AllocationId: !GetAtt
+        - ElasticBootstrapEIP
+        - AllocationId
   
   ElasticMasterB:
     Type: AWS::EC2::Instance
@@ -802,13 +816,8 @@ Resources:
             VolumeSize: 100
             VolumeType: gp2
       NetworkInterfaces:
-        - AssociatePublicIpAddress: "true"
-          DeviceIndex: "0"
-          GroupSet: 
-            - Ref: "ElasticSecurityGroup"
-          SubnetId: 
-            Ref: "SubnetElasticsearch"
-          PrivateIpAddress: "10.0.2.123"
+        - NetworkInterfaceId: !Ref ElasticMasterBEth0
+          DeviceIndex: 0
       Tags:
         - Key: Name
           Value: ElasticMasterB
@@ -818,6 +827,25 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticMasterB --configsets ElasticInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticMasterB --region ${AWS::Region}
     DependsOn: GatewayToInternet
+  ElasticMasterBEth0:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetElasticsearch
+      GroupSet: [!Ref 'ElasticSecurityGroup']
+  ElasticMasterBEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'ElasticMasterBEIP-${AWS::StackName}'
+  ElasticMasterBEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref ElasticMasterBEth0
+      AllocationId: !GetAtt
+        - ElasticMasterBEIP
+        - AllocationId
 
   ElasticMasterC:
     Type: AWS::EC2::Instance
@@ -862,13 +890,8 @@ Resources:
             VolumeSize: 100
             VolumeType: gp2
       NetworkInterfaces:
-        - AssociatePublicIpAddress: "true"
-          DeviceIndex: "0"
-          GroupSet: 
-            - Ref: "ElasticSecurityGroup"
-          SubnetId: 
-            Ref: "SubnetElasticsearch"
-          PrivateIpAddress: "10.0.2.125"
+        - NetworkInterfaceId: !Ref ElasticMasterCEth0
+          DeviceIndex: 0
       Tags:
         - Key: Name
           Value: ElasticMasterC
@@ -878,6 +901,25 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource ElasticMasterC --configsets ElasticInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ElasticMasterC --region ${AWS::Region}
     DependsOn: GatewayToInternet
+  ElasticMasterCEth0:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetElasticsearch
+      GroupSet: [!Ref 'ElasticSecurityGroup']
+  ElasticMasterCEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'ElasticMasterCEIP-${AWS::StackName}'
+  ElasticMasterCEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref ElasticMasterCEth0
+      AllocationId: !GetAtt
+        - ElasticMasterCEIP
+        - AllocationId
 
   # Wazuh Network Load Balancer
   WazuhNetworkLoadBalancer:
@@ -1065,12 +1107,8 @@ Resources:
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
       NetworkInterfaces:
-        - AssociatePublicIpAddress: "true"
-          DeviceIndex: "0"
-          GroupSet: 
-            - Ref: "KibanaSecurityGroup"
-          SubnetId: 
-            Ref: "SubnetWazuh"
+        - NetworkInterfaceId: !Ref KibanaEth0
+          DeviceIndex: 0
       Tags:
         - Key: Name
           Value: WazuhKibana
@@ -1080,8 +1118,25 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource KibanaInstance --configsets KibanaInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource KibanaInstance --region ${AWS::Region}
     DependsOn: GatewayToInternet
-
-
+  KibanaEth0:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetElasticsearch
+      GroupSet: [!Ref 'KibanaSecurityGroup']
+  KibanaEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'KibanaEIP-${AWS::StackName}'
+  KibanaEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref KibanaEth0
+      AllocationId: !GetAtt
+        - KibanaEIP
+        - AllocationId
 
 
   # Kibana instance
@@ -1198,12 +1253,8 @@ Resources:
             VolumeSize: 10
             VolumeType: gp2
       NetworkInterfaces:
-        - AssociatePublicIpAddress: "true"
-          DeviceIndex: "0"
-          GroupSet: 
-            - Ref: "SplunkSecurityGroup"
-          SubnetId: 
-            Ref: "SubnetWazuh"
+        - NetworkInterfaceId: !Ref SplunkEth0
+          DeviceIndex: 0
       Tags:
         - Key: Name
           Value: Splunk
@@ -1213,6 +1264,25 @@ Resources:
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource SplunkInstance --configsets SplunkInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Splunk --region ${AWS::Region}
     DependsOn: GatewayToInternet
+  SplunkEth0:
+    Type: AWS::EC2::NetworkInterface
+    Properties:
+      SubnetId: !Ref SubnetElasticsearch
+      GroupSet: [!Ref 'SplunkSecurityGroup']
+  SplunkEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'SplunkEIP-${AWS::StackName}'
+  SplunkEIPAssociation:
+    Type: 'AWS::EC2::EIPAssociation'
+    Properties:
+      NetworkInterfaceId: !Ref SplunkEth0
+      AllocationId: !GetAtt
+        - SplunkEIP
+        - AllocationId
 
   # Wazuh master instance
   WazuhMasterInstance:
@@ -1274,12 +1344,8 @@ Resources:
             VolumeType: gp2
 
       NetworkInterfaces:
-        - AssociatePublicIpAddress: "true"
-          DeviceIndex: "0"
-          GroupSet: 
-            - Ref: "WazuhSecurityGroup"
-          SubnetId: 
-            Ref: "SubnetWazuh"
+        - NetworkInterfaceId: !Ref WazuhMasterEth0
+          DeviceIndex: 0
       Tags:
         - Key: Name
           Value: WazuhMaster
@@ -1298,6 +1364,9 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'MasterEIP-${AWS::StackName}'
   WazuhMasterEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1380,6 +1449,9 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'WorkerEIP-${AWS::StackName}'
   WazuhWorkerEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1458,6 +1530,9 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'AmazonEIP-${AWS::StackName}'
   AmazonEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1545,6 +1620,9 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'CentosEIP-${AWS::StackName}'
   CentosEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1625,6 +1703,9 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'WindowsEIP-${AWS::StackName}'
   WindowsEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1710,6 +1791,9 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'DebianEIP-${AWS::StackName}'
   DebianEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1795,6 +1879,9 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'UbuntuEIP-${AWS::StackName}'
   UbuntuEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
@@ -1882,6 +1969,9 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
+      Tags:
+        - Key: Name
+          Value: !Sub 'RhelEIP-${AWS::StackName}'
   RHELEIPAssociation:
     Type: 'AWS::EC2::EIPAssociation'
     Properties:
