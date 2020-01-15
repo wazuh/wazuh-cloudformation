@@ -889,7 +889,7 @@ Resources:
             VolumeSize: 100
             VolumeType: gp2
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref ElasticMasterBEth0
+        - NetworkInterfaceId: !Ref ElasticMasterCEth0
           DeviceIndex: 0
       Tags:
         - Key: Name
