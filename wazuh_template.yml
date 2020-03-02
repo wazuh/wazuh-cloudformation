@@ -2042,8 +2042,3 @@ Outputs:
     Value: !GetAtt
       - RHEL7
       - PublicIp
-  Centos:
-    Description: Elastic Stack and Wazuh versions
-    Value: !GetAtt
-      - Centos
-      - PublicIp
