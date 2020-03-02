@@ -740,7 +740,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 100
+            VolumeSize: 50
             VolumeType: gp2
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref ElasticBootstrapEth0
@@ -814,7 +814,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 100
+            VolumeSize: 50
             VolumeType: gp2
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref ElasticMasterBEth0
@@ -888,7 +888,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 100
+            VolumeSize: 50
             VolumeType: gp2
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref ElasticMasterCEth0
@@ -1341,9 +1341,8 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 10
+            VolumeSize: 50
             VolumeType: gp2
-
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref WazuhMasterEth0
           DeviceIndex: 0
@@ -1427,7 +1426,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 10
+            VolumeSize: 50
             VolumeType: gp2
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref WazuhWorkerEth0
@@ -1508,7 +1507,7 @@ Resources:
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
-            VolumeSize: 10
+            VolumeSize: 8
             VolumeType: gp2
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref AmazonEth0
@@ -1587,10 +1586,11 @@ Resources:
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
       BlockDeviceMappings:
-        - DeviceName: /dev/xvda
+        - DeviceName: /dev/sda1
           Ebs:
             VolumeSize: 10
             VolumeType: gp2
+            DeleteOnTermination: true
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref CentosEth0
           DeviceIndex: 0
@@ -1644,9 +1644,9 @@ Resources:
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
       BlockDeviceMappings:
-        - DeviceName: /dev/xvda
+        - DeviceName: /dev/sda1
           Ebs:
-            VolumeSize: 10
+            VolumeSize: 30
             VolumeType: gp2
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref WindowsEth0
@@ -1848,7 +1848,7 @@ Resources:
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
       BlockDeviceMappings:
-        - DeviceName: /dev/xvda
+        - DeviceName: /dev/sda1
           Ebs:
             VolumeSize: 10
             VolumeType: gp2
@@ -1936,9 +1936,9 @@ Resources:
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
       BlockDeviceMappings:
-        - DeviceName: /dev/xvda
+        - DeviceName: /dev/sda1
           Ebs:
-            VolumeSize: 10
+            VolumeSize: 20
             VolumeType: gp2
       NetworkInterfaces:
         - NetworkInterfaceId: !Ref RHELEth0
