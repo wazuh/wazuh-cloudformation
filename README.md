@@ -18,7 +18,7 @@ This repository includes the template and scripts to set up an environment that 
 
 ## Elasticsearch cluster configuration
 
-Elasticsearch data nodes are deployed as part of an auto scaling group, that scales based on CPU usage. Minimum number of nodes is 3, and maximum is 6. 
+Elasticsearch data nodes are deployed as part of an auto scaling group, that scales based on CPU usage. Minimum number of nodes is 3, and maximum is 6.
 
 Elasticsearch instance types can be chosen from:
 
@@ -57,7 +57,7 @@ Kibana server is reachable from the Internet, directly via its own Elastic IP, o
 
 ## Wazuh cluster configuration
 
-The Wazuh cluster deployed has one master node (providing API and registration server) and one worker node. 
+The Wazuh cluster deployed has one master node (providing API and registration server) and one worker node.
 
 Wazuh instance types can be chosen from:
 
@@ -90,7 +90,7 @@ A parent domain (e.g. mycompany.com) and subdomain (e.g. wazuh) can be specified
 
 An example of the installation of a new agent, on a Windows system (automatically registered and configured) using an MSI package would be:
 
-    wazuh-agent-3.11.3-1.msi /q ADDRESS=“wazuh.mycompany.com” AUTHD_SERVER=“registration.wazuh.mycompany.com” PASSWORD=“mypassword” AGENT_NAME=“myhostname” PROTOCOL=“TCP” 
+    wazuh-agent-3.11.4-1.msi /q ADDRESS=“wazuh.mycompany.com” AUTHD_SERVER=“registration.wazuh.mycompany.com” PASSWORD=“mypassword” AGENT_NAME=“myhostname” PROTOCOL=“TCP”
 
 An example of the registration of a new agent on a Linux system would be:
 
