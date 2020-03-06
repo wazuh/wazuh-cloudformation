@@ -19,7 +19,7 @@ SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
 splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^SplunkUsername:' | cut -d' ' -f2)
 splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^SplunkPassword:' | cut -d' ' -f2)
-TAG='v3.11.3'
+TAG='v3.11.4'
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -253,8 +253,8 @@ cat >> ${manager_config} << EOF
   <active-response>
     <command>firewall-drop</command>
     <location>local</location>
-    <rules_id>100100</rules_id> 
-    <timeout>60</timeout> 
+    <rules_id>100100</rules_id>
+    <timeout>60</timeout>
   </active-response>
 </ossec_config>
 EOF

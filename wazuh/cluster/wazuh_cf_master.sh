@@ -26,7 +26,7 @@ AwsSecretKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsSecretKey:' | cut -d' ' -f
 AwsAccessKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsAccessKey:' | cut -d' ' -f2)
 SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
-TAG='v3.11.3'
+TAG='v3.11.4'
 
 echo "Added env vars." >> /tmp/deploy.log
 
@@ -163,7 +163,7 @@ sed -i "s/<protocol>udp<\/protocol>/<protocol>tcp<\/protocol>/" ${manager_config
 # Set manager port for agent communications
 sed -i "s/<port>1514<\/port>/<port>${wazuh_server_port}<\/port>/" ${manager_config}
 
-# Configuring registration service 
+# Configuring registration service
 sed -i '/<auth>/,/<\/auth>/d' ${manager_config}
 
 cat >> ${manager_config} << EOF
@@ -402,8 +402,8 @@ cat >> ${manager_config} << EOF
   <active-response>
     <command>firewall-drop</command>
     <location>local</location>
-    <rules_id>100100</rules_id> 
-    <timeout>60</timeout> 
+    <rules_id>100100</rules_id>
+    <timeout>60</timeout>
   </active-response>
 </ossec_config>
 EOF
@@ -450,7 +450,7 @@ sed -i "s/config.port = \"55000\";/config.port = \"${wazuh_api_port}\";/" /var/o
 echo "Setting port and SSL to Wazuh API." >> /tmp/deploy.log
 
 # Restart wazuh-api
-systemctl restart wazuh-api 
+systemctl restart wazuh-api
 echo "Restarted Wazuh API." >> /tmp/deploy.log
 
 
