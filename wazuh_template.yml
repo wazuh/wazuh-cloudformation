@@ -237,6 +237,7 @@ Parameters:
       - 7.5.1_3.11.1
       - 7.5.1_3.11.2
       - 7.5.2_3.11.3
+      - 7.6.1_3.11.4
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
     Default: 7.6.1_3.11.4
     Description: Elastic and Wazuh versions to be installed
