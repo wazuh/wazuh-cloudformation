@@ -483,6 +483,7 @@ Resources:
     Type: 'AWS::EC2::Subnet'
     Properties:
       VpcId: !Ref WazuhVpc
+      AvailabilityZone: !Select [ "0", !Ref AvailabilityZone ]
       CidrBlock: !FindInMap
         - SubnetConfig
         - SubnetWazuh
@@ -496,6 +497,7 @@ Resources:
     Type: 'AWS::EC2::Subnet'
     Properties:
       VpcId: !Ref WazuhVpc
+      AvailabilityZone: !Select [ "0", !Ref AvailabilityZone ]
       CidrBlock: !FindInMap
         - SubnetConfig
         - SubnetAgents
@@ -509,6 +511,7 @@ Resources:
       Type: 'AWS::EC2::Subnet'
       Properties:
         VpcId: !Ref WazuhVpc
+        AvailabilityZone: !Select [ "0", !Ref AvailabilityZone ]
         CidrBlock: !FindInMap
           - SubnetConfig
           - SubnetElasticsearch
