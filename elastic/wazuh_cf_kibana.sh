@@ -109,7 +109,7 @@ path.logs: /mnt/ephemeral/elasticsearch/log
 node.master: false
 node.data: false
 node.ingest: false
-discovery.seed_hosts: 
+discovery.seed_hosts:
   - "10.0.2.123"
   - "10.0.2.124"
   - "10.0.2.125"
@@ -242,7 +242,7 @@ get_plugin_url(){
   plugin_url="https://packages-dev.wazuh.com/staging/app/kibana/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
   elif [[ ${EnvironmentType} == 'sources' ]]
   then
-    BRANCH="3.11-7.5"
+    BRANCH="3.12-7.6"
     if [[ $BRANCH != "" ]]; then
       yum install -y git
       curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
@@ -260,7 +260,7 @@ get_plugin_url(){
       BUILD_SRC=$(pwd)
       APP_FILE=$(ls *.zip)
     else
-      plugin_url="https://aws-nist.s3-us-west-1.amazonaws.com/wazuhapp-3.11-sources.zip"
+      plugin_url="https://aws-nist.s3-us-west-1.amazonaws.com/wazuhapp-3.12-sources.zip"
     fi
   else
     echo 'no repo' >> /tmp/stage

@@ -46,7 +46,7 @@ yum install wget git python-requests -y
 # Add Docker-ce repo
 yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
 
-# add selinux dependencies 
+# add selinux dependencies
 yum install -y http://mirror.centos.org/centos/7/extras/x86_64/Packages/container-selinux-2.107-1.el7_6.noarch.rpm
 # install Docker
 yum install -y docker-ce
@@ -170,7 +170,7 @@ elif [[ ${EnvironmentType} == 'sources' ]]
 then
 
   # Compile Wazuh manager from sources
-  BRANCH="3.11"
+  BRANCH="3.12"
 
   yum install make gcc policycoreutils-python automake autoconf libtool -y
   curl -Ls https://github.com/wazuh/wazuh/archive/$BRANCH.tar.gz | tar zx

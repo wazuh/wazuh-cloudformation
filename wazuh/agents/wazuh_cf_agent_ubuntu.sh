@@ -45,7 +45,7 @@ elif [[ ${EnvironmentType} == 'sources' ]]
 then
 
   # Compile Wazuh manager from sources
-  BRANCH="3.11"
+  BRANCH="3.12"
 
   apt install make gcc libc6-dev curl policycoreutils automake autoconf libtool -y
 
