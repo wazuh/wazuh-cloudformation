@@ -719,7 +719,6 @@ Resources:
                 MasterIp: ${WazuhMasterInstance.PrivateIp}
                 WorkerIp: ${WazuhWorkerInstance.PrivateIp}
                 KibanaIp: ${KibanaInstance.PrivateIp}
-                KibanaDevIp: ${KibanaInstanceDev.PrivateIp}
                 NodeName: 3
               mode: '000600'
               owner: root
@@ -748,8 +747,13 @@ Resources:
             VolumeSize: 50
             VolumeType: gp2
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref ElasticBootstrapEth0
-          DeviceIndex: 0
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: "ElasticSecurityGroup"
+          SubnetId:
+            Ref: "SubnetElasticsearch"
+          PrivateIpAddress: "10.0.2.124"
       Tags:
         - Key: Name
           Value: ElasticBootstrap
@@ -822,8 +826,13 @@ Resources:
             VolumeSize: 50
             VolumeType: gp2
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref ElasticMasterBEth0
-          DeviceIndex: 0
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: "ElasticSecurityGroup"
+          SubnetId:
+            Ref: "SubnetElasticsearch"
+          PrivateIpAddress: "10.0.2.123"
       Tags:
         - Key: Name
           Value: ElasticMasterB
@@ -896,8 +905,13 @@ Resources:
             VolumeSize: 50
             VolumeType: gp2
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref ElasticMasterCEth0
-          DeviceIndex: 0
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: "ElasticSecurityGroup"
+          SubnetId:
+            Ref: "SubnetElasticsearch"
+          PrivateIpAddress: "10.0.2.125"
       Tags:
         - Key: Name
           Value: ElasticMasterC
@@ -1113,8 +1127,12 @@ Resources:
       IamInstanceProfile: !Ref InstanceProfile
       KeyName: !Ref KeyPairName
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref KibanaEth0
-          DeviceIndex: 0
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: "KibanaSecurityGroup"
+          SubnetId:
+            Ref: "SubnetElasticsearch"
       Tags:
         - Key: Name
           Value: WazuhKibana
@@ -1144,74 +1162,6 @@ Resources:
         - KibanaEIP
         - AllocationId
 
-
-  # Kibana instance
-  KibanaInstanceDev:
-    Type: AWS::EC2::Instance
-    Metadata:
-      'AWS::CloudFormation::Init':
-        configSets:
-          KibanaInstallationSet:
-            - KibanaFiles
-            - KibanaInstall
-        KibanaFiles:
-          files:
-            /tmp/wazuh_cf_settings:
-              content: !Sub |
-                SshUsername: ${SshUsername}
-                SshPassword: ${SshPassword}
-                Elastic_Wazuh: ${ElasticWazuhVersion}
-                KibanaPort: ${KibanaPort}
-                WazuhApiAdminUsername: ${WazuhApiAdminUsername}
-                WazuhApiAdminPassword: ${WazuhApiAdminPassword}
-                WazuhApiPort: ${WazuhApiPort}
-                WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                EnvironmentType: ${EnvironmentType}
-              mode: '000600'
-              owner: root
-              group: root
-            /tmp/wazuh_cf_kibana.sh:
-              source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.12.0_7.6.1/elastic/wazuh_cf_kibana_dev.sh
-              mode: '000700'
-              owner: root
-              group: root
-        KibanaInstall:
-          commands:
-            01_RunInstallationScript:
-              command: /tmp/wazuh_cf_kibana.sh
-    Properties:
-      ImageId: !FindInMap
-        - "RegionMap"
-        - Ref: "AWS::Region"
-        - HVM64
-      InstanceType: !Ref KibanaInstanceType
-      IamInstanceProfile: !Ref InstanceProfile
-      KeyName: !Ref KeyPairName
-      NetworkInterfaces:
-        - AssociatePublicIpAddress: "true"
-          DeviceIndex: "0"
-          GroupSet:
-            - Ref: "KibanaSecurityGroup"
-          SubnetId:
-            Ref: "SubnetWazuh"
-      Tags:
-        - Key: Name
-          Value: WazuhKibanaDev
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource KibanaInstanceDev --configsets KibanaInstallationSet --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource KibanaInstanceDev --region ${AWS::Region}
-    DependsOn: GatewayToInternet
-
-
-
-
-
-
-
-  # Kibana instance
   SplunkInstance:
     Type: AWS::EC2::Instance
     Metadata:
@@ -1259,8 +1209,12 @@ Resources:
             VolumeSize: 10
             VolumeType: gp2
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref SplunkEth0
-          DeviceIndex: 0
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: "SplunkSecurityGroup"
+          SubnetId:
+            Ref: "SubnetWazuh"
       Tags:
         - Key: Name
           Value: Splunk
@@ -1349,8 +1303,12 @@ Resources:
             VolumeSize: 50
             VolumeType: gp2
       NetworkInterfaces:
-        - NetworkInterfaceId: !Ref WazuhMasterEth0
-          DeviceIndex: 0
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: "WazuhSecurityGroup"
+          SubnetId:
+            Ref: "SubnetWazuh"
       Tags:
         - Key: Name
           Value: WazuhMaster
