@@ -17,7 +17,6 @@ node_name=$(cat /tmp/wazuh_cf_settings | grep '^NodeName:' | cut -d' ' -f2)
 master_ip=$(cat /tmp/wazuh_cf_settings | grep '^MasterIp:' | cut -d' ' -f2)
 worker_ip=$(cat /tmp/wazuh_cf_settings | grep '^WorkerIp:' | cut -d' ' -f2)
 kibana_ip=$(cat /tmp/wazuh_cf_settings | grep '^KibanaIp:' | cut -d' ' -f2)
-kibana_dev_ip=$(cat /tmp/wazuh_cf_settings | grep '^KibanaDevIp:' | cut -d' ' -f2)
 
 TAG="v3.12.0"
 echo "Added env vars." >> /tmp/deploy.log
@@ -207,9 +206,6 @@ instances:
     - name: "elasticsearch"
       ip:
         - "$eth0_ip"
-    - name: "kibana-dev"
-      ip:
-        - "$kibana_dev_ip"
 EOF
 /usr/share/elasticsearch/bin/elasticsearch-certutil cert ca --pem --in /usr/share/elasticsearch/instances.yml --out /usr/share/elasticsearch/certs.zip
 echo "Generated certs" >> /tmp/deploy.log
