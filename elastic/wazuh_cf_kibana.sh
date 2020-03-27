@@ -281,7 +281,7 @@ install_plugin(){
   echo "App installed!" >> /tmp/deploy.log
   echo "Redirecting to Wazuh app " >> /tmp/deploy.log
   # Set Wazuh app as the default landing page
-  #echo "server.defaultRoute: /app/wazuh" >> /etc/kibana/kibana.yml
+  echo "server.defaultRoute: /app/wazuh" >> /etc/kibana/kibana.yml
   # Redirect Kibana welcome screen to
   echo "Redirect Kibana welcome screen to Discover"
   sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/global_nav/global_nav.html
