@@ -245,7 +245,7 @@ get_plugin_url(){
     BRANCH="3.12-7.6"
     if [[ $BRANCH != "" ]]; then
       yum install -y git
-      curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
+      curl --silent --location https://rpm.nodesource.com/setup_10.x | bash -
       # Installing NodeJS
       yum -y install nodejs
       npm install -g yarn@1.10.1
@@ -271,15 +271,18 @@ install_plugin(){
   echo "Installing app" >> /tmp/deploy.log
   if [[ ${EnvironmentType} != 'sources' ]] || [[ ${BRANCH} == "" ]]
   then
+    cd /usr/share/kibana
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
   else
+    cd /usr/share/kibana
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install file://$BUILD_SRC/$APP_FILE
   fi
+  cd /tmp
   echo "App installed!" >> /tmp/deploy.log
   echo "Redirecting to Wazuh app " >> /tmp/deploy.log
   # Set Wazuh app as the default landing page
-  echo "server.defaultRoute: /app/wazuh" >> /etc/kibana/kibana.yml
-  # Redirect Kibana welcome screen to Discover
+  #echo "server.defaultRoute: /app/wazuh" >> /etc/kibana/kibana.yml
+  # Redirect Kibana welcome screen to
   echo "Redirect Kibana welcome screen to Discover"
   sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/global_nav/global_nav.html
   sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/header_global_nav/header_global_nav.js
