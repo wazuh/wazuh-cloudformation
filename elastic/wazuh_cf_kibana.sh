@@ -427,6 +427,7 @@ main(){
   install_plugin
   enable_kibana
   start_kibana
+  sleep 120
   add_api
   start_kibana
   kibana_optional_configs
