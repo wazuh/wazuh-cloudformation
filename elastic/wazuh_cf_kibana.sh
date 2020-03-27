@@ -109,7 +109,7 @@ path.logs: /mnt/ephemeral/elasticsearch/log
 node.master: false
 node.data: false
 node.ingest: false
-discovery.seed_hosts: 
+discovery.seed_hosts:
   - "10.0.2.123"
   - "10.0.2.124"
   - "10.0.2.125"
@@ -242,10 +242,10 @@ get_plugin_url(){
   plugin_url="https://packages-dev.wazuh.com/staging/app/kibana/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
   elif [[ ${EnvironmentType} == 'sources' ]]
   then
-    BRANCH="3.11-7.5"
+    BRANCH="3.12-7.6"
     if [[ $BRANCH != "" ]]; then
       yum install -y git
-      curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
+      curl --silent --location https://rpm.nodesource.com/setup_10.x | bash -
       # Installing NodeJS
       yum -y install nodejs
       npm install -g yarn@1.10.1
@@ -260,7 +260,7 @@ get_plugin_url(){
       BUILD_SRC=$(pwd)
       APP_FILE=$(ls *.zip)
     else
-      plugin_url="https://aws-nist.s3-us-west-1.amazonaws.com/wazuhapp-3.11-sources.zip"
+      echo 'Error: Unsupported Wazuh Plugin installation method' >> /tmp/deploy.log
     fi
   else
     echo 'no repo' >> /tmp/stage
@@ -271,15 +271,18 @@ install_plugin(){
   echo "Installing app" >> /tmp/deploy.log
   if [[ ${EnvironmentType} != 'sources' ]] || [[ ${BRANCH} == "" ]]
   then
+    cd /usr/share/kibana
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
   else
+    cd /usr/share/kibana
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install file://$BUILD_SRC/$APP_FILE
   fi
+  cd /tmp
   echo "App installed!" >> /tmp/deploy.log
   echo "Redirecting to Wazuh app " >> /tmp/deploy.log
   # Set Wazuh app as the default landing page
   echo "server.defaultRoute: /app/wazuh" >> /etc/kibana/kibana.yml
-  # Redirect Kibana welcome screen to Discover
+  # Redirect Kibana welcome screen to
   echo "Redirect Kibana welcome screen to Discover"
   sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/global_nav/global_nav.html
   sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/header_global_nav/header_global_nav.js
@@ -296,8 +299,8 @@ install_plugin(){
 
 add_api(){
 echo "Adding Wazuh API" >> /tmp/deploy.log
-sed -ie '/- default:/,+4d' /usr/share/kibana/plugins/wazuh/wazuh.yml
-cat > /usr/share/kibana/plugins/wazuh/wazuh.yml << EOF
+sed -ie '/- default:/,+4d' /usr/share/kibana/optimize/wazuh/config/wazuh.yml
+cat > /usr/share/kibana/optimize/wazuh/config/wazuh.yml << EOF
 hosts:
   - default:
       url: https://${wazuh_master_ip}
@@ -357,6 +360,10 @@ echo  "Do not ask user to help providing usage statistics to Elastic" >> /tmp/de
 # Disable Elastic repository
 sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
 echo "Configured Kibana" >> /tmp/deploy.log
+
+# Remove Montserrat font
+sed -i 's/@import\surl.*Montserrat.*/# Removed montserrat font/g' /usr/share/kibana/optimize/bundles/login.style.css
+
 }
 
 add_nginx(){
@@ -422,10 +429,12 @@ main(){
   kibana_certs
   get_plugin_url
   install_plugin
-  add_api
   enable_kibana
   start_kibana
+  sleep 60
+  add_api
   kibana_optional_configs
+  start_kibana
   add_nginx
   custom_welcome
 }

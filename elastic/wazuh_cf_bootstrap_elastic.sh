@@ -17,9 +17,8 @@ node_name=$(cat /tmp/wazuh_cf_settings | grep '^NodeName:' | cut -d' ' -f2)
 master_ip=$(cat /tmp/wazuh_cf_settings | grep '^MasterIp:' | cut -d' ' -f2)
 worker_ip=$(cat /tmp/wazuh_cf_settings | grep '^WorkerIp:' | cut -d' ' -f2)
 kibana_ip=$(cat /tmp/wazuh_cf_settings | grep '^KibanaIp:' | cut -d' ' -f2)
-kibana_dev_ip=$(cat /tmp/wazuh_cf_settings | grep '^KibanaDevIp:' | cut -d' ' -f2)
 
-TAG="v3.11.1"
+TAG="v3.12.0"
 echo "Added env vars." >> /tmp/deploy.log
 echo "eth0_ip: $eth0_ip" >> /tmp/deploy.log
 
@@ -85,7 +84,7 @@ node.name: "node-$node_name"
 node.master: true
 path.data: /mnt/ephemeral/elasticsearch/lib
 path.logs: /mnt/ephemeral/elasticsearch/log
-cluster.initial_master_nodes: 
+cluster.initial_master_nodes:
   - "10.0.2.123"
   - "10.0.2.124"
   - "10.0.2.125"
@@ -137,7 +136,7 @@ load_template(){
 }
 
 add_wazuh_user(){
-  
+
 until curl -XGET "https://$eth0_ip:9200" -k -u elastic:${ssh_password}; do
   sleep 5
   echo "Elasticsearch not ready yet..." >> /tmp/deploy.log
@@ -207,9 +206,6 @@ instances:
     - name: "elasticsearch"
       ip:
         - "$eth0_ip"
-    - name: "kibana-dev"
-      ip:
-        - "$kibana_dev_ip"
 EOF
 /usr/share/elasticsearch/bin/elasticsearch-certutil cert ca --pem --in /usr/share/elasticsearch/instances.yml --out /usr/share/elasticsearch/certs.zip
 echo "Generated certs" >> /tmp/deploy.log

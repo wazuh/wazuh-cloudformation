@@ -27,12 +27,11 @@ if [ "$STACK_NAME" == "" ] || [ "$BUCKET_NAME" == "" ]; then
 fi
 
 # Uploading template to S3
-aws --profile ansible_demo s3 cp $TEMPLATE_FILE s3://$BUCKET_NAME
-
+aws s3 cp $TEMPLATE_FILE s3://$BUCKET_NAME
 # Getting the template URL
 URL="https://demo-cloudformation-templates.s3-us-west-1.amazonaws.com/wazuh_template.yml"
 echo "Template URL: $URL"
 
-aws --profile ansible_demo cloudformation create-stack --stack-name ${STACK_NAME} --template-url $URL --parameters file://$PARAMS_FILE --capabilities CAPABILITY_IAM --tags Key=service_name,Value=demo_info
+aws cloudformation create-stack --stack-name ${STACK_NAME} --template-url $URL --parameters file://$PARAMS_FILE --capabilities CAPABILITY_IAM --tags Key=service_name,Value=demo_info
 
 echo "Done"
