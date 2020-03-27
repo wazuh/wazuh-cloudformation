@@ -723,7 +723,7 @@ Resources:
               mode: '000600'
               owner: root
               group: root
-            /tmp/wazuh_cf_elastic.sh:
+            /tmp/wazuh_cf_bootstrap_elastic.sh:
               source: !Sub >-
                 https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.12.0_7.6.1/elastic/wazuh_cf_bootstrap_elastic.sh
               mode: '000700'
@@ -732,7 +732,7 @@ Resources:
         ElasticInstall:
           commands:
             01_RunInstallationScript:
-              command: /tmp/wazuh_cf_elastic.sh
+              command: /tmp/wazuh_cf_bootstrap_elastic.sh
     Properties:
       ImageId: !FindInMap
         - "RegionMap"
