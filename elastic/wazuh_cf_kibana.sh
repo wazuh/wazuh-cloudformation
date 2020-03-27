@@ -260,7 +260,7 @@ get_plugin_url(){
       BUILD_SRC=$(pwd)
       APP_FILE=$(ls *.zip)
     else
-      echo 'Error: Unsupported Wazuh Plugin installation method'
+      echo 'Error: Unsupported Wazuh Plugin installation method' >> /tmp/deploy.log
     fi
   else
     echo 'no repo' >> /tmp/stage
