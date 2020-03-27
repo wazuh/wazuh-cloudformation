@@ -299,8 +299,8 @@ install_plugin(){
 
 add_api(){
 echo "Adding Wazuh API" >> /tmp/deploy.log
-sed -ie '/- default:/,+4d' /usr/share/kibana/plugins/wazuh/wazuh.yml
-cat > /usr/share/kibana/plugins/wazuh/wazuh.yml << EOF
+sed -ie '/- default:/,+4d' /usr/share/kibana/optimize/wazuh/config/wazuh.yml
+cat > /usr/share/kibana/optimize/wazuh/config/wazuh.yml << EOF
 hosts:
   - default:
       url: https://${wazuh_master_ip}
