@@ -425,8 +425,9 @@ main(){
   kibana_certs
   get_plugin_url
   install_plugin
-  add_api
   enable_kibana
+  start_kibana
+  add_api
   start_kibana
   kibana_optional_configs
   add_nginx
