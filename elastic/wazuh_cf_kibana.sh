@@ -360,6 +360,10 @@ echo  "Do not ask user to help providing usage statistics to Elastic" >> /tmp/de
 # Disable Elastic repository
 sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
 echo "Configured Kibana" >> /tmp/deploy.log
+
+# Remove Montserrat font
+sed -i 's/@import\surl.*Montserrat.*/# Removed montserrat font/g' /usr/share/kibana/optimize/bundles/login.style.css
+
 }
 
 add_nginx(){
@@ -427,10 +431,10 @@ main(){
   install_plugin
   enable_kibana
   start_kibana
-  sleep 120
+  sleep 60
   add_api
-  start_kibana
   kibana_optional_configs
+  start_kibana
   add_nginx
   custom_welcome
 }
