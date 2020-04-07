@@ -1,0 +1,66 @@
+
+[{
+    "ParameterKey": "ElasticWazuhVersion",
+    "ParameterValue": "<ElasticWazuhVersion>"
+},
+{
+    "ParameterKey": "WazuhInstanceType",
+    "ParameterValue": "t2.medium"
+},
+{
+    "ParameterKey": "EnvironmentType",
+    "ParameterValue": "<EnvironmentType>"
+},
+{
+    "ParameterKey": "ElasticInstanceType",
+    "ParameterValue": "t2.large"
+},
+{
+    "ParameterKey": "KibanaInstanceType",
+    "ParameterValue": "t2.large"
+},
+{
+    "ParameterKey": "SshUsername",
+    "ParameterValue": "<SshUsername>"
+},
+{
+    "ParameterKey": "SshPassword",
+    "ParameterValue": "<SshPassword>"
+},
+{
+    "ParameterKey": "WazuhServerPort",
+    "ParameterValue": "1514"
+},
+{
+    "ParameterKey": "WazuhRegistrationPort",
+    "ParameterValue": "1515"
+},
+{
+    "ParameterKey": "WazuhRegistrationPassword",
+    "ParameterValue": "<WazuhRegistrationPassword>"
+},
+{
+    "ParameterKey": "WazuhApiPort",
+    "ParameterValue": "55000"
+},
+{
+    "ParameterKey": "WazuhApiAdminUsername",
+    "ParameterValue": "<WazuhApiAdminUsername>"
+},
+{
+    "ParameterKey": "WazuhApiAdminPassword",
+    "ParameterValue": "<WazuhApiAdminPassword>"
+},
+{
+    "ParameterKey": "KeyPairName",
+    "ParameterValue": "<KeyPairName>"
+},
+{
+    "ParameterKey": "AvailabilityZone",
+    "ParameterValue": "<AvailabilityZone>"
+},
+{
+    "ParameterKey": "SSLCertificateARN",
+    "ParameterValue": "<SSLCertificateARN>"
+}
+]
