@@ -273,7 +273,7 @@ install_plugin(){
   systemctl restart kibana
   echo "Optimizing app" >> /tmp/deploy.log
   #Optmize app
-  sudo -u kibana NODE_OPTIONS="--max-old-space-size=3072" /usr/share/kibana/bin/kibana --optimize
+  sudo -u kibana NODE_OPTIONS="--max-old-space-size=2048" /usr/share/kibana/bin/kibana --optimize
   cd /tmp
   echo "App installed!" >> /tmp/deploy.log
 }
