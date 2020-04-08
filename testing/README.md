@@ -14,7 +14,6 @@ This repository includes the template and scripts to set up an environment that 
 * Wazuh servers seat behind an internet-facing load balancer for agents to communicate with the cluster
 * Kibana server seats behind an internet facing load balancer, that optionally loads an SSL Certificate for HTTPS
 * A Splunk Indexer instance with a Splunk app for Wazuh installed on it.
-* Six Wazuh agents installed on different operating systems: Red Hat 7, CentOS 7, Ubuntu, Debian, Amazon Linux and Windows.
 
 ## Elasticsearch cluster configuration
 
@@ -103,7 +102,3 @@ Then, on the linux agent, the /var/ossec/etc/ossec.conf would include the config
       <port>1514</port>
       <protocol>tcp</protocol>
     </server>
-
-## AWS environment created by cloud formation template
-
-![wazuh_template](images/wazuh_template-designer.png)

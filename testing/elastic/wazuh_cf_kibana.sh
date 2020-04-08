@@ -230,19 +230,12 @@ echo "Setcap executed" >> /tmp/deploy.log
 
 
 get_plugin_url(){
-  if [[ ${EnvironmentType} == 'staging' ]]
-  then
-    # Adding Wazuh pre_release repository
-  plugin_url="https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/app/kibana/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
-  elif [[ ${EnvironmentType} == 'production' ]]
+  if [[ ${EnvironmentType} == 'production' ]]
   then
   plugin_url="https://packages.wazuh.com/wazuhapp/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
-  elif [[ ${EnvironmentType} == 'devel' ]]
-  then
-  plugin_url="https://packages-dev.wazuh.com/staging/app/kibana/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
   elif [[ ${EnvironmentType} == 'sources' ]]
   then
-    BRANCH="3.12-7.6"
+    BRANCH="3.12-7.6.1"
     if [[ $BRANCH != "" ]]; then
       yum install -y git
       curl --silent --location https://rpm.nodesource.com/setup_10.x | bash -
@@ -277,24 +270,11 @@ install_plugin(){
     cd /usr/share/kibana
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install file://$BUILD_SRC/$APP_FILE
   fi
+  echo "Optimizing app" >> /tmp/deploy.log
+  #Optmize app
+  sudo -u kibana NODE_OPTIONS="--max-old-space-size=4096" /usr/share/kibana/bin/kibana --optimize
   cd /tmp
   echo "App installed!" >> /tmp/deploy.log
-  echo "Redirecting to Wazuh app " >> /tmp/deploy.log
-  # Set Wazuh app as the default landing page
-  echo "server.defaultRoute: /app/wazuh" >> /etc/kibana/kibana.yml
-  # Redirect Kibana welcome screen to
-  echo "Redirect Kibana welcome screen to Discover"
-  sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/global_nav/global_nav.html
-  sed -i "s:'/app/kibana#/home':'/app/wazuh':g" /usr/share/kibana/src/ui/public/chrome/directives/header_global_nav/header_global_nav.js
-  echo "xpack.apm.ui.enabled: false" >> /etc/kibana/kibana.yml
-  echo "xpack.grokdebugger.enabled: false" >> /etc/kibana/kibana.yml
-  echo "xpack.searchprofiler.enabled: false" >> /etc/kibana/kibana.yml
-  echo "xpack.ml.enabled: false" >> /etc/kibana/kibana.yml
-  echo "xpack.canvas.enabled: false" >> /etc/kibana/kibana.yml
-  echo "xpack.infra.enabled: false" >> /etc/kibana/kibana.yml
-  echo "xpack.monitoring.enabled: false" >> /etc/kibana/kibana.yml
-  echo "console.enabled: false" >> /etc/kibana/kibana.yml
-
 }
 
 add_api(){
@@ -397,22 +377,6 @@ echo "Restarted NGINX..." >> /tmp/deploy.log
 
 }
 
-custom_welcome(){
-  await_kibana_ssl
-  echo "custom_welcome " >> /tmp/deploy.log
-  unalias cp
-  curl https://s3.amazonaws.com/wazuh.com/wp-content/uploads/demo/custom-welcome.tar.gz --output custom.tar.gz
-  tar xvf custom.tar.gz
-  cp custom_welcome/wazuh_wazuh_bg.svg /usr/share/kibana/optimize/bundles/
-  cp custom_welcome/wazuh_logo_circle.svg /usr/share/kibana/optimize/bundles/
-  sed -i 's|Welcome to Kibana|Welcome to Wazuh|g' /usr/share/kibana/optimize/bundles/commons.bundle.js
-  sed -i 's|Welcome to Kibana|Welcome to Wazuh|g' /usr/share/kibana/optimize/bundles/login.bundle.js
-  sed -i 's|Welcome to Kibana|Welcome to Wazuh|g' /usr/share/kibana/optimize/bundles/kibana.bundle.js
-  sed -i 's|Your window into the Elastic Stack|The Open Source Security Platform|g' /usr/share/kibana/optimize/bundles/kibana.bundle.js
-  sed -i 's|Your window into the Elastic Stack|The Open Source Security Platform|g' /usr/share/kibana/optimize/bundles/login.bundle.js
-  cp custom_welcome/login.style.css /usr/share/kibana/optimize/bundles/login.style.css -f
-  chown kibana:kibana /usr/share/kibana/optimize/bundles/ -R
-}
 
 main(){
   check_root
@@ -436,7 +400,6 @@ main(){
   kibana_optional_configs
   start_kibana
   add_nginx
-  custom_welcome
 }
 
 main
