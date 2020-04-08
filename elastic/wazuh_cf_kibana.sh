@@ -235,7 +235,7 @@ get_plugin_url(){
   plugin_url="https://packages.wazuh.com/wazuhapp/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
   elif [[ ${EnvironmentType} == 'sources' ]]
   then
-    BRANCH="3.12-7.6.1"
+    BRANCH="3.12-7.6"
     if [[ $BRANCH != "" ]]; then
       yum install -y git
       curl --silent --location https://rpm.nodesource.com/setup_10.x | bash -
@@ -273,7 +273,7 @@ install_plugin(){
   systemctl restart kibana
   echo "Optimizing app" >> /tmp/deploy.log
   #Optmize app
-  sudo -u kibana NODE_OPTIONS="--max-old-space-size=2048" /usr/share/kibana/bin/kibana --optimize
+  sudo -u kibana NODE_OPTIONS="--max-old-space-size=1024" /usr/share/kibana/bin/kibana --optimize
   cd /tmp
   echo "App installed!" >> /tmp/deploy.log
 }
