@@ -270,16 +270,17 @@ install_plugin(){
     cd /usr/share/kibana
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install file://$BUILD_SRC/$APP_FILE
   fi
-  systemctl restart kibana
-  systemctl stop elasticsearch
-  echo "Optimizing app" >> /tmp/deploy.log
-  cd /usr/share/kibana
-  sudo -u kibana NODE_OPTIONS="--max-old-space-size=2048" ./bin/kibana --optimize
-  echo "Optimizing sleep" >> /tmp/deploy.log
-  sleep 300
-  echo "App installed!" >> /tmp/deploy.log
-  systemctl start elasticsearch
-}
+#   systemctl restart kibana
+#   systemctl stop elasticsearch
+#   echo "Optimizing app" >> /tmp/deploy.log
+#   cd /usr/share/kibana
+#   sudo -u kibana NODE_OPTIONS="--max-old-space-size=2048" ./bin/kibana --optimize
+#   cd /tmp
+#   echo "Optimizing sleep" >> /tmp/deploy.log
+#   sleep 300
+#   echo "App installed!" >> /tmp/deploy.log
+#   systemctl start elasticsearch
+# }
 
 add_api(){
 echo "Adding Wazuh API" >> /tmp/deploy.log
