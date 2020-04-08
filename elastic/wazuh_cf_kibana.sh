@@ -270,6 +270,7 @@ install_plugin(){
     cd /usr/share/kibana
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install file://$BUILD_SRC/$APP_FILE
   fi
+  systemctl restart kibana
 #   systemctl restart kibana
 #   systemctl stop elasticsearch
 #   echo "Optimizing app" >> /tmp/deploy.log
@@ -280,7 +281,7 @@ install_plugin(){
 #   sleep 300
 #   echo "App installed!" >> /tmp/deploy.log
 #   systemctl start elasticsearch
-# }
+}
 
 add_api(){
 echo "Adding Wazuh API" >> /tmp/deploy.log
