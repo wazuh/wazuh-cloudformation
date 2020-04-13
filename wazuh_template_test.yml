@@ -332,7 +332,7 @@ Resources:
     Properties:
       SubnetId: !Ref SubnetWazuhNodes
       RouteTableId: !Ref PublicRouteTable
-  Subnet_ElasticPublicRouteTable:
+  SubnetElasticPublicRouteTable:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
       SubnetId: !Ref SubnetElastic
