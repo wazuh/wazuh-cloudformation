@@ -78,10 +78,10 @@ node.name: "node-$node_name"
 node.master: true
 path.data: /mnt/ephemeral/elasticsearch/lib
 path.logs: /mnt/ephemeral/elasticsearch/log
-discovery.seed_hosts: 
-  - "10.0.2.123"
-  - "10.0.2.124"
-  - "10.0.2.125"
+discovery.seed_hosts:
+  - "10.0.2.113"
+  - "10.0.2.114"
+  - "10.0.2.115"
 
 EOF
 
@@ -127,7 +127,7 @@ set_security(){
     while [ ! -f /home/wazuh/certs.zip ];do
         sleep 2
         echo "No certs yet, trying again in 2 secs..." >> /tmp/deploy.log
-        sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/ 2> /tmp/deploy.logerr.log
+        sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.114:/home/wazuh/certs.zip /home/wazuh/ 2> /tmp/deploy.logerr.log
     done
     echo "Got certs.zip." >> /tmp/deploy.log
     rm pass -f

@@ -31,11 +31,11 @@ Mappings:
     sa-east-1:
       HVM64: ami-058141e091292ecf0
   SubnetConfig:
-    WazuhVpc:
+    WazuhHIDSVpc:
       CIDR: 10.0.0.0/16
-    SubnetWazuh:
+    SubnetWazuhNodes:
       CIDR: 10.0.0.0/24
-    SubnetElasticsearch:
+    SubnetElastic:
       CIDR: 10.0.2.0/24
 
 Metadata:
@@ -254,12 +254,12 @@ Conditions:
 Resources:
 
   # Network resources
-  WazuhVpc:
+  WazuhHIDSVpc:
     Type: 'AWS::EC2::VPC'
     Properties:
       CidrBlock: !FindInMap
         - SubnetConfig
-        - WazuhVpc
+        - WazuhHIDSVpc
         - CIDR
       EnableDnsSupport: 'true'
       EnableDnsHostnames: 'true'
@@ -268,34 +268,34 @@ Resources:
           Value: !Ref 'AWS::StackId'
         - Key: Name
           Value: !Ref 'AWS::StackName'
-  SubnetWazuh:
+  SubnetWazuhNodes:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      VpcId: !Ref WazuhVpc
+      VpcId: !Ref WazuhHIDSVpc
       AvailabilityZone: !Select [ "0", !Ref AvailabilityZone ]
       CidrBlock: !FindInMap
         - SubnetConfig
-        - SubnetWazuh
+        - SubnetWazuhNodes
         - CIDR
       Tags:
         - Key: Application
           Value: !Ref 'AWS::StackId'
         - Key: Name
-          Value: !Sub '${AWS::StackName}-SubnetWazuh'
-  SubnetElasticsearch:
+          Value: !Sub '${AWS::StackName}-SubnetWazuhNodes'
+  SubnetElastic:
       Type: 'AWS::EC2::Subnet'
       Properties:
-        VpcId: !Ref WazuhVpc
+        VpcId: !Ref WazuhHIDSVpc
         AvailabilityZone: !Select [ "0", !Ref AvailabilityZone ]
         CidrBlock: !FindInMap
           - SubnetConfig
-          - SubnetElasticsearch
+          - SubnetElastic
           - CIDR
         Tags:
           - Key: Application
             Value: !Ref 'AWS::StackId'
           - Key: Name
-            Value: !Sub '${AWS::StackName}-SubnetElasticsearch'
+            Value: !Sub '${AWS::StackName}-SubnetElastic'
 
   # Internet access and routing
   InternetGateway:
@@ -309,12 +309,12 @@ Resources:
   GatewayToInternet:
     Type: 'AWS::EC2::VPCGatewayAttachment'
     Properties:
-      VpcId: !Ref WazuhVpc
+      VpcId: !Ref WazuhHIDSVpc
       InternetGatewayId: !Ref InternetGateway
   PublicRouteTable:
     Type: 'AWS::EC2::RouteTable'
     Properties:
-      VpcId: !Ref WazuhVpc
+      VpcId: !Ref WazuhHIDSVpc
       Tags:
         - Key: Application
           Value: !Ref 'AWS::StackId'
@@ -327,23 +327,23 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
-  SubnetWazuhPublicRouteTable:
+  SubnetWazuhNodesPublicRouteTable:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
-      SubnetId: !Ref SubnetWazuh
+      SubnetId: !Ref SubnetWazuhNodes
       RouteTableId: !Ref PublicRouteTable
-  SubnetElasticPublicRouteTable:
+  Subnet_ElasticPublicRouteTable:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
-      SubnetId: !Ref SubnetElasticsearch
+      SubnetId: !Ref SubnetElastic
       RouteTableId: !Ref PublicRouteTable
 
   # Security groups
-  ElasticSecurityGroup:
+  Elastic_SecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Elasticsearch security group
-      VpcId: !Ref WazuhVpc
+      VpcId: !Ref WazuhHIDSVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -354,16 +354,16 @@ Resources:
           ToPort: 9400
           CidrIp: !FindInMap
             - SubnetConfig
-            - WazuhVpc
+            - WazuhHIDSVpc
             - CIDR
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-ElasticSecurityGroup'
-  KibanaSecurityGroup:
+  Kibana_SecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Kibana security group
-      VpcId: !Ref WazuhVpc
+      VpcId: !Ref WazuhHIDSVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -378,7 +378,7 @@ Resources:
           ToPort: 9400
           CidrIp: !FindInMap
             - SubnetConfig
-            - WazuhVpc
+            - WazuhHIDSVpc
             - CIDR
       Tags:
         - Key: Name
@@ -387,7 +387,7 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Wazuh security group
-      VpcId: !Ref WazuhVpc
+      VpcId: !Ref WazuhHIDSVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -418,14 +418,14 @@ Resources:
           ToPort: 1516
           CidrIp: !FindInMap
             - SubnetConfig
-            - WazuhVpc
+            - WazuhHIDSVpc
             - CIDR
         - IpProtocol: tcp
           FromPort: !Ref WazuhApiPort
           ToPort: !Ref WazuhApiPort
           CidrIp: !FindInMap
             - SubnetConfig
-            - WazuhVpc
+            - WazuhHIDSVpc
             - CIDR
       Tags:
         - Key: Name
@@ -436,14 +436,14 @@ Resources:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: ELB Elasticsearch security group
-      VpcId: !Ref WazuhVpc
+      VpcId: !Ref WazuhHIDSVpc
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 9200
           ToPort: 9200
           CidrIp: !FindInMap
             - SubnetConfig
-            - WazuhVpc
+            - WazuhHIDSVpc
             - CIDR
       Tags:
         - Key: Name
@@ -501,8 +501,8 @@ Resources:
           GroupSet:
             - Ref: "ElasticSecurityGroup"
           SubnetId:
-            Ref: "SubnetElasticsearch"
-          PrivateIpAddress: "10.0.2.124"
+            Ref: "SubnetElastic"
+          PrivateIpAddress: "10.0.2.114"
       Tags:
         - Key: Name
           Value: ElasticBootstrap
@@ -515,7 +515,7 @@ Resources:
   ElasticBootstrapEth0:
     Type: AWS::EC2::NetworkInterface
     Properties:
-      SubnetId: !Ref SubnetElasticsearch
+      SubnetId: !Ref SubnetElastic
       GroupSet: [!Ref 'ElasticSecurityGroup']
   ElasticBootstrapEIP:
     Type: AWS::EC2::EIP
@@ -580,8 +580,8 @@ Resources:
           GroupSet:
             - Ref: "ElasticSecurityGroup"
           SubnetId:
-            Ref: "SubnetElasticsearch"
-          PrivateIpAddress: "10.0.2.123"
+            Ref: "SubnetElastic"
+          PrivateIpAddress: "10.0.2.113"
       Tags:
         - Key: Name
           Value: ElasticMasterB
@@ -594,7 +594,7 @@ Resources:
   ElasticMasterBEth0:
     Type: AWS::EC2::NetworkInterface
     Properties:
-      SubnetId: !Ref SubnetElasticsearch
+      SubnetId: !Ref SubnetElastic
       GroupSet: [!Ref 'ElasticSecurityGroup']
   ElasticMasterBEIP:
     Type: AWS::EC2::EIP
@@ -659,8 +659,8 @@ Resources:
           GroupSet:
             - Ref: "ElasticSecurityGroup"
           SubnetId:
-            Ref: "SubnetElasticsearch"
-          PrivateIpAddress: "10.0.2.125"
+            Ref: "SubnetElastic"
+          PrivateIpAddress: "10.0.2.115"
       Tags:
         - Key: Name
           Value: ElasticMasterC
@@ -673,7 +673,7 @@ Resources:
   ElasticMasterCEth0:
     Type: AWS::EC2::NetworkInterface
     Properties:
-      SubnetId: !Ref SubnetElasticsearch
+      SubnetId: !Ref SubnetElastic
       GroupSet: [!Ref 'ElasticSecurityGroup']
   ElasticMasterCEIP:
     Type: AWS::EC2::EIP
@@ -697,7 +697,7 @@ Resources:
       Name: !Sub '${AWS::StackName}-Wazuh'
       Scheme: internet-facing
       Subnets:
-        - !Ref SubnetWazuh
+        - !Ref SubnetWazuhNodes
       Type: network
       Tags:
         - Key: Name
@@ -710,7 +710,7 @@ Resources:
       Name: !Sub '${AWS::StackName}-registrationTG'
       Port: !Ref WazuhRegistrationPort
       Protocol: TCP
-      VpcId: !Ref WazuhVpc
+      VpcId: !Ref WazuhHIDSVpc
       TargetGroupAttributes:
         - Key: deregistration_delay.timeout_seconds
           Value: 600
@@ -729,7 +729,7 @@ Resources:
       Name: !Sub '${AWS::StackName}-TLSTargetGroup'
       Port: !Ref KibanaPort
       Protocol: TCP
-      VpcId: !Ref WazuhVpc
+      VpcId: !Ref WazuhHIDSVpc
       TargetGroupAttributes:
         - Key: deregistration_delay.timeout_seconds
           Value: 600
@@ -758,7 +758,7 @@ Resources:
       Name: !Sub '${AWS::StackName}-reportingTG'
       Port: !Ref WazuhServerPort
       Protocol: TCP
-      VpcId: !Ref WazuhVpc
+      VpcId: !Ref WazuhHIDSVpc
       TargetGroupAttributes:
         - Key: deregistration_delay.timeout_seconds
           Value: 600
@@ -881,7 +881,7 @@ Resources:
           GroupSet:
             - Ref: "KibanaSecurityGroup"
           SubnetId:
-            Ref: "SubnetElasticsearch"
+            Ref: "SubnetElastic"
       Tags:
         - Key: Name
           Value: WazuhKibana
@@ -894,7 +894,7 @@ Resources:
   KibanaEth0:
     Type: AWS::EC2::NetworkInterface
     Properties:
-      SubnetId: !Ref SubnetElasticsearch
+      SubnetId: !Ref SubnetElastic
       GroupSet: [!Ref 'KibanaSecurityGroup']
   KibanaEIP:
     Type: AWS::EC2::EIP
@@ -967,7 +967,7 @@ Resources:
           GroupSet:
             - Ref: "WazuhSecurityGroup"
           SubnetId:
-            Ref: "SubnetWazuh"
+            Ref: "SubnetWazuhNodes"
       Tags:
         - Key: Name
           Value: WazuhMaster
@@ -980,7 +980,7 @@ Resources:
   WazuhMasterEth0:
     Type: AWS::EC2::NetworkInterface
     Properties:
-      SubnetId: !Ref SubnetWazuh
+      SubnetId: !Ref SubnetWazuhNodes
       GroupSet: [!Ref 'WazuhSecurityGroup']
   WazuhMasterEIP:
     Type: AWS::EC2::EIP
@@ -1058,7 +1058,7 @@ Resources:
   WazuhWorkerEth0:
     Type: AWS::EC2::NetworkInterface
     Properties:
-      SubnetId: !Ref SubnetWazuh
+      SubnetId: !Ref SubnetWazuhNodes
       GroupSet: [!Ref 'WazuhSecurityGroup']
   WazuhWorkerEIP:
     Type: AWS::EC2::EIP
