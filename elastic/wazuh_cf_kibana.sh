@@ -276,9 +276,10 @@ install_plugin(){
 
 optimize_kibana(){
   systemctl stop elasticsearch
+  systemctl stop kibana
   echo "Optimizing app" >> /tmp/deploy.log
   cd /usr/share/kibana
-  sudo -u kibana NODE_OPTIONS="--max-old-space-size=2048" ./bin/kibana --optimize
+  sudo NODE_OPTIONS="--max-old-space-size=4096" ./bin/kibana --optimize
   sleep 30
   systemctl start elasticsearch
   echo "App optimized!" >> /tmp/deploy.log

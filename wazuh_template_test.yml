@@ -339,7 +339,7 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
 
   # Security groups
-  Elastic_SecurityGroup:
+  ElasticSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Elasticsearch security group
@@ -359,7 +359,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-ElasticSecurityGroup'
-  Kibana_SecurityGroup:
+  KibanaSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
       GroupDescription: Kibana security group
