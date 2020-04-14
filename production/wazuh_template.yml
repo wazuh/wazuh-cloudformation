@@ -43,7 +43,7 @@ Metadata:
     ParameterGroups:
       -
         Label:
-          default: "Install type"
+          default: "Installation method"
         Parameters:
           - InstallType
       -
@@ -159,14 +159,11 @@ Parameters:
     Type: String
   InstallType:
     AllowedValues:
-      - production
-      - staging
-      - devel
+      - packages
       - sources
-
-    ConstraintDescription: Must contain valid instance type
-    Default: staging
-    Description: Select a stage
+    ConstraintDescription: Must contain valid install type
+    Default: packages
+    Description: Select between packages or sources install
     Type: String
   ElasticInstanceType:
     AllowedValues:
@@ -245,28 +242,6 @@ Parameters:
   KibanaPort:
     Default: '443'
     Description: Port for Kibana WUI
-    Type: String
-
-  AwsSecretKey:
-    Description: (Optional) Secret key for AWS integration
-    Type: String
-
-  AwsAccessKey:
-    Description: (Optional) Access key for AWS integration
-    Type: String
-
-  VirusTotalKey:
-    Default: none
-    Description: (Optional) Key for VirusTotal integration
-    Type: String
-
-  SlackHook:
-    Default: none
-    Description: (Optional) Webhook for Slack integration
-    Type: String
-
-  SSLCertificateARN:
-    Description: 'Used for HTTPS access to WUI. Existent certificate, identified by its Amazon Resource Name (ARN).'
     Type: String
 
 Conditions:
@@ -955,10 +930,6 @@ Resources:
                 WazuhRegistrationPort: ${WazuhRegistrationPort}
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
-                AwsSecretKey: ${AwsSecretKey}
-                AwsAccessKey: ${AwsAccessKey}
-                VirusTotalKey: ${VirusTotalKey}
-                SlackHook: ${SlackHook}
                 InstallType: ${InstallType}
               mode: '000600'
               owner: root
@@ -1041,10 +1012,6 @@ Resources:
                 WazuhServerPort: ${WazuhServerPort}
                 WazuhClusterKey: ${WazuhClusterKey}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                AwsSecretKey: ${AwsSecretKey}
-                AwsAccessKey: ${AwsAccessKey}
-                VirusTotalKey: ${VirusTotalKey}
-                SlackHook: ${SlackHook}
                 InstallType: ${InstallType}
               mode: '000600'
               owner: root
