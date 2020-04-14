@@ -270,13 +270,16 @@ install_plugin(){
     cd /usr/share/kibana
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install file://$BUILD_SRC/$APP_FILE
   fi
+}
+
+optimize_kibana(){
   systemctl stop kibana
   echo "Optimizing app" >> /tmp/deploy.log
   cd /usr/share/kibana
   NODE_OPTIONS="--max-old-space-size=2048" ./bin/kibana --optimize --allow-root
   cd /tmp
   echo "App installed!" >> /tmp/deploy.log
-  systemctl start elasticsearch
+  systemctl start kibana
 }
 
 add_api(){
@@ -395,6 +398,7 @@ main(){
   kibana_certs
   get_plugin_url
   install_plugin
+  optimize_kibana
   enable_kibana
   start_kibana
   sleep 60
