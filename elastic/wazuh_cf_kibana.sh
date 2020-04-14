@@ -183,6 +183,7 @@ start_elasticsearch(){
     echo "daemon-reload." >> /tmp/deploy.log
     systemctl restart elasticsearch
     echo "done with starting elasticsearch service." >> /tmp/deploy.log
+    systemctl stop elasticsearch
 }
 
 
@@ -212,6 +213,9 @@ kibana_certs(){
 
 configure_kibana(){
 # Configuring kibana.yml
+touch /var/log/kibana.log
+chmod 777 /var/log/kibana.log
+echo "logging.dest: /var/log/kibana.log" >> /etc/kibana/kibana.yml
 cat > /etc/kibana/kibana.yml << EOF
 elasticsearch.hosts: ["https://$eth0_ip:9200"]
 server.port: 5601
@@ -220,7 +224,6 @@ xpack.security.enabled: true
 elasticsearch.username: "elastic"
 elasticsearch.password: "$ssh_password"
 EOF
-echo "logging.dest: /var/log/kibana.log" >> /etc/kibana/kibana.yml
 echo "Kibana.yml configured." >> /tmp/deploy.log
 # Allow Kibana to listen on privileged ports
 setcap 'CAP_NET_BIND_SERVICE=+eip' /usr/share/kibana/node/bin/node
@@ -274,18 +277,11 @@ install_plugin(){
 }
 
 optimize_kibana(){
-  systemctl stop elasticsearch
-  echo "-----------------ELASTICSEARCH STOPPED--------------" >> /var/log/kibana.log
-  systemctl stop kibana
-  echo "-----------------KIBANA STOPPED--------------" >> /var/log/kibana.log
   echo "Optimizing app" >> /tmp/deploy.log
   cd /usr/share/kibana
   echo "-----------------PRE OPTIMIZE --------------" >> /var/log/kibana.log
-  sudo NODE_OPTIONS="--max-old-space-size=4096" ./bin/kibana --optimize
-  echo "-----------------POST OPTIMIZE--------------" >> /var/log/kibana.log
-  sleep 30
-  systemctl start elasticsearch
-  echo "-----------------ELASTICSEARCH STARTED--------------" >> /var/log/kibana.log
+  NODE_OPTIONS="--max-old-space-size=3072" ./bin/kibana --optimize
+  echo "-----------------POST OPTIMIZE - SLEEPING --------------" >> /var/log/kibana.log
   echo "App optimized!" >> /tmp/deploy.log
 }
 
@@ -405,9 +401,7 @@ main(){
   kibana_certs
   get_plugin_url
   install_plugin
-  start_kibana
   optimize_kibana
-  start_kibana
   enable_kibana
   start_kibana
   sleep 60
@@ -416,6 +410,7 @@ main(){
   start_kibana
   add_nginx
   echo "Deploy finished" >> /tmp/deploy.log
+  systemctl start elasticsearch
 }
 
 main
