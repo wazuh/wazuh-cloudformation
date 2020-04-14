@@ -14,7 +14,7 @@ wazuh_master_ip=$(cat /tmp/wazuh_cf_settings | grep '^WazuhMasterIP:' | cut -d' 
 wazuh_api_user=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminUsername:' | cut -d' ' -f2)
 wazuh_api_password=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminPassword:' | cut -d' ' -f2)
 wazuh_api_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiPort:' | cut -d' ' -f2)
-EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
+InstallType=$(cat /tmp/wazuh_cf_settings | grep '^InstallType:' | cut -d' ' -f2)
 wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
 wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
 wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
@@ -230,17 +230,17 @@ echo "Setcap executed" >> /tmp/deploy.log
 
 
 get_plugin_url(){
-  if [[ ${EnvironmentType} == 'staging' ]]
+  if [[ ${InstallType} == 'staging' ]]
   then
     # Adding Wazuh pre_release repository
   plugin_url="https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/app/kibana/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
-  elif [[ ${EnvironmentType} == 'production' ]]
+  elif [[ ${InstallType} == 'production' ]]
   then
   plugin_url="https://packages.wazuh.com/wazuhapp/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
-  elif [[ ${EnvironmentType} == 'devel' ]]
+  elif [[ ${InstallType} == 'devel' ]]
   then
   plugin_url="https://packages-dev.wazuh.com/staging/app/kibana/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
-  elif [[ ${EnvironmentType} == 'sources' ]]
+  elif [[ ${InstallType} == 'sources' ]]
   then
     BRANCH="3.12-7.6"
     if [[ $BRANCH != "" ]]; then
@@ -269,7 +269,7 @@ get_plugin_url(){
 
 install_plugin(){
   echo "Installing app" >> /tmp/deploy.log
-  if [[ ${EnvironmentType} != 'sources' ]] || [[ ${BRANCH} == "" ]]
+  if [[ ${InstallType} != 'sources' ]] || [[ ${BRANCH} == "" ]]
   then
     cd /usr/share/kibana
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install ${plugin_url}

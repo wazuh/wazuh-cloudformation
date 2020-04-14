@@ -43,9 +43,9 @@ Metadata:
     ParameterGroups:
       -
         Label:
-          default: "Environment type"
+          default: "Install type"
         Parameters:
-          - EnvironmentType
+          - InstallType
       -
         Label:
           default: "AWS environment"
@@ -157,7 +157,7 @@ Parameters:
     Default: t2.medium
     Description: Type of EC2 instance for Wazuh instance
     Type: String
-  EnvironmentType:
+  InstallType:
     AllowedValues:
       - production
       - staging
@@ -874,7 +874,7 @@ Resources:
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                EnvironmentType: ${EnvironmentType}
+                InstallType: ${InstallType}
               mode: '000600'
               owner: root
               group: root
@@ -959,7 +959,7 @@ Resources:
                 AwsAccessKey: ${AwsAccessKey}
                 VirusTotalKey: ${VirusTotalKey}
                 SlackHook: ${SlackHook}
-                EnvironmentType: ${EnvironmentType}
+                InstallType: ${InstallType}
               mode: '000600'
               owner: root
               group: root
@@ -1045,7 +1045,7 @@ Resources:
                 AwsAccessKey: ${AwsAccessKey}
                 VirusTotalKey: ${VirusTotalKey}
                 SlackHook: ${SlackHook}
-                EnvironmentType: ${EnvironmentType}
+                InstallType: ${InstallType}
               mode: '000600'
               owner: root
               group: root

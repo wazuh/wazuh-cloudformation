@@ -17,7 +17,7 @@ wazuh_api_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiPort:' | cut -d' ' 
 wazuh_cluster_key=$(cat /tmp/wazuh_cf_settings | grep '^WazuhClusterKey:' | cut -d' ' -f2)
 elb_elastic=$(cat /tmp/wazuh_cf_settings | grep '^ElbElasticDNS:' | cut -d' ' -f2)
 eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*//' | cut -d' ' -f2)
-EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
+InstallType=$(cat /tmp/wazuh_cf_settings | grep '^InstallType:' | cut -d' ' -f2)
 TAG='v3.12.2'
 
 echo "Added env vars." >> /tmp/deploy.log
@@ -37,11 +37,11 @@ systemctl restart sshd
 
 echo "Created SSH user." >> /tmp/deploy.log
 
-if [[ ${EnvironmentType} == 'staging' ]]
+if [[ ${InstallType} == 'staging' ]]
 then
 	# Adding Wazuh pre_release repository
 	echo -e '[wazuh_pre_release]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_pre.repo
-elif [[ ${EnvironmentType} == 'production' ]]
+elif [[ ${InstallType} == 'production' ]]
 then
 cat > /etc/yum.repos.d/wazuh.repo <<\EOF
 [wazuh_repo]
@@ -52,10 +52,10 @@ name=Wazuh repository
 baseurl=https://packages.wazuh.com/3.x/yum/
 protect=1
 EOF
-elif [[ ${EnvironmentType} == 'devel' ]]
+elif [[ ${InstallType} == 'devel' ]]
 then
 	echo -e '[wazuh_staging]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/staging/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_staging.repo
-elif [[ ${EnvironmentType} == 'sources' ]]
+elif [[ ${InstallType} == 'sources' ]]
 then
 
   # Compile Wazuh manager from sources
@@ -106,7 +106,7 @@ curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
 yum -y install nodejs
 echo "Installed NodeJS." >> /tmp/deploy.log
 
-if [[ ${EnvironmentType} != 'sources' ]]
+if [[ ${InstallType} != 'sources' ]]
 then
 
   # Installing wazuh-manager

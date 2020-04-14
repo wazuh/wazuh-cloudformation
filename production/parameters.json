@@ -8,8 +8,8 @@
     "ParameterValue": "t2.medium"
 },
 {
-    "ParameterKey": "EnvironmentType",
-    "ParameterValue": "<EnvironmentType>"
+    "ParameterKey": "InstallType",
+    "ParameterValue": "<InstallType>"
 },
 {
     "ParameterKey": "ElasticInstanceType",
