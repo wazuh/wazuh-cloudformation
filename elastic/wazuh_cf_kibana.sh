@@ -276,7 +276,6 @@ install_plugin(){
   NODE_OPTIONS="--max-old-space-size=2048" ./bin/kibana --optimize --allow-root
   cd /tmp
   echo "App installed!" >> /tmp/deploy.log
-  sleep 200
   systemctl start elasticsearch
 }
 
