@@ -43,9 +43,9 @@ Metadata:
     ParameterGroups:
       -
         Label:
-          default: "Environment type"
+          default: "Installation type"
         Parameters:
-          - EnvironmentType
+          - InstallType
       -
         Label:
           default: "AWS environment"
@@ -159,12 +159,12 @@ Parameters:
     Description: Type of EC2 instance for Wazuh instance
     Type: String
 
-  EnvironmentType:
+  InstallType:
     AllowedValues:
-      - production
+      - packages
       - sources
     ConstraintDescription: Must contain valid install type
-    Default: production
+    Default: packages
     Description: Select between packages or sources install
     Type: String
   ElasticInstanceType:
@@ -854,7 +854,7 @@ Resources:
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                EnvironmentType: ${EnvironmentType}
+                InstallType: ${InstallType}
               mode: '000600'
               owner: root
               group: root
@@ -935,7 +935,7 @@ Resources:
                 WazuhRegistrationPort: ${WazuhRegistrationPort}
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
-                EnvironmentType: ${EnvironmentType}
+                InstallType: ${InstallType}
               mode: '000600'
               owner: root
               group: root
@@ -1017,7 +1017,7 @@ Resources:
                 WazuhServerPort: ${WazuhServerPort}
                 WazuhClusterKey: ${WazuhClusterKey}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
-                EnvironmentType: ${EnvironmentType}
+                InstallType: ${InstallType}
               mode: '000600'
               owner: root
               group: root
