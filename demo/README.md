@@ -90,7 +90,7 @@ A parent domain (e.g. mycompany.com) and subdomain (e.g. wazuh) can be specified
 
 An example of the installation of a new agent, on a Windows system (automatically registered and configured) using an MSI package would be:
 
-    wazuh-agent-3.12.0-1.msi /q ADDRESS=“wazuh.mycompany.com” AUTHD_SERVER=“registration.wazuh.mycompany.com” PASSWORD=“mypassword” AGENT_NAME=“myhostname” PROTOCOL=“TCP”
+    wazuh-agent-3.12.2-1.msi /q ADDRESS=“wazuh.mycompany.com” AUTHD_SERVER=“registration.wazuh.mycompany.com” PASSWORD=“mypassword” AGENT_NAME=“myhostname” PROTOCOL=“TCP”
 
 An example of the registration of a new agent on a Linux system would be:
 
