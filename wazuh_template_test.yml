@@ -703,6 +703,16 @@ Resources:
       Tags:
         - Key: Name
           Value: nlbwazuh
+    # Wazuh Network route53 record
+  DnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Ref 'HostedZoneName'
+      Comment: DNS name for the Wazuh load balancer
+      Name: !Join ['', [!Ref 'Subdomain', ., !Ref 'HostedZoneName']]
+      Type: 'A'
+      ResourceRecords:
+      - !GetAtt WazuhNetworkLoadBalancer.DNSName
 
   # Wazuh registration Target Group for Network Load Balancer
   RegistrationTG:
