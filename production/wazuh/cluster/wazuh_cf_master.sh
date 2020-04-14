@@ -17,14 +17,6 @@ wazuh_api_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiPort:' | cut -d' ' 
 wazuh_cluster_key=$(cat /tmp/wazuh_cf_settings | grep '^WazuhClusterKey:' | cut -d' ' -f2)
 elb_elastic=$(cat /tmp/wazuh_cf_settings | grep '^ElbElasticDNS:' | cut -d' ' -f2)
 eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*//' | cut -d' ' -f2)
-splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^SplunkUsername:' | cut -d' ' -f2)
-splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^SplunkPassword:' | cut -d' ' -f2)
-splunk_ip=$(cat /tmp/wazuh_cf_settings | grep '^SplunkIP:' | cut -d' ' -f2)
-WindowsPublicIp=$(cat /tmp/wazuh_cf_settings | grep '^WindowsPublicIp:' | cut -d' ' -f2)
-VirusTotalKey=$(cat /tmp/wazuh_cf_settings | grep '^VirusTotalKey:' | cut -d' ' -f2)
-AwsSecretKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsSecretKey:' | cut -d' ' -f2)
-AwsAccessKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsAccessKey:' | cut -d' ' -f2)
-SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
 TAG='v3.12.0'
 
@@ -245,193 +237,6 @@ cat >> ${manager_config} << EOF
 </ossec_config>
 EOF
 
-# Use case: Open-SCAP configuration
-
-# Install dependencies
-yum -y install openscap-scanner
-
-# Configure wodles
-cat >> ${manager_config} << EOF
-<ossec_config>
-  <wodle name="open-scap">
-    <disabled>no</disabled>
-    <timeout>1800</timeout>
-    <interval>1d</interval>
-    <scan-on-start>yes</scan-on-start>
-    <content type="xccdf" path="ssg-rhel-7-ds.xml">
-      <profile>xccdf_org.ssgproject.content_profile_pci-dss</profile>
-      <profile>xccdf_org.ssgproject.content_profile_common</profile>
-    </content>
-    <content type="xccdf" path="cve-redhat-7-ds.xml"/>
-  </wodle>
-</ossec_config>
-EOF
-
-# Add VirusTotal integration if key already set
-if [ "x${VirusTotalKey}" != "x" ]; then
-cat >> ${manager_config} << EOF
-<ossec_config>
-  <integration>
-      <name>virustotal</name>
-      <api_key>${VirusTotalKey}</api_key>
-      <rule_id>100200</rule_id>
-      <alert_format>json</alert_format>
-  </integration>
-</ossec_config>
-EOF
-fi
-
-cat >> ${local_rules} << EOF
-<group name="syscheck,">
-  <rule id="100200" level="7">
-    <if_sid>550,553,554</if_sid>
-    <field name="file">\S*/virus|\S*\\\\virus</field>
-    <description>File modified or created in /virus directory.</description>
-  </rule>
-</group>
-<group name="ossec,">
-  <rule id="100050" level="0">
-    <if_sid>530</if_sid>
-    <match>^ossec: output: 'process list'</match>
-    <description>List of running processes.</description>
-    <group>process_monitor,</group>
-  </rule>
-  <rule id="100051" level="7" ignore="900">
-    <if_sid>100050</if_sid>
-    <match>nc -l</match>
-    <description>Netcat listening for incoming connections.</description>
-    <group>process_monitor,</group>
-  </rule>
-</group>
-<group name="attack,">
-  <rule id="100100" level="10">
-    <if_group>web|attack|attacks</if_group>
-    <list field="srcip" lookup="address_match_key">etc/lists/blacklist-alienvault</list>
-    <description>IP address found in AlienVault reputation database.</description>
-  </rule>
-</group>
-EOF
-
-# Slack integration
-if [ "x${SlackHook}" != "x" ]; then
-cat >> ${manager_config} << EOF
-<ossec_config>
-  <integration>
-    <name>slack</name>
-    <hook_url>${SlackHook}</hook_url>
-    <level>12</level>
-    <alert_format>json</alert_format>
-  </integration>
-</ossec_config>
-EOF
-fi
-
-# AWS integration if key already set
-if [ "x${AwsAccessKey}" != "x" ]; then
-cat >> ${manager_config} << EOF
-<ossec_config>
-  <wodle name="aws-s3">
-    <disabled>no</disabled>
-    <remove_from_bucket>no</remove_from_bucket>
-    <interval>30m</interval>
-    <run_on_start>yes</run_on_start>
-    <skip_on_error>no</skip_on_error>
-    <bucket type="cloudtrail">
-      <name>wazuh-cloudtrail</name>
-      <access_key>${AwsAccessKey}</access_key>
-      <secret_key>${AwsSecretKey}</secret_key>
-      <only_logs_after>2019-MAR-24</only_logs_after>
-    </bucket>
-    <bucket type="guardduty">
-      <name>wazuh-aws-wodle</name>
-      <path>guardduty</path>
-      <access_key>${AwsAccessKey}</access_key>
-      <secret_key>${AwsSecretKey}</secret_key>
-      <only_logs_after>2019-MAR-24</only_logs_after>
-    </bucket>
-    <bucket type="custom">
-      <name>wazuh-aws-wodle</name>
-      <path>macie</path>
-      <access_key>${AwsAccessKey}</access_key>
-      <secret_key>${AwsSecretKey}</secret_key>
-      <only_logs_after>2019-MAR-24</only_logs_after>
-    </bucket>
-    <bucket type="vpcflow">
-      <name>wazuh-aws-wodle</name>
-      <path>vpc</path>
-      <access_key>${AwsAccessKey}</access_key>
-      <secret_key>${AwsSecretKey}</secret_key>
-      <only_logs_after>2019-MAR-24</only_logs_after>
-    </bucket>
-    <service type="inspector">
-      <access_key>${AwsAccessKey}</access_key>
-      <secret_key>${AwsSecretKey}</secret_key>
-    </service>
-  </wodle>
-</ossec_config>
-EOF
-fi
-
-the_uid=$(id -u wazuh)
-
-# Audit rules
-cat >> /etc/audit/rules.d/audit.rules << EOF
--a exit,always -F euid=${the_uid} -F arch=b32 -S execve -k audit-wazuh-c
--a exit,always -F euid=${the_uid} -F arch=b64 -S execve -k audit-wazuh-c
-EOF
-
-auditctl -D
-auditctl -R /etc/audit/rules.d/audit.rules
-systemctl restart auditd
-# Localfiles
-cat >> ${manager_config} << EOF
-<ossec_config>
-  <localfile>
-    <log_format>full_command</log_format>
-    <alias>process list</alias>
-    <command>ps -e -o pid,uname,command</command>
-    <frequency>30</frequency>
-  </localfile>
-  <command>
-    <name>firewall-drop</name>
-    <executable>firewall-drop.sh</executable>
-    <expect>srcip</expect>
-    <timeout_allowed>yes</timeout_allowed>
-  </command>
-
-  <active-response>
-    <command>firewall-drop</command>
-    <location>local</location>
-    <rules_id>100100</rules_id>
-    <timeout>60</timeout>
-  </active-response>
-</ossec_config>
-EOF
-
-# Vuln detector
-cat >> ${manager_config} << EOF
-<ossec_config>
-  <wodle name="vulnerability-detector">
-    <disabled>no</disabled>
-    <interval>12m</interval>
-    <ignore_time>6h</ignore_time>
-    <run_on_start>yes</run_on_start>
-    <feed name="ubuntu-18">
-      <disabled>no</disabled>
-      <update_interval>1h</update_interval>
-    </feed>
-    <feed name="redhat">
-      <disabled>no</disabled>
-      <update_from_year>2010</update_from_year>
-      <update_interval>1h</update_interval>
-    </feed>
-    <feed name="debian-9">
-      <disabled>no</disabled>
-      <update_interval>1h</update_interval>
-    </feed>
-  </wodle>
-</ossec_config>
-EOF
 
 # Restart wazuh-manager
 systemctl restart wazuh-manager
@@ -452,7 +257,6 @@ echo "Setting port and SSL to Wazuh API." >> /tmp/deploy.log
 # Restart wazuh-api
 systemctl restart wazuh-api
 echo "Restarted Wazuh API." >> /tmp/deploy.log
-
 
 # Installing Filebeat
 yum -y install filebeat-${elastic_version}
@@ -520,45 +324,6 @@ filebeat setup --index-management -E setup.template.json.enabled=false
 
 # Disable repositories
 sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
-
-# Setting up Splunk Forwarder
-yum -y install wget
-# download splunkforwarder
-echo 'Downloading Splunk Forwarder...'
-wget -O splunkforwarder-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm 'https://www.splunk.com/bin/splunk/DownloadActivityServlet?architecture=x86_64&platform=linux&version=7.2.3&product=universalforwarder&filename=splunkforwarder-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm&wget=true' &> /dev/null
-
-# install splunkforwarder
-echo 'Installing Splunk Forwarder...'
-yum install splunkforwarder-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm -y -q &> /dev/null
-
-echo "Setting up Splunk forwarder..."
-# props.conf
-curl -so /opt/splunkforwarder/etc/system/local/props.conf https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/splunk/props.conf
-
-# inputs.conf
-curl -so /opt/splunkforwarder/etc/system/local/inputs.conf https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/splunk/inputs.conf
-
-# set hostname
-sed -i "s:MANAGER_HOSTNAME:$(hostname):g" /opt/splunkforwarder/etc/system/local/inputs.conf
-
-# create credential file
-touch /opt/splunkforwarder/etc/system/local/user-seed.conf
-
-# add admin user
-echo "[user_info]" > /opt/splunkforwarder/etc/system/local/user-seed.conf
-echo "USERNAME = $splunk_username" >> /opt/splunkforwarder/etc/system/local/user-seed.conf
-echo "PASSWORD = $splunk_password" >> /opt/splunkforwarder/etc/system/local/user-seed.conf
-
-echo "Starting Splunk..."
-# accept license
-/opt/splunkforwarder/bin/splunk start --accept-license --answer-yes --auto-ports --no-prompt &> /dev/null
-
-# forward to index
-/opt/splunkforwarder/bin/splunk add forward-server ${splunk_ip}:9997 -auth $splunk_username:$splunk_password &> /dev/null
-
-# restart service
-/opt/splunkforwarder/bin/splunk restart &> /dev/null
-echo "Done with Splunk." >> /tmp/deploy.log
 
 # Creating groups
 /var/ossec/bin/agent_groups -a -g apache -q

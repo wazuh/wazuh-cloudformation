@@ -12,13 +12,7 @@ wazuh_server_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhServerPort:' | cut 
 wazuh_cluster_key=$(cat /tmp/wazuh_cf_settings | grep '^WazuhClusterKey:' | cut -d' ' -f2)
 wazuh_master_ip=$(cat /tmp/wazuh_cf_settings | grep '^WazuhMasterIP:' | cut -d' ' -f2)
 elb_elasticsearch=$(cat /tmp/wazuh_cf_settings | grep '^ElbElasticDNS:' | cut -d' ' -f2)
-VirusTotalKey=$(cat /tmp/wazuh_cf_settings | grep '^VirusTotalKey:' | cut -d' ' -f2)
-AwsSecretKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsSecretKey:' | cut -d' ' -f2)
-AwsAccessKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsAccessKey:' | cut -d' ' -f2)
-SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
-splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^SplunkUsername:' | cut -d' ' -f2)
-splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^SplunkPassword:' | cut -d' ' -f2)
 TAG='v3.12.0'
 
 # Check if running as root
@@ -177,51 +171,6 @@ cat >> ${manager_config} << EOF
 </ossec_config>
 EOF
 
-cat >> ${manager_config} << EOF
-<ossec_config>
-  <wodle name="open-scap">
-    <disabled>no</disabled>
-    <timeout>1800</timeout>
-    <interval>1d</interval>
-    <scan-on-start>yes</scan-on-start>
-    <content type="xccdf" path="ssg-rhel-7-ds.xml">
-      <profile>xccdf_org.ssgproject.content_profile_pci-dss</profile>
-      <profile>xccdf_org.ssgproject.content_profile_common</profile>
-    </content>
-    <content type="xccdf" path="cve-redhat-7-ds.xml"/>
-  </wodle>
-</ossec_config>
-EOF
-
-# Add VirusTotal integration if key already set
-if [ "x${VirusTotalKey}" != "x" ]; then
-cat >> ${manager_config} << EOF
-<ossec_config>
-  <integration>
-      <name>virustotal</name>
-      <api_key>${VirusTotalKey}</api_key>
-      <rule_id>100200</rule_id>
-      <alert_format>json</alert_format>
-  </integration>
-</ossec_config>
-EOF
-fi
-
-
-# Slack integration
-if [ "x${SlackHook}" != "x" ]; then
-cat >> ${manager_config} << EOF
-<ossec_config>
-  <integration>
-    <name>slack</name>
-    <hook_url>${SlackHook}</hook_url>
-    <level>12</level>
-    <alert_format>json</alert_format>
-  </integration>
-</ossec_config>
-EOF
-fi
-
 the_uid=$(id -u wazuh)
 
 # Audit rules
@@ -323,46 +272,6 @@ echo "output.elasticsearch.password: "$ssh_password"" >> /etc/filebeat/filebeat.
 
 # Create certs folder
 mkdir -p /etc/filebeat/certs/ca
-
-# Setting up Splunk Forwarder
-yum -y install wget
-# download splunkforwarder
-echo 'Downloading Splunk Forwarder...'
-wget -O splunkforwarder-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm 'https://www.splunk.com/bin/splunk/DownloadActivityServlet?architecture=x86_64&platform=linux&version=7.2.3&product=universalforwarder&filename=splunkforwarder-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm&wget=true' &> /dev/null
-
-# install splunkforwarder
-echo 'Installing Splunk Forwarder...'
-yum install splunkforwarder-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm -y -q &> /dev/null
-
-echo "Setting up Splunk forwarder..."
-# props.conf
-curl -so /opt/splunkforwarder/etc/system/local/props.conf https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/splunk/props.conf
-
-# inputs.conf
-curl -so /opt/splunkforwarder/etc/system/local/inputs.conf https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/splunk/inputs.conf
-
-# set hostname
-sed -i "s:MANAGER_HOSTNAME:$(hostname):g" /opt/splunkforwarder/etc/system/local/inputs.conf
-
-# create credential file
-touch /opt/splunkforwarder/etc/system/local/user-seed.conf
-
-# add admin user
-echo "[user_info]" > /opt/splunkforwarder/etc/system/local/user-seed.conf
-echo "USERNAME = $splunk_username" >> /opt/splunkforwarder/etc/system/local/user-seed.conf
-echo "PASSWORD = $splunk_password" >> /opt/splunkforwarder/etc/system/local/user-seed.conf
-
-echo "Starting Splunk..."
-# accept license
-/opt/splunkforwarder/bin/splunk start --accept-license --answer-yes --auto-ports --no-prompt &> /dev/null
-
-# forward to index
-/opt/splunkforwarder/bin/splunk add forward-server ${splunk_ip}:9997 -auth $splunk_username:$splunk_password &> /dev/null
-
-# restart service
-/opt/splunkforwarder/bin/splunk restart &> /dev/null
-echo "Done with Splunk." >> /tmp/log
-
 
 amazon-linux-extras install epel -y
 yum install -y sshpass
