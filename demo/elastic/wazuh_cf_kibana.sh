@@ -297,6 +297,18 @@ install_plugin(){
 
 }
 
+
+optimize_kibana(){
+  systemctl stop kibana
+  echo "Optimizing app" >> /tmp/deploy.log
+  cd /usr/share/kibana
+  NODE_OPTIONS="--max-old-space-size=2048" ./bin/kibana --optimize --allow-root
+  cd /tmp
+  echo "App installed!" >> /tmp/deploy.log
+  systemctl start kibana
+}
+
+
 add_api(){
 echo "Adding Wazuh API" >> /tmp/deploy.log
 sed -ie '/- default:/,+4d' /usr/share/kibana/optimize/wazuh/config/wazuh.yml
@@ -430,6 +442,7 @@ main(){
   get_plugin_url
   install_plugin
   enable_kibana
+  optimize_kibana
   start_kibana
   sleep 60
   add_api
