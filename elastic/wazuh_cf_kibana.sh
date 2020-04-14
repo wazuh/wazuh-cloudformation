@@ -220,12 +220,11 @@ xpack.security.enabled: true
 elasticsearch.username: "elastic"
 elasticsearch.password: "$ssh_password"
 EOF
+echo "logging.dest: /var/log/kibana.log" >> /etc/kibana/kibana.yml
 echo "Kibana.yml configured." >> /tmp/deploy.log
-
 # Allow Kibana to listen on privileged ports
 setcap 'CAP_NET_BIND_SERVICE=+eip' /usr/share/kibana/node/bin/node
 echo "Setcap executed" >> /tmp/deploy.log
-
 }
 
 
