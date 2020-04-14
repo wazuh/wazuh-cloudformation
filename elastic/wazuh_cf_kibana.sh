@@ -279,9 +279,7 @@ install_plugin(){
 optimize_kibana(){
   echo "Optimizing app" >> /tmp/deploy.log
   cd /usr/share/kibana
-  echo "-----------------PRE OPTIMIZE --------------" >> /var/log/kibana.log
-  NODE_OPTIONS="--max-old-space-size=3072" ./bin/kibana --optimize
-  echo "-----------------POST OPTIMIZE - SLEEPING --------------" >> /var/log/kibana.log
+  NODE_OPTIONS="--max-old-space-size=3072" /usr/share/kibana/bin/kibana --allow-root > /var/log/kibana_error.log
   echo "App optimized!" >> /tmp/deploy.log
 }
 
