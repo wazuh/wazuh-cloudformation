@@ -276,7 +276,7 @@ optimize_kibana(){
   systemctl stop kibana
   echo "Optimizing app" >> /tmp/deploy.log
   cd /usr/share/kibana
-  NODE_OPTIONS="--max-old-space-size=2048" ./bin/kibana --optimize --allow-root
+  sudo -u kibana NODE_OPTIONS="--max-old-space-size=2048" ./bin/kibana --optimize --allow-root
   cd /tmp
   echo "App installed!" >> /tmp/deploy.log
   systemctl start kibana
@@ -398,8 +398,8 @@ main(){
   kibana_certs
   get_plugin_url
   install_plugin
-  optimize_kibana
   enable_kibana
+  optimize_kibana
   start_kibana
   sleep 60
   add_api
