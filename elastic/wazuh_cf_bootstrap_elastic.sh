@@ -85,9 +85,9 @@ node.master: true
 path.data: /mnt/ephemeral/elasticsearch/lib
 path.logs: /mnt/ephemeral/elasticsearch/log
 cluster.initial_master_nodes:
-  - "10.0.2.113"
-  - "10.0.2.114"
-  - "10.0.2.115"
+  - "10.0.2.123"
+  - "10.0.2.124"
+  - "10.0.2.125"
 EOF
 
 echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
@@ -199,10 +199,10 @@ instances:
         - "$kibana_ip"
     - name: "elastic-node2"
       ip:
-        - "10.0.2.115"
+        - "10.0.2.125"
     - name: "elastic-node1"
       ip:
-        - "10.0.2.113"
+        - "10.0.2.123"
     - name: "elasticsearch"
       ip:
         - "$eth0_ip"

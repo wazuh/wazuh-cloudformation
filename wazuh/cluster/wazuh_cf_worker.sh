@@ -163,7 +163,7 @@ chmod go-w /etc/filebeat/filebeat.yml
 chmod go-w /etc/filebeat/wazuh-template.json
 
 # Point to Elasticsearch cluster
-sed -i "s|'http://YOUR_ELASTIC_SERVER_IP:9200'|'10.0.2.113','10.0.2.114','10.0.2.115'|" /etc/filebeat/filebeat.yml
+sed -i "s|'http://YOUR_ELASTIC_SERVER_IP:9200'|'10.0.2.123','10.0.2.124','10.0.2.125'|" /etc/filebeat/filebeat.yml
 
 # Filebeat security
 echo "output.elasticsearch.username: "elastic"" >> /etc/filebeat/filebeat.yml
@@ -177,7 +177,7 @@ amazon-linux-extras install epel -y
 yum install -y sshpass
 sleep 500
 echo $ssh_password >> pass
-sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.114:/home/wazuh/certs.zip /home/wazuh/
+sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/
 rm pass -f
 cp /home/wazuh/certs.zip .
 unzip certs.zip

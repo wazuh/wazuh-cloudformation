@@ -28,7 +28,7 @@ extract_certs(){
   echo $ssh_password >> pass
 
   while [ ! -f /home/wazuh/certs.zip ]; do
-    sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.114:/home/wazuh/certs.zip /home/wazuh/ 2> /dev/null
+    sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/ 2> /dev/null
     sleep 10
   done
   echo "Extract certs " >> /tmp/deploy.log
@@ -110,9 +110,9 @@ node.master: false
 node.data: false
 node.ingest: false
 discovery.seed_hosts:
-  - "10.0.2.113"
-  - "10.0.2.114"
-  - "10.0.2.115"
+  - "10.0.2.123"
+  - "10.0.2.124"
+  - "10.0.2.125"
 EOF
 
 echo "network.host: $eth0_ip" >> /etc/elasticsearch/elasticsearch.yml
@@ -183,7 +183,6 @@ start_elasticsearch(){
     echo "daemon-reload." >> /tmp/deploy.log
     systemctl restart elasticsearch
     echo "done with starting elasticsearch service." >> /tmp/deploy.log
-    # systemctl stop elasticsearch
 }
 
 
@@ -213,9 +212,6 @@ kibana_certs(){
 
 configure_kibana(){
 # Configuring kibana.yml
-# touch /var/log/kibana.log
-# chmod 777 /var/log/kibana.log
-# echo "logging.dest: /var/log/kibana.log" >> /etc/kibana/kibana.yml
 cat > /etc/kibana/kibana.yml << EOF
 elasticsearch.hosts: ["https://$eth0_ip:9200"]
 server.port: 5601
@@ -225,9 +221,11 @@ elasticsearch.username: "elastic"
 elasticsearch.password: "$ssh_password"
 EOF
 echo "Kibana.yml configured." >> /tmp/deploy.log
+
 # Allow Kibana to listen on privileged ports
 setcap 'CAP_NET_BIND_SERVICE=+eip' /usr/share/kibana/node/bin/node
 echo "Setcap executed" >> /tmp/deploy.log
+
 }
 
 
@@ -272,16 +270,18 @@ install_plugin(){
     cd /usr/share/kibana
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install file://$BUILD_SRC/$APP_FILE
   fi
-  cd /tmp
-  echo "App installed!" >> /tmp/deploy.log
-}
-
-# optimize_kibana(){
+  systemctl restart kibana
+#   systemctl restart kibana
+#   systemctl stop elasticsearch
 #   echo "Optimizing app" >> /tmp/deploy.log
 #   cd /usr/share/kibana
-#   NODE_OPTIONS="--max-old-space-size=3072" /usr/share/kibana/bin/kibana --optimize --allow-root > /var/log/kibana_error.log
-#   echo "App optimized!" >> /tmp/deploy.log
-# }
+#   sudo -u kibana NODE_OPTIONS="--max-old-space-size=2048" ./bin/kibana --optimize
+#   cd /tmp
+#   echo "Optimizing sleep" >> /tmp/deploy.log
+#   sleep 300
+#   echo "App installed!" >> /tmp/deploy.log
+#   systemctl start elasticsearch
+}
 
 add_api(){
 echo "Adding Wazuh API" >> /tmp/deploy.log
@@ -399,7 +399,6 @@ main(){
   kibana_certs
   get_plugin_url
   install_plugin
-  # optimize_kibana
   enable_kibana
   start_kibana
   sleep 60
@@ -408,7 +407,6 @@ main(){
   start_kibana
   add_nginx
   echo "Deploy finished" >> /tmp/deploy.log
-  # systemctl start elasticsearch
 }
 
 main
