@@ -142,7 +142,7 @@ Parameters:
       - 7.6.2_3.12.2
 
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
-    Default: 7.6.1_3.12.2
+    Default: 7.6.2_3.12.2
     Description: Elastic and Wazuh versions to be installed
     Type: String
   WazuhInstanceType:
