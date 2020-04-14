@@ -183,7 +183,7 @@ start_elasticsearch(){
     echo "daemon-reload." >> /tmp/deploy.log
     systemctl restart elasticsearch
     echo "done with starting elasticsearch service." >> /tmp/deploy.log
-    systemctl stop elasticsearch
+    # systemctl stop elasticsearch
 }
 
 
@@ -213,9 +213,9 @@ kibana_certs(){
 
 configure_kibana(){
 # Configuring kibana.yml
-touch /var/log/kibana.log
-chmod 777 /var/log/kibana.log
-echo "logging.dest: /var/log/kibana.log" >> /etc/kibana/kibana.yml
+# touch /var/log/kibana.log
+# chmod 777 /var/log/kibana.log
+# echo "logging.dest: /var/log/kibana.log" >> /etc/kibana/kibana.yml
 cat > /etc/kibana/kibana.yml << EOF
 elasticsearch.hosts: ["https://$eth0_ip:9200"]
 server.port: 5601
@@ -276,12 +276,12 @@ install_plugin(){
   echo "App installed!" >> /tmp/deploy.log
 }
 
-optimize_kibana(){
-  echo "Optimizing app" >> /tmp/deploy.log
-  cd /usr/share/kibana
-  NODE_OPTIONS="--max-old-space-size=3072" /usr/share/kibana/bin/kibana --optimize --allow-root > /var/log/kibana_error.log
-  echo "App optimized!" >> /tmp/deploy.log
-}
+# optimize_kibana(){
+#   echo "Optimizing app" >> /tmp/deploy.log
+#   cd /usr/share/kibana
+#   NODE_OPTIONS="--max-old-space-size=3072" /usr/share/kibana/bin/kibana --optimize --allow-root > /var/log/kibana_error.log
+#   echo "App optimized!" >> /tmp/deploy.log
+# }
 
 add_api(){
 echo "Adding Wazuh API" >> /tmp/deploy.log
@@ -399,7 +399,7 @@ main(){
   kibana_certs
   get_plugin_url
   install_plugin
-  optimize_kibana
+  # optimize_kibana
   enable_kibana
   start_kibana
   sleep 60
@@ -408,7 +408,7 @@ main(){
   start_kibana
   add_nginx
   echo "Deploy finished" >> /tmp/deploy.log
-  systemctl start elasticsearch
+  # systemctl start elasticsearch
 }
 
 main
