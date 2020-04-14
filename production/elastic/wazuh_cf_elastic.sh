@@ -78,7 +78,7 @@ node.name: "node-$node_name"
 node.master: true
 path.data: /mnt/ephemeral/elasticsearch/lib
 path.logs: /mnt/ephemeral/elasticsearch/log
-discovery.seed_hosts: 
+discovery.seed_hosts:
   - "10.0.2.123"
   - "10.0.2.124"
   - "10.0.2.125"

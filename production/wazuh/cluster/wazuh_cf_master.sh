@@ -37,11 +37,7 @@ systemctl restart sshd
 
 echo "Created SSH user." >> /tmp/deploy.log
 
-if [[ ${InstallType} == 'staging' ]]
-then
-	# Adding Wazuh pre_release repository
-	echo -e '[wazuh_pre_release]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_pre.repo
-elif [[ ${InstallType} == 'production' ]]
+if [[ ${InstallType} == 'packages' ]]
 then
 cat > /etc/yum.repos.d/wazuh.repo <<\EOF
 [wazuh_repo]
@@ -52,9 +48,6 @@ name=Wazuh repository
 baseurl=https://packages.wazuh.com/3.x/yum/
 protect=1
 EOF
-elif [[ ${InstallType} == 'devel' ]]
-then
-	echo -e '[wazuh_staging]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/staging/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_staging.repo
 elif [[ ${InstallType} == 'sources' ]]
 then
 
@@ -132,22 +125,6 @@ local_rules="/var/ossec/etc/rules/local_rules.xml"
 
 echo "Installed wazuh manager package" >> /tmp/deploy.log
 
-### Use case 1: IP reputation
-echo "Fetching AlienVault reputation IPset" >> /tmp/deploy.log
-
-wget https://raw.githubusercontent.com/firehol/blocklist-ipsets/master/alienvault_reputation.ipset -O /tmp/alienvault_reputation.ipset
-wget https://wazuh.com/resources/iplist-to-cdblist.py -O /tmp/iplist-to-cdblist.py
-# Add Windows public IP to the list
-echo ${WindowsPublicIp} >> /tmp/alienvault_reputation.ipset
-python /tmp/iplist-to-cdblist.py /tmp/alienvault_reputation.ipset /tmp/blacklist-alienvault
-# Delete ipset and python script
-rm -rf /tmp/alienvault_reputation.ipset
-rm -rf /tmp/iplist-to-cdblist.py
-cp /tmp/blacklist-alienvault /var/ossec/etc/lists/
-chown ossec:ossec /var/ossec/etc/lists/blacklist-alienvault
-chmod 660 /var/ossec/etc/lists/blacklist-alienvault
-/var/ossec/bin/ossec-makelists
-echo "Updated CDB list ,added Windows agent IP." >> /tmp/deploy.log
 
 # Change manager protocol to tcp, to be used by Amazon ELB
 sed -i "s/<protocol>udp<\/protocol>/<protocol>tcp<\/protocol>/" ${manager_config}
@@ -217,26 +194,6 @@ sed -i '/<localfile>/,/<\/localfile>/d' ${manager_config}
 sed -i '/<!--.*-->/d' ${manager_config}
 sed -i '/<!--/,/-->/d' ${manager_config}
 sed -i '/^$/d' ${manager_config}
-
-# Add ruleset and lists
-cat >> ${manager_config} << EOF
-<ossec_config>
-  <ruleset>
-    <!-- Default ruleset -->
-    <decoder_dir>ruleset/decoders</decoder_dir>
-    <rule_dir>ruleset/rules</rule_dir>
-    <rule_exclude>0215-policy_rules.xml</rule_exclude>
-    <list>etc/lists/audit-keys</list>
-    <list>etc/lists/amazon/aws-eventnames</list>
-    <list>etc/lists/security-eventchannel</list>
-    <list>etc/lists/blacklist-alienvault</list>
-    <!-- User-defined ruleset -->
-    <decoder_dir>etc/decoders</decoder_dir>
-    <rule_dir>etc/rules</rule_dir>
-  </ruleset>
-</ossec_config>
-EOF
-
 
 # Restart wazuh-manager
 systemctl restart wazuh-manager
@@ -324,214 +281,3 @@ filebeat setup --index-management -E setup.template.json.enabled=false
 
 # Disable repositories
 sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
-
-# Creating groups
-/var/ossec/bin/agent_groups -a -g apache -q
-/var/ossec/bin/agent_groups -a -g redhat -q
-/var/ossec/bin/agent_groups -a -g windows -q
-/var/ossec/bin/agent_groups -a -g mysql -q
-
-# Give time to the instances dependencies to be properly installed
-sleep 360
-
-# Write RHEL7 shared config
-redhat_conf='/var/ossec/etc/shared/redhat/agent.conf'
-sed -i '/<agent_config>/,/<\/agent_config>/d' ${redhat_conf}
-cat >> ${redhat_conf} << EOF
-<agent_config>
-<wodle name="docker-listener">
-  <interval>10m</interval>
-  <attempts>5</attempts>
-  <run_on_start>yes</run_on_start>
-  <disabled>no</disabled>
-</wodle>
-
-	<syscheck>
-		<disabled>no</disabled>
-		<frequency>43200</frequency>
-		<scan_on_start>yes</scan_on_start>
-		<!-- Files/directories to monitor -->
-		<directories check_all="yes" whodata="yes">/usr/bin,/usr/sbin</directories>
-		<directories check_all="yes" whodata="yes">/bin,/sbin,/boot</directories>
-		<directories check_all="yes" report_changes="yes" whodata="yes" tags="cron">/etc/cron*</directories>
-		<directories check_all="yes" report_changes="yes" whodata="yes" recursion_level="2">/home,/root</directories>
-		<directories check_all="yes" report_changes="yes" whodata="yes" tags="tmp" restrict="!.tmp$">/tmp</directories>
-		<!-- Files/directories to ignore -->
-		<ignore>/etc/mtab</ignore>
-		<ignore>/etc/hosts.deny</ignore>
-		<ignore>/etc/mail/statistics</ignore>
-		<ignore>/etc/random-seed</ignore>
-		<ignore>/etc/random.seed</ignore>
-		<ignore>/etc/adjtime</ignore>
-		<ignore>/etc/httpd/logs</ignore>
-		<ignore>/etc/utmpx</ignore>
-		<ignore>/etc/wtmpx</ignore>
-		<ignore>/etc/cups/certs</ignore>
-		<ignore>/etc/dumpdates</ignore>
-		<ignore>/etc/svc/volatile</ignore>
-		<!-- File extensions ignored -->
-		<ignore type="sregex">.log$|.tmp$|.swp$|.viminfo$</ignore>
-		<!-- Check the file, but never compute the diff -->
-		<nodiff>/etc/ssl/private.key</nodiff>
-		<!-- NFS files -->
-		<skip_nfs>yes</skip_nfs>
-	</syscheck>
-	<!-- Policy monitoring -->
-	<!-- OpenSCAP integration -->
-	<wodle name="open-scap">
-		<disabled>no</disabled>
-		<timeout>1800</timeout>
-		<interval>1d</interval>
-		<scan-on-start>yes</scan-on-start>
-		<content type="xccdf" path="ssg-rhel-7-ds.xml">
-			<profile>xccdf_org.ssgproject.content_profile_pci-dss</profile>
-			<profile>xccdf_org.ssgproject.content_profile_common</profile>
-		</content>
-		<content type="xccdf" path="cve-redhat-7-ds.xml"/>
-	</wodle>
-	<!-- System inventory -->
-	<wodle name="syscollector">
-		<disabled>no</disabled>
-		<interval>1h</interval>
-		<scan_on_start>yes</scan_on_start>
-		<hardware>yes</hardware>
-		<os>yes</os>
-		<network>yes</network>
-		<packages>yes</packages>
-		<ports>yes</ports>
-		<processes>yes</processes>
-	</wodle>
-	<wodle name="osquery">
-		<disabled>no</disabled>
-		<run_daemon>yes</run_daemon>
-		<bin_path>/usr/bin</bin_path>
-		<log_path>/var/log/osquery/osqueryd.results.log</log_path>
-		<config_path>/etc/osquery/osquery.conf</config_path>
-		<add_labels>no</add_labels>
-	</wodle>
-	<!-- Log analysis -->
-	<localfile>
-		<log_format>command</log_format>
-		<command>df -P</command>
-		<frequency>360</frequency>
-	</localfile>
-	<localfile>
-		<log_format>full_command</log_format>
-		<command>netstat -tulpn | sed 's/\([[:alnum:]]\+\)\ \+[[:digit:]]\+\ \+[[:digit:]]\+\ \+\(.*\):\([[:digit:]]*\)\ \+\([0-9\.\:\*]\+\).\+\ \([[:digit:]]*\/[[:alnum:]\-]*\).*/\1 \2 == \3 == \4 \5/' | sort -k 4 -g | sed 's/ == \(.*\) ==/:\1/' | sed 1,2d</command>
-		<alias>netstat listening ports</alias>
-		<frequency>360</frequency>
-	</localfile>
-	<localfile>
-		<log_format>full_command</log_format>
-		<command>last -n 20</command>
-		<frequency>360</frequency>
-	</localfile>
-	<localfile>
-		<log_format>apache</log_format>
-		<location>/var/log/httpd/error_log*</location>
-	</localfile>
-	<localfile>
-		<log_format>apache</log_format>
-		<location>/var/log/httpd/access_log*</location>
-	</localfile>
-	<localfile>
-		<log_format>audit</log_format>
-		<location>/var/log/audit/audit.log</location>
-	</localfile>
-	<localfile>
-		<log_format>syslog</log_format>
-		<location>/var/ossec/logs/active-responses.log</location>
-	</localfile>
-	<localfile>
-		<log_format>syslog</log_format>
-		<location>/var/log/messages</location>
-	</localfile>
-	<localfile>
-		<log_format>syslog</log_format>
-		<location>/var/log/secure</location>
-	</localfile>
-	<localfile>
-		<log_format>syslog</log_format>
-		<location>/var/log/maillog</location>
-	</localfile>
-	<localfile>
-		<log_format>syslog</log_format>
-		<location>/var/log/suricata/eve.json</location>
-	</localfile>
-	<localfile>
-		<log_format>full_command</log_format>
-		<alias>process list</alias>
-		<command>ps -e -o pid,uname,command</command>
-		<frequency>30</frequency>
-	</localfile>
-</agent_config>
-EOF
-
-# Write Windows shared config
-windows_conf='/var/ossec/etc/shared/windows/agent.conf'
-sed -i '/<agent_config>/,/<\/agent_config>/d' ${windows_conf}
-cat >> ${windows_conf} << EOF
-<agent_config>
-	<wodle name="syscollector">
-		<disabled>no</disabled>
-		<interval>1h</interval>
-		<scan_on_start>yes</scan_on_start>
-		<hardware>yes</hardware>
-		<os>yes</os>
-		<packages>yes</packages>
-	</wodle>
-	<wodle name="osquery">
-		<disabled>no</disabled>
-		<run_daemon>yes</run_daemon>
-		<bin_path>C:\ProgramData\osquery\osqueryd</bin_path>
-		<log_path>C:\ProgramData\osquery\log\osqueryd.results.log</log_path>
-		<config_path>C:\ProgramData\osquery\osquery.conf</config_path>
-		<add_labels>no</add_labels>
-	</wodle>
-	<localfile>
-		<location>C:\inetpub\logs\LogFiles\W3SVC1\u_ex%y%m%d.log</location>
-		<log_format>iis</log_format>
-	</localfile>
-	<syscheck>
-		<scan_on_start>yes</scan_on_start>
-		<directories check_all="yes" report_changes="yes" whodata="yes">C:\Santiago</directories>
-	</syscheck>
-</agent_config>
-EOF
-
-# Write apache shared config
-apache_conf='/var/ossec/etc/shared/apache/agent.conf'
-sed -i '/<agent_config>/,/<\/agent_config>/d' ${apache_conf}
-cat >> ${apache_conf} << EOF
-<agent_config>
-	<syscheck>
-		<disabled>no</disabled>
-		<frequency>43200</frequency>
-		<scan_on_start>yes</scan_on_start>
-		<!-- Files/directories to monitor -->
-		<directories check_all="yes" report_changes="yes" whodata="yes" tags="apache,web,httpd" restrict=".conf$">/etc/httpd</directories>
-		<!-- File extensions ignored -->
-		<ignore type="sregex">.log$|.tmp$|.swp$|.viminfo$</ignore>
-	</syscheck>
-</agent_config>
-EOF
-
-# Write mysql shared config
-mysql_conf='/var/ossec/etc/shared/mysql/agent.conf'
-sed -i '/<agent_config>/,/<\/agent_config>/d' ${mysql_conf}
-cat >> ${mysql_conf} << EOF
-<agent_config>
-	<syscheck>
-		<directories check_all="yes" report_changes="yes" whodata="yes" tags="visa" recursion_level="2" restrict=".conf$">/var/lib/mysql</directories>
-	</syscheck>
-</agent_config>
-EOF
-
-# Attach agents to groups
-rhel_id=`/var/ossec/bin/manage_agents -l | grep RHEL | cut -d':' -f2 | cut -d ',' -f1`
-windows_id=`/var/ossec/bin/manage_agents -l | grep Win | cut -d':' -f2 | cut -d ',' -f1`
-
-/var/ossec/bin/agent_groups -a -g redhat -i ${rhel_id} -q
-/var/ossec/bin/agent_groups -a -g mysql -i ${rhel_id} -q
-/var/ossec/bin/agent_groups -a -g apache -i ${rhel_id} -q
-/var/ossec/bin/agent_groups -a -g windows -i ${windows_id} -q

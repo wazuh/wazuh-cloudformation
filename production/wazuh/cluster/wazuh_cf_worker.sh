@@ -29,11 +29,7 @@ sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/s
 systemctl restart sshd
 echo "Created SSH user." >> /tmp/log
 
-if [[ ${InstallType} == 'staging' ]]
-then
-	# Adding Wazuh pre_release repository
-	echo -e '[wazuh_pre_release]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/pre-release/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_pre.repo
-elif [[ ${InstallType} == 'production' ]]
+if [[ ${InstallType} == 'packages' ]]
 then
 cat > /etc/yum.repos.d/wazuh.repo <<\EOF
 [wazuh_repo]
@@ -44,9 +40,6 @@ name=Wazuh repository
 baseurl=https://packages.wazuh.com/3.x/yum/
 protect=1
 EOF
-elif [[ ${InstallType} == 'devel' ]]
-then
-	echo -e '[wazuh_staging]\ngpgcheck=1\ngpgkey=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/key/GPG-KEY-WAZUH\nenabled=1\nname=EL-$releasever - Wazuh\nbaseurl=https://s3-us-west-1.amazonaws.com/packages-dev.wazuh.com/staging/yum/\nprotect=1' | tee /etc/yum.repos.d/wazuh_staging.repo
 elif [[ ${InstallType} == 'sources' ]]
 then
 
@@ -138,101 +131,6 @@ EOF
 systemctl restart wazuh-manager
 # Wait for cluster information to be received (rules,lists...)
 sleep 60
-
-# Disabling agent components and cleaning configuration file
-sed -i '/<wodle name="open-scap">/,/<\/wodle>/d' ${manager_config}
-sed -i '/<wodle name="cis-cat">/,/<\/wodle>/d' ${manager_config}
-sed -i '/<ruleset>/,/<\/ruleset>/d' ${manager_config}
-sed -i '/<auth>/,/<\/auth>/d' ${manager_config}
-sed -i '/<wodle name="syscollector">/,/<\/wodle>/d' ${manager_config}
-sed -i '/<wodle name="vulnerability-detector">/,/<\/wodle>/d' ${manager_config}
-sed -i '/<localfile>/,/<\/localfile>/d' ${manager_config}
-sed -i '/<!--.*-->/d' ${manager_config}
-sed -i '/<!--/,/-->/d' ${manager_config}
-sed -i '/^$/d' ${manager_config}
-
-
-# Add ruleset and lists
-cat >> ${manager_config} << EOF
-<ossec_config>
-  <ruleset>
-    <!-- Default ruleset -->
-    <decoder_dir>ruleset/decoders</decoder_dir>
-    <rule_dir>ruleset/rules</rule_dir>
-    <rule_exclude>0215-policy_rules.xml</rule_exclude>
-    <list>etc/lists/audit-keys</list>
-    <list>etc/lists/amazon/aws-eventnames</list>
-    <list>etc/lists/security-eventchannel</list>
-    <list>etc/lists/blacklist-alienvault</list>
-    <!-- User-defined ruleset -->
-    <decoder_dir>etc/decoders</decoder_dir>
-    <rule_dir>etc/rules</rule_dir>
-  </ruleset>
-</ossec_config>
-EOF
-
-the_uid=$(id -u wazuh)
-
-# Audit rules
-cat >> /etc/audit/rules.d/audit.rules << EOF
--a exit,always -F euid=${the_uid} -F arch=b32 -S execve -k audit-wazuh-c
--a exit,always -F euid=${the_uid} -F arch=b64 -S execve -k audit-wazuh-c
-EOF
-
-auditctl -D
-auditctl -R /etc/audit/rules.d/audit.rules
-systemctl restart auditd
-
-# Localfiles
-cat >> ${manager_config} << EOF
-<ossec_config>
-  <localfile>
-    <log_format>full_command</log_format>
-    <alias>process list</alias>
-    <command>ps -e -o pid,uname,command</command>
-    <frequency>30</frequency>
-  </localfile>
-  <command>
-    <name>firewall-drop</name>
-    <executable>firewall-drop.sh</executable>
-    <expect>srcip</expect>
-    <timeout_allowed>yes</timeout_allowed>
-  </command>
-
-  <active-response>
-    <command>firewall-drop</command>
-    <location>local</location>
-    <rules_id>100100</rules_id>
-    <timeout>60</timeout>
-  </active-response>
-</ossec_config>
-EOF
-
-# Vuln detector
-cat >> ${manager_config} << EOF
-<ossec_config>
-  <wodle name="vulnerability-detector">
-    <disabled>no</disabled>
-    <interval>12m</interval>
-    <ignore_time>6h</ignore_time>
-    <run_on_start>yes</run_on_start>
-    <feed name="ubuntu-18">
-      <disabled>no</disabled>
-      <update_interval>1h</update_interval>
-    </feed>
-    <feed name="redhat">
-      <disabled>no</disabled>
-      <update_from_year>2010</update_from_year>
-      <update_interval>1h</update_interval>
-    </feed>
-    <feed name="debian-9">
-      <disabled>no</disabled>
-      <update_interval>1h</update_interval>
-    </feed>
-  </wodle>
-</ossec_config>
-EOF
-
 
 echo "Cluster configuration" >> /tmp/log
 
