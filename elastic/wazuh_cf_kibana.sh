@@ -270,6 +270,8 @@ install_plugin(){
     cd /usr/share/kibana
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install file://$BUILD_SRC/$APP_FILE
   fi
+  echo "Long sleep" >> /tmp/deploy.log
+  sleep 10000
 }
 
 optimize_kibana(){
