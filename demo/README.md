@@ -5,7 +5,7 @@
 [![Documentation](https://img.shields.io/badge/docs-view-green.svg)](https://documentation.wazuh.com)
 [![Web](https://img.shields.io/badge/web-view-green.svg)](https://wazuh.com)
 
-This repository includes the template and scripts to set up an environment that includes:
+The template and scripts here set up an environment that includes:
 
 * A VPC with two subnets, one for Wazuh servers, and another for Elastic Stack
 * Wazuh managers cluster with two nodes, a master and a worker
@@ -104,6 +104,6 @@ Then, on the linux agent, the /var/ossec/etc/ossec.conf would include the config
       <protocol>tcp</protocol>
     </server>
 
-## AWS environment created by cloud formation template
+## AWS demo environment diagram
 
 ![wazuh_template](images/wazuh_template-designer.png)

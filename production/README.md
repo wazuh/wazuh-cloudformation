@@ -5,7 +5,7 @@
 [![Documentation](https://img.shields.io/badge/docs-view-green.svg)](https://documentation.wazuh.com)
 [![Web](https://img.shields.io/badge/web-view-green.svg)](https://wazuh.com)
 
-This repository includes the template and scripts to set up an environment that includes:
+The production environment has the following structure:
 
 * A VPC with two subnets, one for Wazuh servers, and another for Elastic Stack
 * Wazuh managers cluster with two nodes, a master and a worker
@@ -13,7 +13,7 @@ This repository includes the template and scripts to set up an environment that 
 * A Kibana node that includes a local elasticsearch client node, and an Nginx for HTTP basic authentication
 * Wazuh servers seat behind an internet-facing load balancer for agents to communicate with the cluster
 * Kibana server seats behind an internet facing load balancer, that optionally loads an SSL Certificate for HTTPS
-* A Splunk Indexer instance with a Splunk app for Wazuh installed on it.
+* Route53 DNS records for the loadbalancer, Wazuh and Elastic Stack nodes (optional).
 
 ## Elasticsearch cluster configuration
 
@@ -81,24 +81,98 @@ Once registered, new agents can connect to the Wazuh cluster, via TCP, using the
 
 ## Optional DNS records
 
-A parent domain (e.g. mycompany.com) and subdomain (e.g. wazuh) can be specified. In this example, this is what would be used for communications:
+`EnableDNSRecord`, `Subdomain` and `HostedZoneName` parameters configure the DNS records.
 
-* wazuh.mycompany.com: domain name for access to Kibana WUI (via HTTPS). It also provides access via SSH (jumpbox to servers).
-* registration.wazuh.mycompany.com: domain name for agents registration.
-* data.wazuh.mycompany.com: domain name for agents communication with the cluster.
+- The DNS records can be enable/disable throught the `EnableDNSRecord` parameter.
+- The `Subdomain` parameter sets the subdomain name for the loadbalancer.
+- `HostedZoneName` sets the parent domain for the loadbalancer and the instances.
+- The subdomain name is fixed for the Elastic Stack and Wazuh nodes.
 
-An example of the installation of a new agent, on a Windows system (automatically registered and configured) using an MSI package would be:
 
-    wazuh-agent-3.12.2-1.msi /q ADDRESS=“wazuh.mycompany.com” AUTHD_SERVER=“registration.wazuh.mycompany.com” PASSWORD=“mypassword” AGENT_NAME=“myhostname” PROTOCOL=“TCP”
+## Parameters template
 
-An example of the registration of a new agent on a Linux system would be:
+The following template contains an example list of parameters and value placeholders.
 
-    /var/ossec/bin/agent-auth -m registration.wazuh.mycompany.com -P mypassword -A myhostname
+```json
+[{
+    "ParameterKey": "ElasticWazuhVersion",
+    "ParameterValue": "<ElasticWazuhVersion>"
+},
+{
+    "ParameterKey": "WazuhInstanceType",
+    "ParameterValue": "t2.medium"
+},
+{
+    "ParameterKey": "InstallType",
+    "ParameterValue": "<InstallType>"
+},
+{
+    "ParameterKey": "ElasticInstanceType",
+    "ParameterValue": "t2.large"
+},
+{
+    "ParameterKey": "KibanaInstanceType",
+    "ParameterValue": "t2.large"
+},
+{
+    "ParameterKey": "SshUsername",
+    "ParameterValue": "<SshUsername>"
+},
+{
+    "ParameterKey": "SshPassword",
+    "ParameterValue": "<SshPassword>"
+},
+{
+    "ParameterKey": "WazuhServerPort",
+    "ParameterValue": "1514"
+},
+{
+    "ParameterKey": "WazuhRegistrationPort",
+    "ParameterValue": "1515"
+},
+{
+    "ParameterKey": "WazuhRegistrationPassword",
+    "ParameterValue": "<WazuhRegistrationPassword>"
+},
+{
+    "ParameterKey": "WazuhApiPort",
+    "ParameterValue": "55000"
+},
+{
+    "ParameterKey": "WazuhApiAdminUsername",
+    "ParameterValue": "<WazuhApiAdminUsername>"
+},
+{
+    "ParameterKey": "WazuhApiAdminPassword",
+    "ParameterValue": "<WazuhApiAdminPassword>"
+},
+{
+    "ParameterKey": "KeyPairName",
+    "ParameterValue": "<KeyPairName>"
+},
+{
+    "ParameterKey": "AvailabilityZone",
+    "ParameterValue": "<AvailabilityZone>"
+},
+{
+    "ParameterKey": "SSLCertificateARN",
+    "ParameterValue": "<SSLCertificateARN>"
+},
+{
+    "ParameterKey": "EnableDNSRecord",
+    "ParameterValue": "disabled"
+},
+{
+    "ParameterKey": "Subdomain",
+    "ParameterValue": "<Subdomain>"
+},
+{
+    "ParameterKey": "HostedZoneName",
+    "ParameterValue": "<HostedZoneName>"
+}
+]
+```
 
-Then, on the linux agent, the /var/ossec/etc/ossec.conf would include the configuration to connect to the managers:
+## AWS demo environment diagram
 
-    <server>
-      <address>data.wazuh.mycompany.com</address>
-      <port>1514</port>
-      <protocol>tcp</protocol>
-    </server>
+![wazuh_template](images/wazuh_template-designer.png)
