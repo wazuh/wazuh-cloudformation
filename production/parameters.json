@@ -62,5 +62,17 @@
 {
     "ParameterKey": "SSLCertificateARN",
     "ParameterValue": "<SSLCertificateARN>"
+},
+{
+    "ParameterKey": "EnableDNSRecord",
+    "ParameterValue": "disabled"
+},
+{
+    "ParameterKey": "Subdomain",
+    "ParameterValue": "<Subdomain>"
+},
+{
+    "ParameterKey": "HostedZoneName",
+    "ParameterValue": "<HostedZoneName>"
 }
 ]

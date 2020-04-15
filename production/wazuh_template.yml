@@ -36,7 +36,7 @@ Mappings:
     SubnetWazuh:
       CIDR: 10.0.0.0/24
     SubnetElasticsearch:
-      CIDR: 10.0.1.0/24
+      CIDR: 10.0.2.0/24
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -46,6 +46,13 @@ Metadata:
           default: "Installation method"
         Parameters:
           - InstallType
+      -
+        Label:
+          default: "DNS records details"
+        Parameters:
+          - EnableDNSRecord
+          - HostedZoneName
+          - Subdomain
       -
         Label:
           default: "AWS environment"
@@ -85,6 +92,22 @@ Metadata:
           - SSLCertificateARN
 
 Parameters:
+
+  # DNS records details
+  HostedZoneName:
+    Description: HostedZoneName
+    Type: String
+  Subdomain:
+    Description: Subdomain name
+    Type: String
+  EnableDNSRecord:
+    Default: disabled
+    Description: If enabled deploy DNS records for each node and the common LB.
+    ConstraintDescription: Only enabled or disabled.
+    AllowedValues:
+      - enabled
+      - disabled
+    Type: String
 
   # AWS environment
   AvailabilityZone:
@@ -243,9 +266,13 @@ Parameters:
     Default: '443'
     Description: Port for Kibana WUI
     Type: String
+  SSLCertificateARN:
+    Description: 'Used for HTTPS access to WUI. Existent certificate, identified by its Amazon Resource Name (ARN).'
+    Type: String
 
 Conditions:
   HasSslCert: !Not [!Equals [!Ref SSLCertificateARN, ""]]
+  EnableDNSRecords: !Not [!Equals [!Ref EnableDNSRecord, "disabled"]]
 
 Resources:
 
@@ -498,7 +525,7 @@ Resources:
             - Ref: "ElasticSecurityGroup"
           SubnetId:
             Ref: "SubnetElasticsearch"
-          PrivateIpAddress: "10.0.1.124"
+          PrivateIpAddress: "10.0.2.124"
       Tags:
         - Key: Name
           Value: ElasticBootstrap
@@ -577,7 +604,7 @@ Resources:
             - Ref: "ElasticSecurityGroup"
           SubnetId:
             Ref: "SubnetElasticsearch"
-          PrivateIpAddress: "10.0.1.123"
+          PrivateIpAddress: "10.0.2.123"
       Tags:
         - Key: Name
           Value: ElasticMasterB
@@ -656,7 +683,7 @@ Resources:
             - Ref: "ElasticSecurityGroup"
           SubnetId:
             Ref: "SubnetElasticsearch"
-          PrivateIpAddress: "10.0.1.125"
+          PrivateIpAddress: "10.0.2.125"
       Tags:
         - Key: Name
           Value: ElasticMasterC
@@ -698,6 +725,79 @@ Resources:
       Tags:
         - Key: Name
           Value: nlbwazuh
+    # Wazuh Network Load Balancer route53 record
+  LbRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: EnableDNSRecords
+    Properties:
+      HostedZoneName: !Ref 'HostedZoneName'
+      Name: !Join ['', [!Ref 'Subdomain', ., !Ref 'HostedZoneName']]
+      Comment: DNS name for the Wazuh load balancer
+      Type: A
+      AliasTarget:
+        HostedZoneId: !GetAtt 'WazuhNetworkLoadBalancer.CanonicalHostedZoneID'
+        DNSName: !GetAtt 'WazuhNetworkLoadBalancer.DNSName'
+    # Deployed nodes route53 records
+  ElasticBootstrapRecord:
+    Type: 'AWS::Route53::RecordSet'
+    Condition: EnableDNSRecords
+    Properties:
+      HostedZoneName: !Ref 'HostedZoneName'
+      Name: !Join ['', ['ElasticBootstrap', ., !Ref 'HostedZoneName']]
+      Type: A
+      TTL: '600'
+      ResourceRecords:
+        - !GetAtt  ElasticBootstrap.PublicIp
+  ElasticMasterBRecord:
+    Type: 'AWS::Route53::RecordSet'
+    Condition: EnableDNSRecords
+    Properties:
+      HostedZoneName: !Ref 'HostedZoneName'
+      Name: !Join ['', ['ElasticMasterB', ., !Ref 'HostedZoneName']]
+      Type: A
+      TTL: '600'
+      ResourceRecords:
+        - !GetAtt  ElasticMasterB.PublicIp
+  ElasticMasterCRecord:
+    Type: 'AWS::Route53::RecordSet'
+    Condition: EnableDNSRecords
+    Properties:
+      HostedZoneName: !Ref 'HostedZoneName'
+      Name: !Join ['', ['ElasticMasterC', ., !Ref 'HostedZoneName']]
+      Type: A
+      TTL: '600'
+      ResourceRecords:
+        - !GetAtt  ElasticMasterC.PublicIp
+  KibanaInstanceRecord:
+    Type: 'AWS::Route53::RecordSet'
+    Condition: EnableDNSRecords
+    Properties:
+      HostedZoneName: !Ref 'HostedZoneName'
+      Name: !Join ['', ['KibanaInstance', ., !Ref 'HostedZoneName']]
+      Type: A
+      TTL: '600'
+      ResourceRecords:
+        - !GetAtt  KibanaInstance.PublicIp
+  WazuhMasterInstanceRecord:
+    Type: 'AWS::Route53::RecordSet'
+    Condition: EnableDNSRecords
+    Properties:
+      HostedZoneName: !Ref 'HostedZoneName'
+      Name: !Join ['', ['WazuhMasterInstance', ., !Ref 'HostedZoneName']]
+      Type: A
+      TTL: '600'
+      ResourceRecords:
+        - !GetAtt  WazuhMasterInstance.PublicIp
+  WazuhWorkerInstanceRecord:
+    Type: 'AWS::Route53::RecordSet'
+    Condition: EnableDNSRecords
+    Properties:
+      HostedZoneName: !Ref 'HostedZoneName'
+      Name: !Join ['', ['WazuhWorkerInstance', ., !Ref 'HostedZoneName']]
+      Type: A
+      TTL: '600'
+      ResourceRecords:
+        - !GetAtt  WazuhWorkerInstance.PublicIp
 
   # Wazuh registration Target Group for Network Load Balancer
   RegistrationTG:
@@ -1072,32 +1172,60 @@ Resources:
         - AllocationId
 Outputs:
   ElasticBootstrapIp:
-    Description: Elastic Stack and Wazuh versions
+    Description: Elastic Bootstrap IP
     Value: !GetAtt
       - ElasticBootstrap
       - PublicIp
   ElasticMasterB:
-    Description: Elastic Stack and Wazuh versions
+    Description: Elastic masterB IP
     Value: !GetAtt
       - ElasticMasterB
       - PublicIp
   ElasticMasterC:
-    Description: Elastic Stack and Wazuh versions
+    Description: Elastic masterC IP
     Value: !GetAtt
       - ElasticMasterC
       - PublicIp
   WazuhMasterInstance:
-    Description: Elastic Stack and Wazuh versions
+    Description: Wazuh master IP
     Value: !GetAtt
       - WazuhMasterInstance
       - PublicIp
   WazuhWorkerInstance:
-    Description: Elastic Stack and Wazuh versions
+    Description: Wazuh worker IP
     Value: !GetAtt
       - WazuhWorkerInstance
       - PublicIp
   KibanaInstance:
-    Description: Elastic Stack and Wazuh versions
+    Description: Kibana instance IP
     Value: !GetAtt
       - KibanaInstance
       - PublicIp
+  ElasticBootstrapDNS:
+    Description: Elastic Bootstrap DNS
+    Value: !Ref ElasticBootstrapRecord
+    Condition: EnableDNSRecords
+  ElasticMasterBDNS:
+    Description: Elastic master B DNS
+    Value: !Ref ElasticMasterBRecord
+    Condition: EnableDNSRecords
+  ElasticMasterCDNS:
+    Description: Elastic master C IP
+    Value: !Ref ElasticMasterCRecord
+    Condition: EnableDNSRecords
+  WazuhMasterInstanceDNS:
+    Description: Wazuh Master DNS
+    Value: !Ref WazuhMasterInstanceRecord
+    Condition: EnableDNSRecords
+  WazuhWorkerInstanceDNS:
+    Description: Wazuh Worker DNS
+    Value: !Ref WazuhWorkerInstanceRecord
+    Condition: EnableDNSRecords
+  KibanaInstanceDNS:
+    Description: Kibana instance DNS
+    Value: !Ref KibanaInstanceRecord
+    Condition: EnableDNSRecords
+  LoadBalancerDNS:
+    Description: Load balancer DNS
+    Value: !Ref LbRecord
+    Condition: EnableDNSRecords
