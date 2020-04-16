@@ -81,12 +81,12 @@ Once registered, new agents can connect to the Wazuh cluster, via TCP, using the
 
 ## Optional DNS records
 
-`EnableDNSRecord`, `Subdomain` and `HostedZoneName` parameters configure the DNS records.
+Optionally it is possible to deploy DNS records for the loadbalancer, Wazuh nodes and Elastic Stack nodes. The `EnableDNSRecord`, `Subdomain` and `HostedZoneName` parameters configure the related Route 53 settings.
 
-- The DNS records can be enable/disable throught the `EnableDNSRecord` parameter.
-- The `Subdomain` parameter sets the subdomain name for the loadbalancer.
-- `HostedZoneName` sets the parent domain for the loadbalancer and the instances.
-- The subdomain name is fixed for the Elastic Stack and Wazuh nodes.
+* `EnableDNSRecord` parameter enables/disables the DNS record usage.
+* `HostedZoneName` sets the parent domain for the loadbalancer and the instances.
+* The `Subdomain` parameter sets the subdomain name for the loadbalancer.
+* Elastic Stack nodes and Wazuh nodes subdomain names are hardcoded on the CloudFormation template.
 
 
 ## Parameters template
@@ -173,6 +173,6 @@ The following template contains an example list of parameters and value placehol
 ]
 ```
 
-## AWS demo environment diagram
+## AWS production environment diagram
 
 ![wazuh_template](images/wazuh_template-designer.png)
