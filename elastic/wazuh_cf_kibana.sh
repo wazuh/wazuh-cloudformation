@@ -270,15 +270,15 @@ install_plugin(){
     cd /usr/share/kibana
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install file://$BUILD_SRC/$APP_FILE
   fi
-  echo "Long sleep" >> /tmp/deploy.log
-  sleep 10000
+  echo "Sleep pre optimize " >> /tmp/deploy.log
+  sleep 120
 }
 
 optimize_kibana(){
   systemctl stop kibana
   echo "Optimizing app" >> /tmp/deploy.log
   cd /usr/share/kibana
-  NODE_OPTIONS="--max-old-space-size=2048" ./bin/kibana --optimize --allow-root
+  sudo -u kibana NODE_OPTIONS="--max-old-space-size=2048" ./bin/kibana --optimize
   cd /tmp
   echo "App installed!" >> /tmp/deploy.log
   systemctl start kibana
