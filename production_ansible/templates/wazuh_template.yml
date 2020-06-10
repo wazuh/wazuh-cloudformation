@@ -61,6 +61,7 @@ Metadata:
         Parameters:
           - WazuhServerPort
           - WazuhRegistrationPort
+          - WazuhApiPort
       -
         Label:
           default: "Kibana configuration"
@@ -84,6 +85,10 @@ Parameters:
   WazuhRegistrationPort:
     Default: '1515'
     Description: Port for agents registration with Wazuh server
+    Type: String
+  WazuhApiPort:
+    Default: '55000'
+    Description: Port for Wazuh server API
     Type: String
   WazuhInstanceType:
     AllowedValues:
