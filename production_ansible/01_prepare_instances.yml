@@ -1,0 +1,76 @@
+---
+    - hosts: localhost
+      tasks:
+        - name: Create a cloudformation stack
+          cloudformation:
+            stack_name: "wazuh-prod-env"
+            state: "present"
+            region: "<region>"
+            template: "templates/wazuh_template.yml"
+            template_parameters:
+              KeyPairName: "<KeyPairName>"
+              AvailabilityZone: "<AvailabilityZone>"
+
+        - cloudformation_info:
+            stack_name: "wazuh-prod-env"
+          register: stack_info
+
+        - set_fact:
+              elastic_nodes:
+                  - PublicIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.ElasticBootstrapIp }}"
+                    PrivateIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.ElasticBootstrapIpPrivate }}"
+                  - PublicIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.ElasticMasterBIp }}"
+                    PrivateIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.ElasticMasterBIpPrivate }}"
+                  - PublicIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.ElasticMasterCIp }}"
+                    PrivateIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.ElasticMasterCIpPrivate }}"
+              kibana_nodes:
+                  - PublicIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.KibanaInstanceIp }}"
+                    PrivateIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.KibanaInstanceIpPrivate }}"
+              wazuh_master_nodes:
+                  - PublicIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.WazuhMasterInstanceIp }}"
+                    PrivateIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.WazuhMasterInstanceIpPrivate }}"
+              wazuh_worker_nodes:
+                  - PublicIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.WazuhWorkerInstanceIp }}"
+                    PrivateIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.WazuhWorkerInstanceIpPrivate }}"
+
+    - hosts: localhost
+      vars:
+        elastic_user: admin
+        elastic_password: admin_pass
+        ssh_key_path_private: <ssh_key_path>
+        elastic_version: 7.6.2
+        wazuh_version: 3.12.3-1
+        wazuh_api_admin_username: foo
+        wazuh_api_admin_password: bar
+        wazuh_api_password: bar
+      tasks:
+        - name: Rendering hosts file with the output IPs
+          template:
+            src: "templates/ansible_hosts.j2"
+            dest: "wazuh_hostfile"
+            mode: '664'
+            force: yes
+
+        - name: Clean destination folder for wazuh-ansible repository
+          file:
+            path: "/tmp/wazuh-ansible"
+            state: absent
+
+        - name: Create destination folder for wazuh-ansible repository
+          file:
+            path: "/tmp/wazuh-ansible"
+            state: directory
+            mode: '0777'
+
+        - name: Cloning https://github.com/wazuh/wazuh-ansible
+          git:
+            repo: "https://github.com/wazuh/wazuh-ansible.git"
+            dest: "/tmp/wazuh-ansible"
+            version: "devel"
+
+        - name: Ensure permissions on wazuh-ansible repo folder
+          file:
+            path: "/tmp/wazuh-ansible"
+            state: directory
+            mode: '0777'
+            recurse: yes
