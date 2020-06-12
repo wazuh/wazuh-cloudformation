@@ -1,18 +1,23 @@
 ---
     - hosts: localhost
+      vars:
+        user_region: "<region>"
+        user_KeyPair: "<KeyPairName>"
+        user_AvZone: "<AvailabilityZone>"
       tasks:
         - name: Create a cloudformation stack
           cloudformation:
             stack_name: "wazuh-prod-env"
             state: "present"
-            region: "<region>"
+            region: "{{ user_region }}"
             template: "templates/wazuh_template.yml"
             template_parameters:
-              KeyPairName: "<KeyPairName>"
-              AvailabilityZone: "<AvailabilityZone>"
+              KeyPairName: "{{ user_KeyPair }}"
+              AvailabilityZone: "{{ user_AvZone }}"
 
         - cloudformation_info:
             stack_name: "wazuh-prod-env"
+            region: "{{ user_region }}"
           register: stack_info
 
         - set_fact:
