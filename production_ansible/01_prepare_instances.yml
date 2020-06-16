@@ -75,7 +75,6 @@
           git:
             repo: "https://github.com/wazuh/wazuh-ansible.git"
             dest: "/tmp/wazuh-ansible"
-            version: "devel"
 
         - name: Ensure permissions on wazuh-ansible repo folder
           file:
