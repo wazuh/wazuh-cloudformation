@@ -4,10 +4,11 @@
         user_region: "<region>"
         user_KeyPair: "<KeyPairName>"
         user_AvZone: "<AvailabilityZone>"
+        user_stack_name: wazuh-prod-env
       tasks:
         - name: Create a cloudformation stack
           cloudformation:
-            stack_name: "wazuh-prod-env"
+            stack_name: "{{ user_stack_name }}"
             state: "present"
             region: "{{ user_region }}"
             template: "templates/wazuh_template.yml"
@@ -16,27 +17,30 @@
               AvailabilityZone: "{{ user_AvZone }}"
 
         - cloudformation_info:
-            stack_name: "wazuh-prod-env"
+            stack_name: "{{ user_stack_name }}"
             region: "{{ user_region }}"
           register: stack_info
 
         - set_fact:
+            addresses: "{{ stack_info | json_query('cloudformation.*.stack_outputs') | list }}"
+
+        - set_fact:
               elastic_nodes:
-                  - PublicIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.ElasticBootstrapIp }}"
-                    PrivateIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.ElasticBootstrapIpPrivate }}"
-                  - PublicIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.ElasticMasterBIp }}"
-                    PrivateIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.ElasticMasterBIpPrivate }}"
-                  - PublicIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.ElasticMasterCIp }}"
-                    PrivateIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.ElasticMasterCIpPrivate }}"
+                  - PublicIP: "{{ addresses.0.ElasticBootstrapIp }}"
+                    PrivateIP: "{{ addresses.0.ElasticBootstrapIpPrivate }}"
+                  - PublicIP: "{{ addresses.0.ElasticMasterBIp }}"
+                    PrivateIP: "{{ addresses.0.ElasticMasterBIpPrivate }}"
+                  - PublicIP: "{{ addresses.0.ElasticMasterCIp }}"
+                    PrivateIP: "{{ addresses.0.ElasticMasterCIpPrivate }}"
               kibana_nodes:
-                  - PublicIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.KibanaInstanceIp }}"
-                    PrivateIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.KibanaInstanceIpPrivate }}"
+                  - PublicIP: "{{ addresses.0.KibanaInstanceIp }}"
+                    PrivateIP: "{{ addresses.0.KibanaInstanceIpPrivate }}"
               wazuh_master_nodes:
-                  - PublicIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.WazuhMasterInstanceIp }}"
-                    PrivateIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.WazuhMasterInstanceIpPrivate }}"
+                  - PublicIP: "{{ addresses.0.WazuhMasterInstanceIp }}"
+                    PrivateIP: "{{ addresses.0.WazuhMasterInstanceIpPrivate }}"
               wazuh_worker_nodes:
-                  - PublicIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.WazuhWorkerInstanceIp }}"
-                    PrivateIP: "{{ stack_info.cloudformation['wazuh-prod-env'].stack_outputs.WazuhWorkerInstanceIpPrivate }}"
+                  - PublicIP: "{{ addresses.0.WazuhWorkerInstanceIp }}"
+                    PrivateIP: "{{ addresses.0.WazuhWorkerInstanceIpPrivate }}"
 
     - hosts: localhost
       vars:
