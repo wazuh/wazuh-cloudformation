@@ -23,6 +23,9 @@
           register: stack_info
 
         - set_fact:
+            user_ssh_key_path: "{{ user_ssh_key_path }}"
+
+        - set_fact:
             addresses: "{{ stack_info | json_query('cloudformation.*.stack_outputs') | list }}"
 
         - set_fact:
@@ -47,7 +50,7 @@
       vars:
         elastic_user: admin
         elastic_password: admin_pass
-        ssh_key_path_private: "{{ user_ssh_key_path }}"
+        ssh_key_path_private: "{{ hostvars['localhost']['user_ssh_key_path'] }}"
         elastic_version: 7.6.2
         wazuh_version: 3.12.3-1
         wazuh_api_admin_username: foo
