@@ -299,6 +299,10 @@ Resources:
             - SubnetConfig
             - WazuhVpc
             - CIDR
+        - IpProtocol: udp
+          FromPort: !Ref WazuhServerPort
+          ToPort: !Ref WazuhServerPort
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: !Ref WazuhServerPort
           ToPort: !Ref WazuhServerPort
