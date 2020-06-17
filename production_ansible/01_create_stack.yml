@@ -4,6 +4,7 @@
         user_region: "<region>"
         user_KeyPair: "<KeyPairName>"
         user_AvZone: "<AvailabilityZone>"
+        user_ssh_key_path: "<user_ssh_key_path>"
         user_stack_name: wazuh-prod-env
       tasks:
         - name: Create a cloudformation stack
@@ -46,7 +47,7 @@
       vars:
         elastic_user: admin
         elastic_password: admin_pass
-        ssh_key_path_private: <ssh_key_path>
+        ssh_key_path_private: "{{ user_ssh_key_path }}"
         elastic_version: 7.6.2
         wazuh_version: 3.12.3-1
         wazuh_api_admin_username: foo
