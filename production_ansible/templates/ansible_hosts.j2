@@ -1,0 +1,224 @@
+
+elasticsearch:
+    hosts:
+{% for instance in elastic_nodes %}
+{% if loop.index == 1 %}
+        {{ instance.PublicIP }}:
+            private_ip: {{ instance.PrivateIP }}
+            elasticsearch_network_host: {{ instance.PrivateIP }}
+            elasticsearch_reachable_host: {{ instance.PrivateIP }}
+            elasticsearch_cluster_nodes:
+{% for instance in elastic_nodes %}
+                - "{{ instance.PrivateIP }}"
+{% endfor %}
+            elasticsearch_node_name: node-1
+            elasticsearch_bootstrap_node: true
+            node_certs_generator: true
+            instances:
+{% for instance in elastic_nodes %}
+                node{{ loop.index }}:
+                    name: node-{{ loop.index }}
+                    ip: {{ instance.PrivateIP }}
+{% endfor %}
+                node{{ (elastic_nodes | length) + 1 }}:
+                    name: node-{{ (elastic_nodes | length) + 1 }}
+                    ip: {{ wazuh_master_nodes.0.PrivateIP }}
+{% for instance in wazuh_worker_nodes %}
+                node{{ loop.index+(elastic_nodes | length) + 1 }}:
+                    name: node-{{ loop.index+(elastic_nodes | length) + 1 }}
+                    ip: {{ instance.PrivateIP }}
+{% endfor %}
+{% for instance in kibana_nodes %}
+                node{{ loop.index + (wazuh_worker_nodes | length) + (elastic_nodes | length) + 1 }}:
+                    name: node-{{ loop.index + (wazuh_worker_nodes | length) + (elastic_nodes | length) + 1 }}
+                    ip: {{ instance.PrivateIP }}
+{% endfor %}
+{% else %}
+        {{ instance.PublicIP }}:
+            private_ip: {{ instance.PrivateIP }}
+            elasticsearch_network_host: {{ instance.PrivateIP }}
+            elasticsearch_reachable_host: {{ instance.PrivateIP }}
+            elasticsearch_node_name: node-{{ loop.index }}
+            elasticsearch_discovery_nodes:
+{% for instance in elastic_nodes %}
+                - "{{ instance.PrivateIP }}"
+{% endfor %}
+{% if loop.index == (elastic_nodes | length) %}
+            node_certs_generator_ip: {{ elastic_nodes.0.PrivateIP }}
+            elasticsearch_xpack_users:
+                {{ elastic_user }}:
+                    password: '{{ elastic_password }}'
+                    roles: '["superuser"]'
+{% endif %}
+{% endif %}
+{% endfor %}
+    vars:
+        ansible_ssh_user: ec2-user
+        ansible_ssh_private_key_file: {{ ssh_key_path_private }}
+        ansible_ssh_extra_args: '-o StrictHostKeyChecking=no'
+        elastic_stack_version: {{ elastic_version }}
+        single_node: false
+        elasticsearch_node_master: true
+        elasticsearch_xpack_security: true
+        elasticsearch_xpack_security_user: {{ elastic_user }}
+        elasticsearch_xpack_security_password: {{ elastic_password }}
+
+
+masters:
+    hosts:
+{% for instance in wazuh_master_nodes %}
+        {{ instance.PublicIP }}:
+            private_ip: {{ instance.PrivateIP }}
+            wazuh_api_user:
+                - "{{ wazuh_api_admin_username }}:{{ wazuh_api_password }}"
+            filebeat_node_name: node-{{ (elastic_nodes | length) + 1 }}
+{% endfor %}
+    vars:
+        shared_agent_config:
+          - type: os
+            type_value: Linux
+            syscheck:
+              frequency: 43200
+              scan_on_start: 'yes'
+              alert_new_files: 'yes'
+              ignore:
+                - /etc/mtab
+                - /etc/mnttab
+                - /etc/hosts.deny
+                - /etc/mail/statistics
+                - /etc/svc/volatile
+              no_diff:
+                - /etc/ssl/private.key
+            rootcheck:
+              frequency: 43200
+              cis_distribution_filename: null
+            localfiles:
+              - format: 'syslog'
+                location: '/var/log/messages'
+              - format: 'syslog'
+                location: '/var/log/secure'
+              - format: 'syslog'
+                location: '/var/log/maillog'
+              - format: 'apache'
+                location: '/var/log/httpd/error_log'
+              - format: 'apache'
+                location: '/var/log/httpd/access_log'
+              - format: 'apache'
+                location: '/var/ossec/logs/active-responses.log'
+          - type: os
+            type_value: Windows
+            syscheck:
+              frequency: 43200
+              scan_on_start: 'yes'
+              auto_ignore: 'no'
+              alert_new_files: 'yes'
+              windows_registry:
+                - key: 'HKEY_LOCAL_MACHINE\Software\Classes\batfile'
+                  arch: 'both'
+                - key: 'HKEY_LOCAL_MACHINE\Software\Classes\Folder'
+            localfiles:
+              - location: 'Security'
+                format: 'eventchannel'
+              - location: 'System'
+                format: 'eventlog'
+
+        ansible_ssh_user: ec2-user
+        ansible_ssh_private_key_file: {{ ssh_key_path_private }}
+        ansible_ssh_extra_args: '-o StrictHostKeyChecking=no'
+        wazuh_manager_version: {{ wazuh_version }}
+        wazuh_manager_config:
+          connection:
+            - type: 'secure'
+              port: '1514'
+              protocol: 'tcp'
+              queue_size: 131072
+          api:
+            port: "55000"
+            https: 'yes'
+          cluster:
+            disable: 'no'
+            name: 'wazuh'
+            node_name: 'master'
+            node_type: 'master'
+            key: 'ugdtAnd7Pi9myP7CVts4qZaZQEQcRYZa'
+            port: '1516'
+            bind_addr: '0.0.0.0'
+            nodes:
+              - '{{ wazuh_master_nodes.0.PrivateIP }}'
+            hidden: 'no'
+        filebeat_version: {{ elastic_version }}
+        filebeat_xpack_security: true
+        elasticsearch_xpack_security_user: {{ elastic_user }}
+        elasticsearch_xpack_security_password: {{ elastic_password }}
+        filebeat_output_elasticsearch_hosts:
+{% for instance in elastic_nodes %}
+                - "{{ instance.PrivateIP }}"
+{% endfor %}
+
+workers:
+    hosts:
+{% for instance in wazuh_worker_nodes %}
+        {{ instance.PublicIP }}:
+            private_ip: {{ instance.PrivateIP }}
+            filebeat_node_name : node-{{ loop.index+(elastic_nodes | length) + 1 }}
+            wazuh_manager_config:
+                connection:
+                    - type: 'secure'
+                      port: '1514'
+                      protocol: 'tcp'
+                      queue_size: 131072
+                api:
+                    port: "55000"
+                    https: 'yes'
+                cluster:
+                    disable: 'no'
+                    name: 'wazuh'
+                    node_name: 'worker_0{{ loop.index }}'
+                    node_type: 'worker'
+                    key: 'ugdtAnd7Pi9myP7CVts4qZaZQEQcRYZa'
+                    port: '1516'
+                    bind_addr: '0.0.0.0'
+                    nodes:
+                        - '{{ wazuh_master_nodes.0.PrivateIP }}'
+                    hidden: 'no'
+{% endfor %}
+    vars:
+        ansible_ssh_user: ec2-user
+        ansible_ssh_private_key_file: {{ ssh_key_path_private }}
+        ansible_ssh_extra_args: '-o StrictHostKeyChecking=no'
+        wazuh_manager_version: {{ wazuh_version }}
+        filebeat_version: {{ elastic_version }}
+        filebeat_xpack_security: true
+        elasticsearch_xpack_security_user: {{ elastic_user }}
+        elasticsearch_xpack_security_password: {{ elastic_password }}
+        filebeat_output_elasticsearch_hosts:
+{% for instance in elastic_nodes %}
+                - "{{ instance.PrivateIP }}"
+{% endfor %}
+
+kibana:
+    hosts:
+{% for instance in kibana_nodes %}
+        {{ instance.PublicIP }}:
+            private_ip: {{ instance.PrivateIP }}
+            elasticsearch_network_host: {{ elastic_nodes.0.PrivateIP }}
+            kibana_node_name: node-{{ (elastic_nodes | length) + (wazuh_worker_nodes | length) + 2 }}
+            elasticsearch_xpack_security: true
+            elasticsearch_xpack_security_user: {{ elastic_user }}
+            elasticsearch_xpack_security_password: {{ elastic_password }}
+
+{% endfor %}
+    vars:
+        ansible_ssh_user: ec2-user
+        ansible_ssh_private_key_file: {{ ssh_key_path_private }}
+        ansible_ssh_extra_args: '-o StrictHostKeyChecking=no'
+        elastic_stack_version: {{ elastic_version }}
+        wazuh_version: {{ wazuh_version[:-2] }}
+        kibana_xpack_security: true
+        node_options: "--max-old-space-size=2048"
+        wazuh_api_credentials:
+            - id: default
+              url: https://{{ wazuh_master_nodes.0.PrivateIP }}
+              port: 55000
+              user: {{ wazuh_api_admin_username }}
+              password: {{ wazuh_api_password }}
