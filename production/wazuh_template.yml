@@ -87,8 +87,9 @@ Metadata:
           - KibanaPort
       -
         Label:
-          default: "SSL Certificate"
+          default: "Security"
         Parameters:
+          - SSHAccessCidr
           - SSLCertificateARN
 
 Parameters:
@@ -164,8 +165,9 @@ Parameters:
       - 7.6.1_3.12.0
       - 7.6.2_3.12.2
       - 7.6.2_3.12.3
+      - 7.7.1_3.13.0
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
-    Default: 7.6.2_3.12.3
+    Default: 7.7.1_3.13.0
     Description: Elastic and Wazuh versions to be installed
     Type: String
   WazuhInstanceType:
@@ -266,6 +268,13 @@ Parameters:
   KibanaPort:
     Default: '443'
     Description: Port for Kibana WUI
+    Type: String
+
+  # Security
+  SSHAccessCidr:
+    Description: A CIDR from which SSH access to the instances is allowed
+    AllowedPattern: ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[0-9]{1,2}$
+    ConstraintDescription: Parameter should be a CIDR block e.g. "1.2.3.4/32"
     Type: String
   SSLCertificateARN:
     Description: 'Used for HTTPS access to WUI. Existent certificate, identified by its Amazon Resource Name (ARN).'
@@ -372,7 +381,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 0.0.0.0/0
+          CidrIp: !Ref SSHAccessCidr
         - IpProtocol: tcp
           FromPort: 9200
           ToPort: 9400
@@ -392,7 +401,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 0.0.0.0/0
+          CidrIp: !Ref SSHAccessCidr
         - IpProtocol: tcp
           FromPort: !Ref KibanaPort
           ToPort: !Ref KibanaPort
@@ -416,7 +425,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: 0.0.0.0/0
+          CidrIp: !Ref SSHAccessCidr
         - IpProtocol: tcp
           FromPort: 3389
           ToPort: 3389
@@ -498,7 +507,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_bootstrap_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.12.3_7.6.2/production/elastic/wazuh_cf_bootstrap_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.0_7.7.1/production/elastic/wazuh_cf_bootstrap_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -577,7 +586,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.12.3_7.6.2/production/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.0_7.7.1/production/elastic/wazuh_cf_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -656,7 +665,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.12.3_7.6.2/production/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.0_7.7.1/production/elastic/wazuh_cf_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -956,7 +965,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_kibana.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.12.3_7.6.2/production/elastic/wazuh_cf_kibana.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.0_7.7.1/production/elastic/wazuh_cf_kibana.sh
               mode: '000700'
               owner: root
               group: root
@@ -1037,7 +1046,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_master.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.12.3_7.6.2/production/wazuh/cluster/wazuh_cf_master.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.0_7.7.1/production/wazuh/cluster/wazuh_cf_master.sh
               mode: '000700'
               owner: root
               group: root
@@ -1119,7 +1128,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_worker.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.12.3_7.6.2/production/wazuh/cluster/wazuh_cf_worker.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.0_7.7.1/production/wazuh/cluster/wazuh_cf_worker.sh
               mode: '000700'
               owner: root
               group: root

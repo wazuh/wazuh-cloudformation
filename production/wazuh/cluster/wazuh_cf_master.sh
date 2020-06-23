@@ -18,7 +18,7 @@ wazuh_cluster_key=$(cat /tmp/wazuh_cf_settings | grep '^WazuhClusterKey:' | cut 
 elb_elastic=$(cat /tmp/wazuh_cf_settings | grep '^ElbElasticDNS:' | cut -d' ' -f2)
 eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*//' | cut -d' ' -f2)
 InstallType=$(cat /tmp/wazuh_cf_settings | grep '^InstallType:' | cut -d' ' -f2)
-TAG='v3.12.3'
+TAG='v3.13.0'
 
 echo "Added env vars." >> /tmp/deploy.log
 
@@ -52,7 +52,7 @@ elif [[ ${InstallType} == 'sources' ]]
 then
 
   # Compile Wazuh manager from sources
-  BRANCH="3.12"
+  BRANCH="3.13"
 
   yum install make gcc policycoreutils-python automake autoconf libtool -y
   curl -Ls https://github.com/wazuh/wazuh/archive/$BRANCH.tar.gz | tar zx
@@ -110,7 +110,7 @@ then
   chkconfig --add wazuh-api
   echo "Installed Wazuh API." >> /tmp/deploy.log
 else
-  API_BRANCH="3.12"
+  API_BRANCH="3.13"
   npm config set user 0
   curl -LO https://github.com/wazuh/wazuh-api/archive/$API_BRANCH.zip
   unzip $API_BRANCH.zip

@@ -11,8 +11,8 @@ eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet addr:' | cut -d: -f2  | cut -d' ' -f1
 wazuh_api_user=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminUsername:' | cut -d' ' -f2)
 wazuh_api_password=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminPassword:' | cut -d' ' -f2)
 wazuh_api_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiPort:' | cut -d' ' -f2)
-TAG="v3.12.3"
-APP_TAG="v3.12.3-7.3.4"
+TAG="v3.13.0"
+APP_TAG="v3.13.0-7.3.5"
 # Creating SSH user
 adduser ${ssh_username}
 echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
@@ -24,10 +24,10 @@ systemctl restart sshd
 yum install net-tools wget git curl -y -q
 
 # download splunk
-wget -O splunk-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm 'https://www.splunk.com/bin/splunk/DownloadActivityServlet?architecture=x86_64&platform=linux&version=7.2.3&product=splunk&filename=splunk-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm&wget=true' &> /dev/null
+wget -O splunk-7.3.5-86fd62efc3d7-linux-2.6-x86_64.rpm 'https://wazuh-demo.s3-us-west-1.amazonaws.com/splunk-7.3.5-86fd62efc3d7-linux-2.6-x86_64.rpm' &> /dev/null
 
 # install splunk
-yum install splunk-7.2.3-06d57c595b80-linux-2.6-x86_64.rpm -y &> /dev/null
+yum install splunk-7.3.5-86fd62efc3d7-linux-2.6-x86_64.rpm -y &> /dev/null
 
 # add admin user
 echo "[user_info]" > /opt/splunk/etc/system/local/user-seed.conf
