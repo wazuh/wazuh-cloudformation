@@ -164,6 +164,7 @@ Resources:
     Type: 'AWS::EC2::Subnet'
     Properties:
       VpcId: !Ref WazuhVpc
+      MapPublicIpOnLaunch: 'true'
       AvailabilityZone: !Select [ "0", !Ref AvailabilityZone ]
       CidrBlock: !FindInMap
         - SubnetConfig
@@ -178,6 +179,7 @@ Resources:
       Type: 'AWS::EC2::Subnet'
       Properties:
         VpcId: !Ref WazuhVpc
+        MapPublicIpOnLaunch: 'true'
         AvailabilityZone: !Select [ "0", !Ref AvailabilityZone ]
         CidrBlock: !FindInMap
           - SubnetConfig
@@ -376,20 +378,6 @@ Resources:
     Properties:
       SubnetId: !Ref SubnetElasticsearch
       GroupSet: [!Ref 'ElasticSecurityGroup']
-  ElasticBootstrapEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-      Tags:
-        - Key: Name
-          Value: !Sub 'ElasticBootstrapEIP-${AWS::StackName}'
-  ElasticBootstrapEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref ElasticBootstrapEth0
-      AllocationId: !GetAtt
-        - ElasticBootstrapEIP
-        - AllocationId
 
   ElasticMasterB:
     Type: AWS::EC2::Instance
@@ -425,20 +413,6 @@ Resources:
     Properties:
       SubnetId: !Ref SubnetElasticsearch
       GroupSet: [!Ref 'ElasticSecurityGroup']
-  ElasticMasterBEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-      Tags:
-        - Key: Name
-          Value: !Sub 'ElasticMasterBEIP-${AWS::StackName}'
-  ElasticMasterBEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref ElasticMasterBEth0
-      AllocationId: !GetAtt
-        - ElasticMasterBEIP
-        - AllocationId
 
   ElasticMasterC:
     Type: AWS::EC2::Instance
@@ -474,20 +448,6 @@ Resources:
     Properties:
       SubnetId: !Ref SubnetElasticsearch
       GroupSet: [!Ref 'ElasticSecurityGroup']
-  ElasticMasterCEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-      Tags:
-        - Key: Name
-          Value: !Sub 'ElasticMasterCEIP-${AWS::StackName}'
-  ElasticMasterCEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref ElasticMasterCEth0
-      AllocationId: !GetAtt
-        - ElasticMasterCEIP
-        - AllocationId
 
   # Wazuh Network Load Balancer
   WazuhNetworkLoadBalancer:
@@ -657,20 +617,6 @@ Resources:
     Properties:
       SubnetId: !Ref SubnetElasticsearch
       GroupSet: [!Ref 'KibanaSecurityGroup']
-  KibanaEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-      Tags:
-        - Key: Name
-          Value: !Sub 'KibanaEIP-${AWS::StackName}'
-  KibanaEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref KibanaEth0
-      AllocationId: !GetAtt
-        - KibanaEIP
-        - AllocationId
 
   # Wazuh master instance
   WazuhMasterInstance:
@@ -707,20 +653,6 @@ Resources:
     Properties:
       SubnetId: !Ref SubnetWazuh
       GroupSet: [!Ref 'WazuhSecurityGroup']
-  WazuhMasterEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-      Tags:
-        - Key: Name
-          Value: !Sub 'MasterEIP-${AWS::StackName}'
-  WazuhMasterEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref WazuhMasterEth0
-      AllocationId: !GetAtt
-        - WazuhMasterEIP
-        - AllocationId
 
   # Wazuh worker instance
   WazuhWorkerInstance:
@@ -753,78 +685,52 @@ Resources:
     Properties:
       SubnetId: !Ref SubnetWazuh
       GroupSet: [!Ref 'WazuhSecurityGroup']
-  WazuhWorkerEIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
-      Tags:
-        - Key: Name
-          Value: !Sub 'WorkerEIP-${AWS::StackName}'
-  WazuhWorkerEIPAssociation:
-    Type: 'AWS::EC2::EIPAssociation'
-    Properties:
-      NetworkInterfaceId: !Ref WazuhWorkerEth0
-      AllocationId: !GetAtt
-        - WazuhWorkerEIP
-        - AllocationId
+
 Outputs:
   ElasticBootstrapIp:
     Description: Elastic Bootstrap IP
-    Value: !GetAtt
-      - ElasticBootstrap
-      - PublicIp
+    Value: !GetAtt ElasticBootstrap.PublicIp
+
   ElasticBootstrapIpPrivate:
     Description: Elastic Bootstrap private IP
-    Value: !GetAtt
-      - ElasticBootstrap
-      - PrivateIp
+    Value: !GetAtt ElasticBootstrap.PrivateIp
+
   ElasticMasterBIp:
     Description: Elastic masterB IP
-    Value: !GetAtt
-      - ElasticMasterB
-      - PublicIp
+    Value: !GetAtt ElasticMasterB.PublicIp
+
   ElasticMasterBIpPrivate:
     Description: Elastic masterB private IP
-    Value: !GetAtt
-      - ElasticMasterB
-      - PrivateIp
+    Value: !GetAtt ElasticMasterB.PrivateIp
+
   ElasticMasterCIp:
     Description: Elastic masterC IP
-    Value: !GetAtt
-      - ElasticMasterC
-      - PublicIp
+    Value: !GetAtt ElasticMasterC.PublicIp
+
   ElasticMasterCIpPrivate:
     Description: Elastic masterC private IP
-    Value: !GetAtt
-      - ElasticMasterC
-      - PrivateIp
+    Value: !GetAtt ElasticMasterC.PrivateIp
+
   WazuhMasterInstanceIp:
     Description: Wazuh master IP
-    Value: !GetAtt
-      - WazuhMasterInstance
-      - PublicIp
+    Value: !GetAtt WazuhMasterInstance.PublicIp
+
   WazuhMasterInstanceIpPrivate:
     Description: Wazuh master private IP
-    Value: !GetAtt
-      - WazuhMasterInstance
-      - PrivateIp
+    Value: !GetAtt WazuhMasterInstance.PrivateIp
+
   WazuhWorkerInstanceIp:
     Description: Wazuh worker IP
-    Value: !GetAtt
-      - WazuhWorkerInstance
-      - PublicIp
+    Value: !GetAtt WazuhWorkerInstance.PublicIp
+
   WazuhWorkerInstanceIpPrivate:
     Description: Wazuh worker private IP
-    Value: !GetAtt
-      - WazuhWorkerInstance
-      - PrivateIp
+    Value: !GetAtt WazuhWorkerInstance.PrivateIp
+
   KibanaInstanceIp:
     Description: Kibana instance IP
-    Value: !GetAtt
-      - KibanaInstance
-      - PublicIp
+    Value: !GetAtt KibanaInstance.PublicIp
+
   KibanaInstanceIpPrivate:
     Description: Kibana instance private IP
-    Value: !GetAtt
-      - KibanaInstance
-      - PrivateIp
+    Value: !GetAtt KibanaInstance.PrivateIp
