@@ -311,8 +311,8 @@ optimize_kibana(){
 
 add_api(){
 echo "Adding Wazuh API" >> /tmp/deploy.log
+sed -ie '/- default:/,+4d' /usr/share/kibana/optimize/wazuh/config/wazuh.yml
 cat > /usr/share/kibana/optimize/wazuh/config/wazuh.yml << EOF
-#${wazuh_master_ip}
 hosts:
   - default:
       url: https://${wazuh_master_ip}
@@ -444,7 +444,8 @@ main(){
   enable_kibana
   optimize_kibana
   start_kibana
-  sleep 60
+  echo "Sleeping before adding api"
+  sleep 200
   add_api
   kibana_optional_configs
   start_kibana
