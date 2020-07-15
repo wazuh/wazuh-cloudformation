@@ -92,11 +92,12 @@ sed -i "s/<port>1514<\/port>/<port>${wazuh_server_port}<\/port>/" ${manager_conf
 echo "${wazuh_registration_password}" > /var/ossec/etc/authd.pass
 echo "Set Wazuh password registration." >> /tmp/log
 
-#Sleep to wait for manager to be ready
-sleep 120
-
 # Register agent using authd
-/var/ossec/bin/agent-auth -m ${master_ip} -A ${agent_name}
+until `cat /var/ossec/logs/ossec.log | grep -q "Valid key created. Finished."`
+do
+  /var/ossec/bin/agent-auth -m ${master_ip} -A ${agent_name}
+  sleep 1
+done
 sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' ${manager_config}
 echo "Registered Wazuh agent." >> /tmp/log
 
