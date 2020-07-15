@@ -86,8 +86,6 @@ else
 	echo 'no repo' >> /tmp/stage
 fi
 
-
-
 # Install Wazuh agent
 apt-get update
 apt-get install wazuh-agent=$wazuh_version-* -y
@@ -99,7 +97,11 @@ echo "Set registration password." >> /tmp/deploy.log
 echo "Registering agent..." >> /tmp/deploy.log
 
 # Register agent using authd
-/var/ossec/bin/agent-auth -m ${master_ip} -A Debian
+until `cat /var/ossec/logs/ossec.log | grep -q "Valid key created. Finished."`
+do
+  /var/ossec/bin/agent-auth -m ${master_ip} -A Debian
+  sleep 1
+done
 echo "Agent registered." >> /tmp/deploy.log
 
 sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' /var/ossec/etc/ossec.conf

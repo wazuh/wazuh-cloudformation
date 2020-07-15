@@ -215,7 +215,11 @@ echo "${wazuh_registration_password}" > /var/ossec/etc/authd.pass
 echo "Set Wazuh password registration." >> /tmp/log
 echo 'logcollector.remote_commands=1' >>  /var/ossec/etc/local_internal_options.conf
 # Register agent using authd
-/var/ossec/bin/agent-auth -m ${master_ip} -A ${agent_name}
+until `cat /var/ossec/logs/ossec.log | grep -q "Valid key created. Finished."`
+do
+  /var/ossec/bin/agent-auth -m ${master_ip} -A ${agent_name}
+  sleep 1
+done
 sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' ${manager_config}
 echo "Registered Wazuh agent." >> /tmp/log
 

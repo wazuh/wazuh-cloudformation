@@ -97,7 +97,11 @@ sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' ${manager_config}
 sed -i "s/<protocol>udp<\/protocol>/<protocol>tcp<\/protocol>/" ${manager_config}
 
 # Register agent using authd
-/var/ossec/bin/agent-auth -m ${master_ip} -A Ubuntu < /tmp/log
+until `cat /var/ossec/logs/ossec.log | grep -q "Valid key created. Finished."`
+do
+  /var/ossec/bin/agent-auth -m ${master_ip} -A Ubuntu < /tmp/log
+  sleep 1
+done
 echo "Agent registered." > /tmp/log
 
 # Enable and restart the Wazuh agent
