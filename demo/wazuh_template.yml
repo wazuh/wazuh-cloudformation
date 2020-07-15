@@ -137,6 +137,7 @@ Metadata:
           - SplunkInstanceType
           - SshUsername
           - SshPassword
+          - SplunkVersion
       -
         Label:
           default: "Wazuh Amazon Linux agent instance type"
@@ -209,7 +210,14 @@ Parameters:
     MaxLength: '64'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Only alphanumeric characters. Minimum length 8. Maximum length 64.
-
+  SplunkVersion:
+    Description: Splunk version
+    NoEcho: 'True'
+    Type: String
+    MinLength: '8'
+    MaxLength: '64'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: Only alphanumeric characters. Minimum length 8. Maximum length 64.
   # Version and instance types
   ElasticWazuhVersion:
     AllowedValues:
@@ -1177,6 +1185,7 @@ Resources:
           files:
             /tmp/wazuh_cf_settings:
               content: !Sub |
+                WazuhVersion: ${ElasticWazuhVersion}
                 SshUsername: ${SshUsername}
                 SshPassword: ${SshPassword}
                 SplunkUsername: ${SplunkUsername}
@@ -1185,6 +1194,7 @@ Resources:
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
                 EnvironmentType: ${EnvironmentType}
+                SplunkVersion: ${EnvironmentType}
               mode: '000600'
               owner: root
               group: root

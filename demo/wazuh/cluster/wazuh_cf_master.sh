@@ -125,7 +125,7 @@ then
   chkconfig --add wazuh-api
   echo "Installed Wazuh API." >> /tmp/deploy.log
 else
-  API_BRANCH="3.13"
+  API_BRANCH=$api_branch
   npm config set user 0
   curl -LO https://github.com/wazuh/wazuh-api/archive/$API_BRANCH.zip
   unzip $API_BRANCH.zip

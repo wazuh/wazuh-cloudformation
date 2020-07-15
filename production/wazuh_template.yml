@@ -80,6 +80,8 @@ Metadata:
           - WazuhApiAdminUsername
           - WazuhApiAdminPassword
           - WazuhClusterKey
+          - Branch
+          - ApiBranch
       -
         Label:
           default: "Kibana configuration"
@@ -262,6 +264,22 @@ Parameters:
     Type: String
     MinLength: '32'
     MaxLength: '32'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: Any alphanumeric string of 32 characters
+  Branch:
+    Description: Branch to fetch in order to compile.
+    Default: '3.13'
+    Type: String
+    MinLength: '1'
+    MaxLength: '10'
+    AllowedPattern: '[a-zA-Z0-9]*'
+    ConstraintDescription: Any alphanumeric string of 32 characters
+  ApiBranch:
+    Description: Branch to fetch in order to compile.
+    Default: '3.13'
+    Type: String
+    MinLength: '1'
+    MaxLength: '10'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Any alphanumeric string of 32 characters
   # Kibana configuration
@@ -507,7 +525,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_bootstrap_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.0_7.7.1/production/elastic/wazuh_cf_bootstrap_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/production/elastic/wazuh_cf_bootstrap_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -586,7 +604,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.0_7.7.1/production/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/production/elastic/wazuh_cf_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -665,7 +683,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.0_7.7.1/production/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/production/elastic/wazuh_cf_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -965,7 +983,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_kibana.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.0_7.7.1/production/elastic/wazuh_cf_kibana.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/production/elastic/wazuh_cf_kibana.sh
               mode: '000700'
               owner: root
               group: root
@@ -1041,12 +1059,14 @@ Resources:
                 WazuhRegistrationPassword: ${WazuhRegistrationPassword}
                 WazuhClusterKey: ${WazuhClusterKey}
                 InstallType: ${InstallType}
+                Branch: ${Branch}
+                ApiBranch: ${ApiBranch}
               mode: '000600'
               owner: root
               group: root
             /tmp/wazuh_cf_master.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.0_7.7.1/production/wazuh/cluster/wazuh_cf_master.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/production/wazuh/cluster/wazuh_cf_master.sh
               mode: '000700'
               owner: root
               group: root
@@ -1123,12 +1143,13 @@ Resources:
                 WazuhClusterKey: ${WazuhClusterKey}
                 WazuhMasterIP: ${WazuhMasterInstance.PrivateIp}
                 InstallType: ${InstallType}
+                Branch: ${Branch}
               mode: '000600'
               owner: root
               group: root
             /tmp/wazuh_cf_worker.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.0_7.7.1/production/wazuh/cluster/wazuh_cf_worker.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/production/wazuh/cluster/wazuh_cf_worker.sh
               mode: '000700'
               owner: root
               group: root

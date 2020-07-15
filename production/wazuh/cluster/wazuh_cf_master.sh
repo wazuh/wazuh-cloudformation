@@ -18,7 +18,15 @@ wazuh_cluster_key=$(cat /tmp/wazuh_cf_settings | grep '^WazuhClusterKey:' | cut 
 elb_elastic=$(cat /tmp/wazuh_cf_settings | grep '^ElbElasticDNS:' | cut -d' ' -f2)
 eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*//' | cut -d' ' -f2)
 InstallType=$(cat /tmp/wazuh_cf_settings | grep '^InstallType:' | cut -d' ' -f2)
-TAG='v3.13.0'
+branch=$(cat /tmp/wazuh_cf_settings | grep '^Branch:' | cut -d' ' -f2)
+api_branch=$(cat /tmp/wazuh_cf_settings | grep '^ApiBranch:' | cut -d' ' -f2)
+wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
+wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
+wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
+elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
+elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
+
+TAG="v$wazuh_version"
 
 echo "Added env vars." >> /tmp/deploy.log
 
@@ -52,7 +60,7 @@ elif [[ ${InstallType} == 'sources' ]]
 then
 
   # Compile Wazuh manager from sources
-  BRANCH="3.13"
+  BRANCH=$branch
 
   yum install make gcc policycoreutils-python automake autoconf libtool -y
   curl -Ls https://github.com/wazuh/wazuh/archive/$BRANCH.tar.gz | tar zx
@@ -110,7 +118,7 @@ then
   chkconfig --add wazuh-api
   echo "Installed Wazuh API." >> /tmp/deploy.log
 else
-  API_BRANCH="3.13"
+  API_BRANCH=$api_branch
   npm config set user 0
   curl -LO https://github.com/wazuh/wazuh-api/archive/$API_BRANCH.zip
   unzip $API_BRANCH.zip
@@ -218,13 +226,6 @@ echo "Restarted Wazuh API." >> /tmp/deploy.log
 # Installing Filebeat
 yum -y install filebeat-${elastic_version}
 echo "Installed Filebeat" >> /tmp/log
-
-# Configuring Filebeat
-wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
-wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
-wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
-elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
-elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
 
 # Install Filebeat module
 curl -s "https://packages.wazuh.com/3.x/filebeat/wazuh-filebeat-0.1.tar.gz" | tar -xvz -C /usr/share/filebeat/module

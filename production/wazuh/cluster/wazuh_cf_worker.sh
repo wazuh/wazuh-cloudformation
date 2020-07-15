@@ -13,7 +13,8 @@ wazuh_cluster_key=$(cat /tmp/wazuh_cf_settings | grep '^WazuhClusterKey:' | cut 
 wazuh_master_ip=$(cat /tmp/wazuh_cf_settings | grep '^WazuhMasterIP:' | cut -d' ' -f2)
 elb_elasticsearch=$(cat /tmp/wazuh_cf_settings | grep '^ElbElasticDNS:' | cut -d' ' -f2)
 InstallType=$(cat /tmp/wazuh_cf_settings | grep '^InstallType:' | cut -d' ' -f2)
-TAG='v3.13.0'
+branch=$(cat /tmp/wazuh_cf_settings | grep '^Branch:' | cut -d' ' -f2)
+TAG="v$wazuh_version"
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -44,7 +45,7 @@ elif [[ ${InstallType} == 'sources' ]]
 then
 
   # Compile Wazuh manager from sources
-  BRANCH="3.13"
+  BRANCH=$branch
 
   yum install make gcc policycoreutils-python automake autoconf libtool -y
   curl -Ls https://github.com/wazuh/wazuh/archive/$BRANCH.tar.gz | tar zx
