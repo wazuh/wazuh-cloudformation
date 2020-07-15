@@ -84,6 +84,7 @@ fi
 
 
 # Install Wazuh agent
+apt-get update
 apt-get install wazuh-agent -y
 echo "Installed Wazuh agent." >> /tmp/deploy.log
 
