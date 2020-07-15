@@ -93,6 +93,9 @@ echo "${wazuh_registration_password}" > /var/ossec/etc/authd.pass
 echo "Set registration password." >> /tmp/deploy.log
 echo "Registering agent..." >> /tmp/deploy.log
 
+#Sleep to wait for manager to be ready
+sleep 120
+
 # Register agent using authd
 /var/ossec/bin/agent-auth -m ${master_ip} -A Debian
 echo "Agent registered." >> /tmp/deploy.log
