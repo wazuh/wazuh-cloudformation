@@ -5,6 +5,11 @@ touch /tmp/log
 echo "Starting process." > /tmp/log
 agent_name=$(cat /tmp/wazuh_cf_settings | grep '^agent_name:' | cut -d' ' -f2)
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
+wazuh_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f2)
+wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
+wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
+wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
+branch=$(cat /tmp/wazuh_cf_settings | grep '^Branch:' | cut -d' ' -f2)
 master_ip=$(cat /tmp/wazuh_cf_settings | grep '^WazuhMasterIP:' | cut -d' ' -f2)
 elb_wazuh_dns=$(cat /tmp/wazuh_cf_settings | grep '^ElbWazuhDNS:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
@@ -45,7 +50,7 @@ elif [[ ${EnvironmentType} == 'sources' ]]
 then
 
   # Compile Wazuh manager from sources
-  BRANCH="3.13"
+  BRANCH="$branch"
 
   apt install make gcc libc6-dev curl policycoreutils automake autoconf libtool -y
 
@@ -77,7 +82,7 @@ apt-get install curl apt-transport-https lsb-release -y
 echo "Installed dependencies." > /tmp/log
 
 # Install Wazuh agent
-apt-get install wazuh-agent -y
+apt-get install wazuh-agent=$wazuh_version-* -y
 echo "Installed Wazuh agent." > /tmp/log
 
 # Add registration password

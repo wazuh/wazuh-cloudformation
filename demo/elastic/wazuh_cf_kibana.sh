@@ -242,7 +242,7 @@ get_plugin_url(){
   plugin_url="https://packages-dev.wazuh.com/staging/app/kibana/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
   elif [[ ${EnvironmentType} == 'sources' ]]
   then
-    BRANCH="3.13-7.7"
+    BRANCH="$wazuh_major.$wazuh_minor-$elastic_major_version.$elastic_minor_version"
     if [[ $BRANCH != "" ]]; then
       yum install -y git
       curl --silent --location https://rpm.nodesource.com/setup_10.x | bash -

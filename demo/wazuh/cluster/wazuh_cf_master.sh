@@ -26,7 +26,9 @@ AwsSecretKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsSecretKey:' | cut -d' ' -f
 AwsAccessKey=$(cat /tmp/wazuh_cf_settings | grep '^AwsAccessKey:' | cut -d' ' -f2)
 SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
-TAG='v3.13.0'
+branch=$(cat /tmp/wazuh_cf_settings | grep '^Branch:' | cut -d' ' -f2)
+
+TAG='v$wazuh_version'
 
 echo "Added env vars." >> /tmp/deploy.log
 
@@ -67,7 +69,7 @@ elif [[ ${EnvironmentType} == 'sources' ]]
 then
 
   # Compile Wazuh manager from sources
-  BRANCH="3.13"
+  BRANCH="$branch"
 
   yum install make gcc policycoreutils-python automake autoconf libtool -y
   curl -Ls https://github.com/wazuh/wazuh/archive/$BRANCH.tar.gz | tar zx
@@ -118,10 +120,10 @@ if [[ ${EnvironmentType} != 'sources' ]]
 then
 
   # Installing wazuh-manager
-  yum -y install wazuh-manager
+  yum -y install wazuh-manager-$wazuh_version
   chkconfig --add wazuh-manager
   # Installing wazuh-api
-  yum -y install wazuh-api
+  yum -y install wazuh-api-$wazuh_version
   chkconfig --add wazuh-api
   echo "Installed Wazuh API." >> /tmp/deploy.log
 else
