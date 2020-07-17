@@ -28,7 +28,7 @@ SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
 branch=$(cat /tmp/wazuh_cf_settings | grep '^Branch:' | cut -d' ' -f2)
 
-TAG='v$wazuh_version'
+TAG="v$wazuh_version"
 
 echo "Added env vars." >> /tmp/deploy.log
 

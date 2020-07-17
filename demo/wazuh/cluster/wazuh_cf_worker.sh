@@ -21,7 +21,7 @@ splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^SplunkUsername:' | cut -d'
 splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^SplunkPassword:' | cut -d' ' -f2)
 branch=$(cat /tmp/wazuh_cf_settings | grep '^Branch:' | cut -d' ' -f2)
 
-TAG='v$wazuh_version'
+TAG="v$wazuh_version"
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
