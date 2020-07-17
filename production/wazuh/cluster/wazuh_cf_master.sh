@@ -111,7 +111,7 @@ if [[ ${InstallType} != 'sources' ]]
 then
 
   # Installing wazuh-manager
-  yum -y install wazuh-manager
+  yum -y install wazuh-manager-$wazuh_version
   chkconfig --add wazuh-manager
   # Installing wazuh-api
   yum -y install wazuh-api
