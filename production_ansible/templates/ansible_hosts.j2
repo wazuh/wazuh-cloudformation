@@ -215,6 +215,7 @@ kibana:
         elastic_stack_version: {{ elastic_version }}
         wazuh_version: {{ wazuh_version[:-2] }}
         kibana_xpack_security: true
+        kibana_server_port: {{ kibana_port }}
         node_options: "--max-old-space-size=2048"
         wazuh_api_credentials:
             - id: default

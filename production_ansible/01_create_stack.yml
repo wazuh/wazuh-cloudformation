@@ -16,6 +16,7 @@
             template_parameters:
               KeyPairName: "{{ user_KeyPair }}"
               AvailabilityZone: "{{ user_AvZone }}"
+              KibanaPort: 443
 
         - cloudformation_info:
             stack_name: "{{ user_stack_name }}"
@@ -51,11 +52,12 @@
         elastic_user: admin
         elastic_password: admin_pass
         ssh_key_path_private: "{{ hostvars['localhost']['user_ssh_key_path'] }}"
-        elastic_version: 7.7.1
-        wazuh_version: 3.13.0-1
+        elastic_version: 7.8.0
+        wazuh_version: 3.13.1-1
         wazuh_api_admin_username: foo
         wazuh_api_admin_password: bar
         wazuh_api_password: bar
+        kibana_port: 443
       tasks:
         - name: Rendering hosts file with the output IPs
           template:
