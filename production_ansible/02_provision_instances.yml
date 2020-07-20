@@ -32,8 +32,9 @@
       strategy: free
       roles:
         - role: "/tmp/wazuh-ansible/roles/elastic-stack/ansible-kibana"
+      tasks:
+        - name: Allow Kibana to bind to ports less than 1024
+          shell: setcap 'CAP_NET_BIND_SERVICE=+eip' /usr/share/kibana/node/bin/node
+          notify: restart kibana
       become: yes
       become_user: root
-
-
-
