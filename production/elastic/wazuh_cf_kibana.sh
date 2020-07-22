@@ -401,7 +401,7 @@ main(){
   enable_kibana
   optimize_kibana
   start_kibana
-  sleep 120
+  sleep 200
   add_api
   kibana_optional_configs
   start_kibana
