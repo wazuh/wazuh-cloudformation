@@ -7,6 +7,11 @@ echo "Starting process." > /tmp/log
 
 agent_name=$(cat /tmp/wazuh_cf_settings | grep '^AgentName:' | cut -d' ' -f2)
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
+wazuh_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' -f2 | cut -d'_' -f2)
+wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
+wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
+wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
+branch=$(cat /tmp/wazuh_cf_settings | grep '^Branch:' | cut -d' ' -f2)
 master_ip=$(cat /tmp/wazuh_cf_settings | grep '^WazuhMasterIP:' | cut -d' ' -f2)
 elb_wazuh_dns=$(cat /tmp/wazuh_cf_settings | grep '^ElbWazuhDNS:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
@@ -52,7 +57,7 @@ elif [[ ${EnvironmentType} == 'sources' ]]
 then
 
   # Compile Wazuh manager from sources
-  BRANCH="3.13"
+  BRANCH=$branch
 
   yum install make gcc policycoreutils-python automake autoconf libtool -y
   curl -Ls https://github.com/wazuh/wazuh/archive/$BRANCH.tar.gz | tar zx
@@ -79,7 +84,7 @@ else
 fi
 
 # Installing wazuh-manager
-yum -y install wazuh-agent
+yum -y install wazuh-agent-$wazuh_version
 echo "Installed Wazuh agent." >> /tmp/log
 
 # Change manager protocol to tcp, to be used by Amazon ELB

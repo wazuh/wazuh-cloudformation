@@ -242,7 +242,7 @@ get_plugin_url(){
   plugin_url="https://packages-dev.wazuh.com/staging/app/kibana/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
   elif [[ ${EnvironmentType} == 'sources' ]]
   then
-    BRANCH="3.13-7.8"
+    BRANCH="$wazuh_major.$wazuh_minor-$elastic_major_version.$elastic_minor_version"
     if [[ $BRANCH != "" ]]; then
       yum install -y git
       curl --silent --location https://rpm.nodesource.com/setup_10.x | bash -
@@ -409,23 +409,6 @@ echo "Restarted NGINX..." >> /tmp/deploy.log
 
 }
 
-custom_welcome(){
-  await_kibana_ssl
-  echo "custom_welcome " >> /tmp/deploy.log
-  unalias cp
-  curl https://s3.amazonaws.com/wazuh.com/wp-content/uploads/demo/custom-welcome.tar.gz --output custom.tar.gz
-  tar xvf custom.tar.gz
-  cp custom_welcome/wazuh_wazuh_bg.svg /usr/share/kibana/optimize/bundles/
-  cp custom_welcome/wazuh_logo_circle.svg /usr/share/kibana/optimize/bundles/
-  sed -i 's|Welcome to Kibana|Welcome to Wazuh|g' /usr/share/kibana/optimize/bundles/commons.bundle.js
-  sed -i 's|Welcome to Kibana|Welcome to Wazuh|g' /usr/share/kibana/optimize/bundles/login.bundle.js
-  sed -i 's|Welcome to Kibana|Welcome to Wazuh|g' /usr/share/kibana/optimize/bundles/kibana.bundle.js
-  sed -i 's|Your window into the Elastic Stack|The Open Source Security Platform|g' /usr/share/kibana/optimize/bundles/kibana.bundle.js
-  sed -i 's|Your window into the Elastic Stack|The Open Source Security Platform|g' /usr/share/kibana/optimize/bundles/login.bundle.js
-  cp custom_welcome/login.style.css /usr/share/kibana/optimize/bundles/login.style.css -f
-  chown kibana:kibana /usr/share/kibana/optimize/bundles/ -R
-}
-
 main(){
   check_root
   create_ssh_user
@@ -444,12 +427,11 @@ main(){
   enable_kibana
   optimize_kibana
   start_kibana
-  sleep 120
+  sleep 200
   add_api
   kibana_optional_configs
   start_kibana
   add_nginx
-  custom_welcome
 }
 
 main

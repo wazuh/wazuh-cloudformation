@@ -5,14 +5,20 @@
 ssh_username=$(cat /tmp/wazuh_cf_settings | grep '^SshUsername:' | cut -d' ' -f2)
 ssh_password=$(cat /tmp/wazuh_cf_settings | grep '^SshPassword:' | cut -d' ' -f2)
 splunk_port="8000"
+wazuh_version=$(cat /tmp/wazuh_cf_settings | grep '^WazuhVersion:' | cut -d' ' -f2 | cut -d'_' -f2)
+wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
+wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
+wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
+splunk_version=$(cat /tmp/wazuh_cf_settings | grep '^SplunkVersion:' | cut -d' ' -f2)
 splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^SplunkUsername:' | cut -d' ' -f2)
 splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^SplunkPassword:' | cut -d' ' -f2)
 eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet addr:' | cut -d: -f2  | cut -d' ' -f1)
 wazuh_api_user=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminUsername:' | cut -d' ' -f2)
 wazuh_api_password=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminPassword:' | cut -d' ' -f2)
 wazuh_api_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiPort:' | cut -d' ' -f2)
-TAG="v3.13.1"
-APP_TAG="v3.13.1-7.3.5"
+TAG="v$wazuh_version"
+APP_TAG="v$wazuh_version-$splunk_version"
+APP_TAG="v$wazuh_version"
 # Creating SSH user
 adduser ${ssh_username}
 echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers

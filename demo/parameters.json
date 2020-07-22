@@ -1,15 +1,18 @@
-
 [{
     "ParameterKey": "ElasticWazuhVersion",
     "ParameterValue": "<ElasticWazuhVersion>"
 },
 {
-    "ParameterKey": "SSHAccessCidr",
-    "ParameterValue": "<SSHAccessCidr>"
+    "ParameterKey": "SplunkVersion",
+    "ParameterValue": "<SplunkVersion>"
 },
 {
     "ParameterKey": "WazuhInstanceType",
     "ParameterValue": "t2.medium"
+},
+{
+    "ParameterKey": "EnvironmentType",
+    "ParameterValue": "production"
 },
 {
     "ParameterKey": "ElasticInstanceType",
@@ -60,19 +63,27 @@
     "ParameterValue": "<AvailabilityZone>"
 },
 {
+    "ParameterKey": "VirusTotalKey",
+    "ParameterValue": "<VirusTotalKey>"
+},
+{
+    "ParameterKey": "SplunkPassword",
+    "ParameterValue": "<SplunkPassword>"
+},
+{
+    "ParameterKey": "SlackHook",
+    "ParameterValue": "<SlackHook>"
+},
+{
+    "ParameterKey": "AwsAccessKey",
+    "ParameterValue": "<AwsAccessKey>"
+},
+{
+    "ParameterKey": "AwsSecretKey",
+    "ParameterValue": "<AwsSecretKey>"
+},
+{
     "ParameterKey": "SSLCertificateARN",
     "ParameterValue": "<SSLCertificateARN>"
-},
-{
-    "ParameterKey": "EnableDNSRecord",
-    "ParameterValue": "disabled"
-},
-{
-    "ParameterKey": "Subdomain",
-    "ParameterValue": "<Subdomain>"
-},
-{
-    "ParameterKey": "HostedZoneName",
-    "ParameterValue": "<HostedZoneName>"
 }
 ]

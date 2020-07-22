@@ -137,6 +137,7 @@ Metadata:
           - SplunkInstanceType
           - SshUsername
           - SshPassword
+          - SplunkVersion
       -
         Label:
           default: "Wazuh Amazon Linux agent instance type"
@@ -159,6 +160,8 @@ Metadata:
           - WazuhApiAdminUsername
           - WazuhApiAdminPassword
           - WazuhClusterKey
+          - Branch
+          - ApiBranch
       -
         Label:
           default: "Kibana configuration"
@@ -209,7 +212,13 @@ Parameters:
     MaxLength: '64'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Only alphanumeric characters. Minimum length 8. Maximum length 64.
-
+  SplunkVersion:
+    Description: Splunk version
+    NoEcho: 'True'
+    Type: String
+    MinLength: '8'
+    MaxLength: '64'
+    ConstraintDescription: Only alphanumeric characters. Minimum length 8. Maximum length 64.
   # Version and instance types
   ElasticWazuhVersion:
     AllowedValues:
@@ -247,6 +256,12 @@ Parameters:
     Default: 7.8.0_3.13.1
     Description: Elastic and Wazuh versions to be installed
     Type: String
+
+  Winagentversion:
+    Default: 3.13.1
+    Description: Wazuh Windows agent version to be installed
+    Type: String
+
   WazuhInstanceType:
     AllowedValues:
       - t2.micro
@@ -422,6 +437,20 @@ Parameters:
     MaxLength: '32'
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Any alphanumeric string of 32 characters
+  Branch:
+    Description: Branch to fetch in order to compile.
+    Default: '3.13'
+    Type: String
+    MinLength: '1'
+    MaxLength: '10'
+    ConstraintDescription: Any valid Wazuh branch
+  ApiBranch:
+    Description: Wazuh API Branch to fetch in order to compile.
+    Default: '3.13'
+    Type: String
+    MinLength: '1'
+    MaxLength: '10'
+    ConstraintDescription: Any valid Wazuh API branch
   # Kibana configuration
   KibanaPort:
     Default: '443'
@@ -729,7 +758,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_bootstrap_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.1_7.8.0/demo/elastic/wazuh_cf_bootstrap_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/demo/elastic/wazuh_cf_bootstrap_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -808,7 +837,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.1_7.8.0/demo/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/demo/elastic/wazuh_cf_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -887,7 +916,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.1_7.8.0/demo/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/demo/elastic/wazuh_cf_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -1114,7 +1143,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_kibana.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.1_7.8.0/demo/elastic/wazuh_cf_kibana.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/demo/elastic/wazuh_cf_kibana.sh
               mode: '000700'
               owner: root
               group: root
@@ -1178,6 +1207,7 @@ Resources:
           files:
             /tmp/wazuh_cf_settings:
               content: !Sub |
+                WazuhVersion: ${ElasticWazuhVersion}
                 SshUsername: ${SshUsername}
                 SshPassword: ${SshPassword}
                 SplunkUsername: ${SplunkUsername}
@@ -1186,12 +1216,13 @@ Resources:
                 WazuhApiAdminPassword: ${WazuhApiAdminPassword}
                 WazuhApiPort: ${WazuhApiPort}
                 EnvironmentType: ${EnvironmentType}
+                SplunkVersion: ${EnvironmentType}
               mode: '000600'
               owner: root
               group: root
             /tmp/wazuh_cf_splunk.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.1_7.8.0/demo/splunk/wazuh_cf_splunk.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/demo/splunk/wazuh_cf_splunk.sh
               mode: '000700'
               owner: root
               group: root
@@ -1280,12 +1311,14 @@ Resources:
                 SlackHook: ${SlackHook}
                 EnvironmentType: ${EnvironmentType}
                 SplunkIp: ${SplunkInstance.PrivateIp}
+                Branch: ${Branch}
+                ApiBranch: ${ApiBranch}
               mode: '000600'
               owner: root
               group: root
             /tmp/wazuh_cf_master.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.1_7.8.0/demo/wazuh/cluster/wazuh_cf_master.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/demo/wazuh/cluster/wazuh_cf_master.sh
               mode: '000700'
               owner: root
               group: root
@@ -1369,12 +1402,13 @@ Resources:
                 SlackHook: ${SlackHook}
                 EnvironmentType: ${EnvironmentType}
                 SplunkIp: ${SplunkInstance.PrivateIp}
+                Branch: ${Branch}
               mode: '000600'
               owner: root
               group: root
             /tmp/wazuh_cf_worker.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.1_7.8.0/demo/wazuh/cluster/wazuh_cf_worker.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/demo/wazuh/cluster/wazuh_cf_worker.sh
               mode: '000700'
               owner: root
               group: root
@@ -1450,12 +1484,13 @@ Resources:
                 ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
                 AgentName: Amazon
                 EnvironmentType: ${EnvironmentType}
+                Branch: ${Branch}
               mode: '000600'
               owner: root
               group: root
             /tmp/wazuh_agent_amazon.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.1_7.8.0/demo/wazuh/agents/wazuh_agent_amazon.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/demo/wazuh/agents/wazuh_agent_amazon.sh
               mode: '000700'
               owner: root
               group: root
@@ -1531,12 +1566,13 @@ Resources:
                 ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
                 AgentName: Centos
                 EnvironmentType: ${EnvironmentType}
+                Branch: ${Branch}
               mode: '000600'
               owner: root
               group: root
             /tmp/wazuh_agent_centos.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.1_7.8.0/demo/wazuh/agents/wazuh_agent_centos.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/demo/wazuh/agents/wazuh_agent_centos.sh
               mode: '000700'
               owner: root
               group: root
@@ -1624,13 +1660,12 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           <powershell>
-          Start-Sleep -s 400
           $Password = (convertto-securestring -asplaintext ${SshPassword} -force)
           New-LocalUser "wazuh" -Password $Password -FullName "wazuh" -Description "Wazuh user for remote desktop"
           Add-LocalGroupMember -Group "Remote Desktop Users" -Member "wazuh"
           net user Administrator ${SshPassword}
           $master_ip=${WazuhNetworkLoadBalancer.DNSName}
-          $url = "https://packages.wazuh.com/3.x/windows/wazuh-agent-3.13.1-1.msi"
+          $url = "https://packages.wazuh.com/3.x/windows/wazuh-agent-${Winagentversion}-1.msi"
           $path = "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi"
           $url_osquery = "https://pkg.osquery.io/windows/osquery-3.3.2.msi"
           $path_osquery = "C:\\Users\\Administrator\\Desktop\\osquery.msi"
@@ -1646,6 +1681,7 @@ Resources:
           (New-Object Net.WebClient).DownloadFile($url, $path)
           (New-Object Net.WebClient).DownloadFile($url_osquery, $path_osquery)
           New-Item -ItemType directory -Path C:\Santiago
+          Start-Sleep -s 400
           try {
             Start-Process -FilePath "C:\\Users\\Administrator\\Desktop\\wazuh-agent.msi" -Wait -ArgumentList /q,ADDRESS=${WazuhNetworkLoadBalancer.DNSName},AUTHD_SERVER=${WazuhNetworkLoadBalancer.DNSName},AGENT_NAME="Windows",PROTOCOL="TCP",PASSWORD=${WazuhRegistrationPassword}
           } catch {
@@ -1705,12 +1741,13 @@ Resources:
                 ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
                 AgentName: Debian
                 EnvironmentType: ${EnvironmentType}
+                Branch: ${Branch}
               mode: '000600'
               owner: root
               group: root
             /tmp/wazuh_agent_debian.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.1_7.8.0/demo/wazuh/agents/wazuh_cf_agent_debian.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/demo/wazuh/agents/wazuh_cf_agent_debian.sh
               mode: '000700'
               owner: root
               group: root
@@ -1793,12 +1830,13 @@ Resources:
                 ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
                 AgentName: Ubuntu
                 EnvironmentType: ${EnvironmentType}
+                Branch: ${Branch}
               mode: '000600'
               owner: root
               group: root
             /tmp/wazuh_agent_ubuntu.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.1_7.8.0/demo/wazuh/agents/wazuh_cf_agent_ubuntu.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/demo/wazuh/agents/wazuh_cf_agent_ubuntu.sh
               mode: '000700'
               owner: root
               group: root
@@ -1881,12 +1919,13 @@ Resources:
                 ElbWazuhDNS: ${WazuhNetworkLoadBalancer.DNSName}
                 AgentName: RHEL7
                 EnvironmentType: ${EnvironmentType}
+                Branch: ${Branch}
               mode: '000600'
               owner: root
               group: root
             /tmp/wazuh_agent_rhel.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/v3.13.1_7.8.0/demo/wazuh/agents/wazuh_agent_rhel.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/devel/demo/wazuh/agents/wazuh_agent_rhel.sh
               mode: '000700'
               owner: root
               group: root

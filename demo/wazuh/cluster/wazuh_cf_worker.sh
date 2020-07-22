@@ -19,7 +19,9 @@ SlackHook=$(cat /tmp/wazuh_cf_settings | grep '^SlackHook:' | cut -d' ' -f2)
 EnvironmentType=$(cat /tmp/wazuh_cf_settings | grep '^EnvironmentType:' | cut -d' ' -f2)
 splunk_username=$(cat /tmp/wazuh_cf_settings | grep '^SplunkUsername:' | cut -d' ' -f2)
 splunk_password=$(cat /tmp/wazuh_cf_settings | grep '^SplunkPassword:' | cut -d' ' -f2)
-TAG='v3.13.1'
+branch=$(cat /tmp/wazuh_cf_settings | grep '^Branch:' | cut -d' ' -f2)
+
+TAG="v$wazuh_version"
 
 # Check if running as root
 if [[ $EUID -ne 0 ]]; then
@@ -57,7 +59,7 @@ elif [[ ${EnvironmentType} == 'sources' ]]
 then
 
   # Compile Wazuh manager from sources
-  BRANCH="3.13"
+  BRANCH="$branch"
 
   yum install make gcc policycoreutils-python automake autoconf libtool -y
   curl -Ls https://github.com/wazuh/wazuh/archive/$BRANCH.tar.gz | tar zx
@@ -100,7 +102,7 @@ type=rpm-md
 EOF
 
 # Installing wazuh-manager
-yum -y install wazuh-manager
+yum -y install wazuh-manager-$wazuh_version
 systemctl enable wazuh-manager
 chkconfig --add wazuh-manager
 manager_config="/var/ossec/etc/ossec.conf"
