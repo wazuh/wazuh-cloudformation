@@ -168,6 +168,7 @@ Parameters:
       - 7.6.2_3.12.2
       - 7.6.2_3.12.3
       - 7.7.1_3.13.0
+      - 7.8.0_3.13.1
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
     Default: 7.7.1_3.13.0
     Description: Elastic and Wazuh versions to be installed
@@ -267,21 +268,19 @@ Parameters:
     AllowedPattern: '[a-zA-Z0-9]*'
     ConstraintDescription: Any alphanumeric string of 32 characters
   Branch:
-    Description: Branch to fetch in order to compile.
+    Description: Wazuh Branch to fetch in order to compile.
     Default: '3.13'
     Type: String
     MinLength: '1'
     MaxLength: '10'
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Any alphanumeric string of 32 characters
+    ConstraintDescription: Any wazuh branch.
   ApiBranch:
-    Description: Branch to fetch in order to compile.
+    Description: Wazuh API Branch to fetch in order to compile.
     Default: '3.13'
     Type: String
     MinLength: '1'
     MaxLength: '10'
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Any alphanumeric string of 32 characters
+    ConstraintDescription: Any wazuh API branch.
   # Kibana configuration
   KibanaPort:
     Default: '443'

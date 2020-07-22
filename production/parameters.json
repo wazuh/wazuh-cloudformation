@@ -4,12 +4,12 @@
     "ParameterValue": "<ElasticWazuhVersion>"
 },
 {
-    "ParameterKey": "WazuhInstanceType",
-    "ParameterValue": "t2.medium"
+    "ParameterKey": "SSHAccessCidr",
+    "ParameterValue": "<SSHAccessCidr>"
 },
 {
-    "ParameterKey": "InstallType",
-    "ParameterValue": "<InstallType>"
+    "ParameterKey": "WazuhInstanceType",
+    "ParameterValue": "t2.medium"
 },
 {
     "ParameterKey": "ElasticInstanceType",
