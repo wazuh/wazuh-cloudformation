@@ -449,7 +449,7 @@ main(){
   kibana_optional_configs
   start_kibana
   add_nginx
-  custom_welcome
+  #custom_welcome
 }
 
 main
