@@ -114,7 +114,7 @@ then
   yum -y install wazuh-manager-$wazuh_version
   chkconfig --add wazuh-manager
   # Installing wazuh-api
-  yum -y install wazuh-api
+  yum -y install wazuh-api-$wazuh_version
   chkconfig --add wazuh-api
   echo "Installed Wazuh API." >> /tmp/deploy.log
 else
