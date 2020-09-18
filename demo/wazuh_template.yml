@@ -252,13 +252,14 @@ Parameters:
       - 7.6.2_3.12.3
       - 7.7.1_3.13.0
       - 7.8.0_3.13.1
+      - 7.9.1_3.13.2
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
-    Default: 7.8.0_3.13.1
+    Default: 7.9.1_3.13.2
     Description: Elastic and Wazuh versions to be installed
     Type: String
 
   Winagentversion:
-    Default: 3.13.1
+    Default: 3.13.2
     Description: Wazuh Windows agent version to be installed
     Type: String
 
