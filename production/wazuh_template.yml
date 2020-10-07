@@ -402,6 +402,13 @@ Resources:
           ToPort: 22
           CidrIp: !Ref SSHAccessCidr
         - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !FindInMap
+            - SubnetConfig
+            - WazuhVpc
+            - CIDR
+        - IpProtocol: tcp
           FromPort: 9200
           ToPort: 9400
           CidrIp: !FindInMap
