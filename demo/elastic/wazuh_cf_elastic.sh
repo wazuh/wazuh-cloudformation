@@ -124,14 +124,14 @@ set_security(){
     sleep 30
     echo "Installed sshpass." >> /tmp/deploy.log
     echo $ssh_password >> pass
-    while [ ! -f /home/wazuh/certs.zip ];do
+    while [ ! -f /home/$ssh_username/certs.zip ];do
         sleep 2
         echo "No certs yet, trying again in 2 secs..." >> /tmp/deploy.log
-        sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/ 2> /tmp/deploy.logerr.log
+        sshpass -f pass scp -o "StrictHostKeyChecking=no" $ssh_username@10.0.2.124:/home/$ssh_username/certs.zip /home/$ssh_username/ 2> /tmp/deploy.logerr.log
     done
     echo "Got certs.zip." >> /tmp/deploy.log
     rm pass -f
-    cp /home/wazuh/certs.zip .
+    cp /home/$ssh_username/certs.zip .
     unzip certs.zip
     echo "Unzipped certs.zip." >> /tmp/deploy.log
     cp ca/ca.crt /etc/elasticsearch/certs/ca

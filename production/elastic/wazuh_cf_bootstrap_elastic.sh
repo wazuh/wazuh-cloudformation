@@ -209,8 +209,8 @@ instances:
 EOF
 /usr/share/elasticsearch/bin/elasticsearch-certutil cert ca --pem --in /usr/share/elasticsearch/instances.yml --out /usr/share/elasticsearch/certs.zip
 echo "Generated certs" >> /tmp/deploy.log
-cp /usr/share/elasticsearch/certs.zip /home/wazuh/
-chown wazuh:wazuh /home/wazuh/certs.zip
+cp /usr/share/elasticsearch/certs.zip /home/$ssh_username/
+chown $ssh_username:$ssh_username /home/$ssh_username/certs.zip
 cp /usr/share/elasticsearch/certs.zip .
 unzip certs.zip
 mkdir /etc/elasticsearch/certs/ca -p

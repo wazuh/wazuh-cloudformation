@@ -253,9 +253,9 @@ amazon-linux-extras install epel -y
 yum install -y sshpass
 sleep 500
 echo $ssh_password >> pass
-sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/
+sshpass -f pass scp -o "StrictHostKeyChecking=no" $ssh_username@10.0.2.124:/home/$ssh_username/certs.zip /home/$ssh_username/
 rm pass -f
-cp /home/wazuh/certs.zip .
+cp /home/$ssh_username/certs.zip .
 unzip certs.zip
 cp ca/ca.crt /etc/filebeat/certs/ca
 cp wazuh-manager/wazuh-manager.crt /etc/filebeat/certs
