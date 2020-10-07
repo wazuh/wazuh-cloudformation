@@ -27,13 +27,13 @@ extract_certs(){
   yum install -y sshpass
   echo $ssh_password >> pass
 
-  while [ ! -f /home/wazuh/certs.zip ]; do
-    sshpass -f pass scp -o "StrictHostKeyChecking=no" wazuh@10.0.2.124:/home/wazuh/certs.zip /home/wazuh/ 2> /dev/null
+  while [ ! -f /home/$ssh_username/certs.zip ]; do
+    sshpass -f pass scp -o "StrictHostKeyChecking=no" $ssh_username@10.0.2.124:/home/$ssh_username/certs.zip /home/$ssh_username/ 2> /dev/null
     sleep 10
   done
   echo "Extract certs " >> /tmp/deploy.log
   rm pass -f
-  cp /home/wazuh/certs.zip .
+  cp /home/$ssh_username/certs.zip .
   unzip certs.zip
 }
 

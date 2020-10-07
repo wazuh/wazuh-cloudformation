@@ -38,7 +38,6 @@ create_ssh_user(){
     echo "${ssh_username} ALL=(ALL)NOPASSWD:ALL" >> /etc/sudoers
     usermod --password $(openssl passwd -1 ${ssh_password}) ${ssh_username}
     echo "Created SSH user." >> /tmp/deploy.log
-
     sed -i 's|[#]*PasswordAuthentication no|PasswordAuthentication yes|g' /etc/ssh/sshd_config
     systemctl restart sshd
     echo "Started SSH service." >> /tmp/deploy.log
@@ -209,8 +208,8 @@ instances:
 EOF
 /usr/share/elasticsearch/bin/elasticsearch-certutil cert ca --pem --in /usr/share/elasticsearch/instances.yml --out /usr/share/elasticsearch/certs.zip
 echo "Generated certs" >> /tmp/deploy.log
-cp /usr/share/elasticsearch/certs.zip /home/wazuh/
-chown wazuh:wazuh /home/wazuh/certs.zip
+cp /usr/share/elasticsearch/certs.zip /home/$ssh_username/
+chown $ssh_username:$ssh_username /home/$ssh_username/certs.zip
 cp /usr/share/elasticsearch/certs.zip .
 unzip certs.zip
 mkdir /etc/elasticsearch/certs/ca -p
