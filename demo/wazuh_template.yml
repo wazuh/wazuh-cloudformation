@@ -1079,6 +1079,7 @@ Resources:
       LoadBalancerArn: !Ref WazuhNetworkLoadBalancer
       Port: !Ref KibanaPort
       Protocol: TLS
+      SslPolicy: ELBSecurityPolicy-TLS-1-2-2017-01
       Certificates:
       - CertificateArn: !Ref SSLCertificateARN
 
