@@ -38,7 +38,7 @@ gpgcheck=1
 gpgkey=https://packages.wazuh.com/key/GPG-KEY-WAZUH
 enabled=1
 name=Wazuh repository
-baseurl=https://packages.wazuh.com/3.x/yum/
+baseurl=https://packages.wazuh.com/4.x/yum/
 protect=1
 EOF
 elif [[ ${InstallType} == 'sources' ]]
@@ -88,17 +88,13 @@ type=rpm-md
 EOF
 
 # Installing wazuh-manager
-yum -y install wazuh-manager-$wazuh_version
+yum -y install wazuh-manager-$wazuh_version-1
 systemctl enable wazuh-manager
 chkconfig --add wazuh-manager
 manager_config="/var/ossec/etc/ossec.conf"
+
 # Install dependencies
-yum -y install openscap-scanner
-
 echo "Installed wazuh manager package" >> /tmp/log
-
-# Change manager protocol to tcp, to be used by Amazon ELB
-sed -i "s/<protocol>udp<\/protocol>/<protocol>tcp<\/protocol>/" ${manager_config}
 
 # Set manager ports for agents communication
 sed -i "s/<port>1514<\/port>/<port>${wazuh_server_port}<\/port>/" ${manager_config}
@@ -150,7 +146,7 @@ elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
 elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
 
 # Install Filebeat module
-curl -s "https://packages.wazuh.com/3.x/filebeat/wazuh-filebeat-0.1.tar.gz" | tar -xvz -C /usr/share/filebeat/module
+curl -s "https://packages.wazuh.com/4.x/filebeat/wazuh-filebeat-0.1.tar.gz" | tar -xvz -C /usr/share/filebeat/module
 
 # Get Filebeat configuration file
 curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/filebeat/7.x/filebeat.yml
