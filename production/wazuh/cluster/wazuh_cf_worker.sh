@@ -41,6 +41,7 @@ name=Wazuh repository
 baseurl=https://packages.wazuh.com/4.x/yum/
 protect=1
 EOF
+yum install wazuh-manager -y
 elif [[ ${InstallType} == 'sources' ]]
 then
 
