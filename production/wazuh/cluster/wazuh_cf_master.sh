@@ -19,7 +19,6 @@ elb_elastic=$(cat /tmp/wazuh_cf_settings | grep '^ElbElasticDNS:' | cut -d' ' -f
 eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*//' | cut -d' ' -f2)
 InstallType=$(cat /tmp/wazuh_cf_settings | grep '^InstallType:' | cut -d' ' -f2)
 branch=$(cat /tmp/wazuh_cf_settings | grep '^Branch:' | cut -d' ' -f2)
-api_branch=$(cat /tmp/wazuh_cf_settings | grep '^ApiBranch:' | cut -d' ' -f2)
 wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
 wazuh_minor=`echo $wazuh_version | cut -d'.' -f2`
 wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
@@ -53,9 +52,10 @@ gpgcheck=1
 gpgkey=https://packages.wazuh.com/key/GPG-KEY-WAZUH
 enabled=1
 name=Wazuh repository
-baseurl=https://packages.wazuh.com/3.x/yum/
+baseurl=https://packages.wazuh.com/4.x/yum/
 protect=1
 EOF
+yum install wazuh-manager -y
 elif [[ ${InstallType} == 'sources' ]]
 then
 
@@ -103,28 +103,12 @@ type=rpm-md
 EOF
 
 curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
-# Installing NodeJS
-yum -y install nodejs
-echo "Installed NodeJS." >> /tmp/deploy.log
 
 if [[ ${InstallType} != 'sources' ]]
 then
-
   # Installing wazuh-manager
-  yum -y install wazuh-manager-$wazuh_version
+  yum -y install wazuh-manager-$wazuh_version-1
   chkconfig --add wazuh-manager
-  # Installing wazuh-api
-  yum -y install wazuh-api-$wazuh_version
-  chkconfig --add wazuh-api
-  echo "Installed Wazuh API." >> /tmp/deploy.log
-else
-  API_BRANCH=$api_branch
-  npm config set user 0
-  curl -LO https://github.com/wazuh/wazuh-api/archive/$API_BRANCH.zip
-  unzip $API_BRANCH.zip
-  rm -f $API_BRANCH.zip
-  cd wazuh-api-$API_BRANCH
-  ./install_api.sh
 fi
 
 manager_config="/var/ossec/etc/ossec.conf"
@@ -132,10 +116,6 @@ local_rules="/var/ossec/etc/rules/local_rules.xml"
 # Enable registration service (only for master node)
 
 echo "Installed wazuh manager package" >> /tmp/deploy.log
-
-
-# Change manager protocol to tcp, to be used by Amazon ELB
-sed -i "s/<protocol>udp<\/protocol>/<protocol>tcp<\/protocol>/" ${manager_config}
 
 # Set manager port for agent communications
 sed -i "s/<port>1514<\/port>/<port>${wazuh_server_port}<\/port>/" ${manager_config}
@@ -168,9 +148,6 @@ EOF
 echo "${wazuh_registration_password}" > /var/ossec/etc/authd.pass
 echo "Set registration password." >> /tmp/deploy.log
 
-# Installing Python Cryptography module for the cluster
-pip install cryptography
-
 # Configuring cluster section
 sed -i '/<cluster>/,/<\/cluster>/d' ${manager_config}
 
@@ -193,7 +170,6 @@ cat >> ${manager_config} << EOF
 EOF
 
 # Disabling agent components and cleaning configuration file
-sed -i '/<wodle name="open-scap">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<wodle name="cis-cat">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<ruleset>/,/<\/ruleset>/d' ${manager_config}
 sed -i '/<wodle name="syscollector">/,/<\/wodle>/d' ${manager_config}
@@ -208,27 +184,26 @@ systemctl restart wazuh-manager
 systemctl enable wazuh-manager
 echo "Restarted Wazuh manager." >> /tmp/deploy.log
 
-# Configuring Wazuh API user and password
-cd /var/ossec/api/configuration/auth
-node htpasswd -b -c user ${wazuh_api_user} ${wazuh_api_password}
-
-# Enable Wazuh API SSL and configure listening port
-api_ssl_dir="/var/ossec/api/configuration/ssl"
-openssl req -x509 -batch -nodes -days 3650 -newkey rsa:2048 -keyout ${api_ssl_dir}/server.key -out ${api_ssl_dir}/server.crt
-sed -i "s/config.https = \"no\";/config.https = \"yes\";/" /var/ossec/api/configuration/config.js
-sed -i "s/config.port = \"55000\";/config.port = \"${wazuh_api_port}\";/" /var/ossec/api/configuration/config.js
-echo "Setting port and SSL to Wazuh API." >> /tmp/deploy.log
-
-# Restart wazuh-api
+# API configuration
+# ensure the API is running
 systemctl restart wazuh-api
-echo "Restarted Wazuh API." >> /tmp/deploy.log
+
+# get token
+
+TOKEN=$(curl -u wazuh:wazuh -k -X GET "https://localhost:55000/security/user/authenticate?raw=true")
+
+# Change default password
+curl -k -X PUT "https://localhost:55000/security/users/1" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"password":$ssh_password}'
+
+# get new token
+TOKEN=$(curl -u wazuh:$ssh_password -k -X GET "https://localhost:55000/security/user/authenticate?raw=true")
 
 # Installing Filebeat
 yum -y install filebeat-${elastic_version}
 echo "Installed Filebeat" >> /tmp/log
 
 # Install Filebeat module
-curl -s "https://packages.wazuh.com/3.x/filebeat/wazuh-filebeat-0.1.tar.gz" | tar -xvz -C /usr/share/filebeat/module
+curl -s "https://packages.wazuh.com/4.x/filebeat/wazuh-filebeat-0.1.tar.gz" | tar -xvz -C /usr/share/filebeat/module
 
 # Get Filebeat configuration file
 curl -so /etc/filebeat/filebeat.yml https://raw.githubusercontent.com/wazuh/wazuh/${TAG}/extensions/filebeat/7.x/filebeat.yml

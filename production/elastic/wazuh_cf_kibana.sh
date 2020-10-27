@@ -232,7 +232,7 @@ echo "Setcap executed" >> /tmp/deploy.log
 get_plugin_url(){
   if [[ ${InstallType} == 'packages' ]]
   then
-  plugin_url="https://packages.wazuh.com/wazuhapp/wazuhapp-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}.zip"
+  plugin_url="https://packages.wazuh.com/4.x/ui/kibana/wazuh_kibana-${wazuh_major}.${wazuh_minor}.${wazuh_patch}_${elastic_major_version}.${elastic_minor_version}.${elastic_patch_version}-1.zip"
   elif [[ ${InstallType} == 'sources' ]]
   then
     BRANCH="$wazuh_major.$wazuh_minor-$elastic_major_version.$elastic_minor_version"
@@ -323,7 +323,7 @@ default_index="/tmp/default_index.json"
 cat > ${default_index} << EOF
 {
   "changes": {
-    "defaultIndex": "wazuh-alerts-3.x-*"
+    "defaultIndex": "wazuh-alerts-4.x-*"
   }
 }
 EOF
