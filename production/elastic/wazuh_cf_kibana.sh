@@ -264,7 +264,7 @@ install_plugin(){
   echo "Installing app" >> /tmp/deploy.log
   if [[ ${InstallType} != 'sources' ]] || [[ ${BRANCH} == "" ]]
   then    
-    chmod -R kibaba:kibana /usr/share/kibana
+    chown -R kibaba:kibana /usr/share/kibana
     cd /usr/share/kibana
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
   else
