@@ -401,12 +401,12 @@ main(){
   install_plugin
   enable_kibana
   optimize_kibana
+  add_nginx
+  kibana_optional_configs
   start_kibana
   sleep 200
   add_api
-  kibana_optional_configs
   start_kibana
-  add_nginx
   echo "Deploy finished" >> /tmp/deploy.log
 }
 
