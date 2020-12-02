@@ -310,6 +310,7 @@ enable_kibana(){
 start_kibana(){
   # Starting Kibana
   systemctl restart kibana
+  systemctl restart elasticsearch
   await_kibana_ssl
 
 }
