@@ -329,7 +329,6 @@ cat > ${default_index} << EOF
 }
 EOF
 
-await_kibana_ssl
 # Configuring Kibana TimePicker
 curl -XPOST "https://$eth0_ip:5601/api/kibana/settings" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d \
 '{"changes":{"timepicker:timeDefaults":"{\n  \"from\": \"now-24h\",\n  \"to\": \"now\",\n  \"mode\": \"quick\"}"}}' >> /tmp/deploy.log
@@ -402,10 +401,10 @@ main(){
   enable_kibana
   optimize_kibana
   add_nginx
-  kibana_optional_configs
   start_kibana
   sleep 200
   add_api
+  kibana_optional_configs
   start_kibana
   echo "Deploy finished" >> /tmp/deploy.log
 }
