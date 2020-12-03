@@ -291,7 +291,7 @@ hosts:
   - default:
       url: https://${wazuh_master_ip}
       port: ${wazuh_api_port}
-      user: ${wazuh_api_user}
+      username: ${wazuh_api_user}
       password: ${wazuh_api_password}
 EOF
 echo "Configured API" >> /tmp/deploy.log
