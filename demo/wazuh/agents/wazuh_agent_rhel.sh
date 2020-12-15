@@ -224,7 +224,7 @@ sed -i 's:MANAGER_IP:'${elb_wazuh_dns}':g' ${manager_config}
 echo "Registered Wazuh agent." >> /tmp/log
 
 # Enable integrator
-/var/ossec/bin/ossec-control enable integrator
+/var/ossec/bin/wazuh-control enable integrator
 
 # Installing pip docker dependency
 pip install docker
