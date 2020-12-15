@@ -156,7 +156,6 @@ rm -rf /tmp/iplist-to-cdblist.py
 cp /tmp/blacklist-alienvault /var/ossec/etc/lists/
 chown ossec:ossec /var/ossec/etc/lists/blacklist-alienvault
 chmod 660 /var/ossec/etc/lists/blacklist-alienvault
-/var/ossec/bin/ossec-makelists
 echo "Updated CDB list ,added Windows agent IP." >> /tmp/deploy.log
 
 # Change manager protocol to tcp, to be used by Amazon ELB
