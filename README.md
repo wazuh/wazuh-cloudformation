@@ -27,3 +27,10 @@ This repository contains CloudFormation templates and provision scripts to deplo
 * Kibana server seats behind an internet facing load balancer, that optionally loads an SSL Certificate for HTTPS
 * A Splunk Indexer instance with a Splunk app for Wazuh installed on it.
 * Six Wazuh agents installed on different operating systems: Red Hat 7, CentOS 7, Ubuntu, Debian, Amazon Linux and Windows.
+
+
+## Unattendend all-in-one
+
+* Install scipt following [Wazuh Unattended installation](https://documentation.wazuh.com/current/installation-guide/open-distro/all-in-one-deployment/unattended-installation.html)
+* A single node with Amazon Linux
+
