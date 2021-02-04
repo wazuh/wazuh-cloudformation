@@ -2,17 +2,17 @@
 
 ## Elasticsearch configuration
 
-cluster.name: {{elastic_cluster}}
+cluster.name: {{cluster_name}}
 
 cluster.initial_master_nodes:
-        - {{master_node_1}}
-        - {{master_node_2}}
-        - {{master_node_3}}
+  - {{master_node_1}}
+  - {{master_node_2}}
+  - {{master_node_3}}
 
 discovery.seed_hosts:
-        - {{elasticsearch_ip_node1}}
-        - {{elasticsearch_ip_node2}}
-        - {{elasticsearch_ip_node3}}
+  - {{elasticsearch_ip_node1}}
+  - {{elasticsearch_ip_node2}}
+  - {{elasticsearch_ip_node3}}
 
 ## Certificates creation
           
