@@ -1,0 +1,326 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Provides an unattended all-in-one Wazuh installation 
+Parameters:
+  ## AWS
+  AvailabilityZone:
+    Description: Select an availability zone for the VPC
+    Type: 'List<AWS::EC2::AvailabilityZone::Name>'
+  InstanceType:
+    AllowedValues:
+    - t2.small
+    - t2.medium
+    - t2.large
+    - t2.xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+    Default: t2.large
+    Description: EC2 instance type
+    Type: String
+  KeyName:
+    ConstraintDescription: Can contain only ASCII characters.
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+  SSHLocation:
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x
+    Default: 0.0.0.0/0
+    Description: The IP address range that can be used to SSH to the EC2 instances
+    MaxLength: '18'
+    MinLength: '9'
+    Type: String
+  
+  ## Version
+  WazuhVersion:
+    AllowedValues:
+      - "4.0.1"
+      - "4.0.2"
+      - "4.0.3"
+      - "4.0.4"
+    Description: Wazuh version
+    Default: "4.0.4"
+    Type: String
+
+Mappings:
+  Node2NameAndIP:
+    MasterNode:
+      Name: master-node
+      IP: 10.0.0.100
+    WorkerNode:
+      Name: worker-node
+      IP: 10.0.0.200
+    Elastic1:
+      Name: elastic-node-1
+      IP: 10.0.1.101
+    Elastic2:
+      Name: elastic-node-2
+      IP: 10.0.1.102
+    Elastic3:
+      Name: elastic-node-3
+      IP: 10.0.1.103
+
+  AWSInstanceType2Arch:
+    t2.large:
+      Arch: HVM64
+    t2.medium:
+      Arch: HVM64
+    t2.micro:
+      Arch: HVM64
+    t2.xlarge:
+      Arch: HVM64
+    t2.small:
+      Arch: HVM64
+
+  AWSRegionArch2AMI:
+    us-east-1:
+      HVM64: ami-0c6b1d09930fac512
+      HVMCENTOS7: ami-02eac2c0129f6376b
+      HVMUBUNTU64: ami-024a64a6685d05041
+      HVMREDHAT7: ami-6871a115
+      HVMDEBIAN: ami-0357081a1383dc76b
+      HVMWINDOWS: ami-0a9ca0496f746e6e0
+    us-east-2:
+      HVM64: ami-0ebbf2179e615c338
+      HVMCENTOS7: ami-0f2b4fc905b0bd1f1
+      HVMUBUNTU64: ami-097ebb39620d8d54b
+      HVMREDHAT7: ami-03291866
+      HVMDEBIAN: ami-09c10a66337c79669
+      HVMWINDOWS: ami-0087a83ed4a60d1e9
+    us-west-1:
+      HVM64: ami-015954d5e5548d13b
+      HVMUBUNTU64: ami-040dfc3ebf1bfc4f6
+      HVMCENTOS7: ami-074e2d6769f445be5
+      HVMREDHAT7: ami-18726478
+      HVMDEBIAN: ami-0adbaf2e0ce044437
+      HVMWINDOWS: ami-05bf35c67c02cd868
+    us-west-2:
+      HVM64: ami-0cb72367e98845d43
+      HVMUBUNTU64: ami-0196ce5c34425a906
+      HVMCENTOS7: ami-01ed306a12b7d1c96
+      HVMREDHAT7: ami-28e07e50
+      HVMDEBIAN: ami-05a3ef6744aa96514
+      HVMWINDOWS: ami-04ad37d2932b886c0
+    
+  Subnet2CIDR:
+    WazuhVpc:
+      CIDR: 10.0.0.0/16
+    SubnetWazuh:
+      CIDR: 10.0.0.0/24
+    SubnetElasticsearch:
+      CIDR: 10.0.1.0/24
+
+Resources:  
+  # Network resources
+  WazuhVpc:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: !FindInMap
+        - Subnet2CIDR
+        - WazuhVpc
+        - CIDR
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: !Ref 'AWS::StackName'
+
+  SubnetWazuh:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref WazuhVpc
+      AvailabilityZone: !Select [ "0", !Ref AvailabilityZone ]
+      CidrBlock: !FindInMap
+        - Subnet2CIDR
+        - SubnetWazuh
+        - CIDR
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-SubnetWazuh'
+
+  SubnetElasticsearch:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref WazuhVpc
+      AvailabilityZone: !Select [ "0", !Ref AvailabilityZone ]
+      CidrBlock: !FindInMap
+        - Subnet2CIDR
+        - SubnetElasticsearch
+        - CIDR
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-SubnetElasticsearch'
+  
+  # Internet access and routing
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-InternetGateway'
+  
+  GatewayToInternet:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref WazuhVpc
+      InternetGatewayId: !Ref InternetGateway
+  
+  PublicRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref WazuhVpc
+      Tags:
+        - Key: Application
+          Value: !Ref 'AWS::StackId'
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-PublicRouteTable'
+  
+  PublicRoute:
+    Type: 'AWS::EC2::Route'
+    DependsOn: GatewayToInternet
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  
+  SubnetWazuhPublicRouteTable:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref SubnetWazuh
+      RouteTableId: !Ref PublicRouteTable
+  
+  SubnetElasticPublicRouteTable:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref SubnetElasticsearch
+      RouteTableId: !Ref PublicRouteTable
+
+  # Security groups
+  WazuhSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Wazuh security group
+      VpcId: !Ref WazuhVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !FindInMap
+            - Subnet2CIDR
+            - WazuhVpc
+            - CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-WazuhSecurityGroup'
+
+  ElasticSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: Elasticsearch security group
+      VpcId: !Ref WazuhVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !FindInMap
+            - Subnet2CIDR
+            - WazuhVpc
+            - CIDR
+        - IpProtocol: tcp
+          FromPort: 5601
+          ToPort: 5601
+          CidrIp: !FindInMap
+            - Subnet2CIDR
+            - WazuhVpc
+            - CIDR
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::StackName}-ElasticSecurityGroup'
+  
+  # Instances
+  Elastic1:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          Elastic1InstallationSet:
+            - DownloadFile
+            - ConfigFile
+            - InstallELK
+        DownloadFile:
+          commands:
+            download-elk-installation-script:
+              command: "curl -so ~/elastic-stack-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/v$WazuhVersion/resources/open-distro/unattended-installation/distributed/elastic-stack-installation.sh"
+              env:
+                WazuhVersion: !Ref WazuhVersion
+              cwd: "~"
+              test: "test ! -e ~/elastic-stack-installation.sh"
+        ConfigFile:
+          files:
+            ~/config.yml:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/config_cluster.yml
+              mode: '000700'
+              owner: root
+              group: root
+              context:
+                cluster_name: "elastic_cluster"
+                master_node_1: !FindInMap [Node2NameAndIP, Elastic1, Name]
+                master_node_2: !FindInMap [Node2NameAndIP, Elastic2, Name]
+                master_node_3: !FindInMap [Node2NameAndIP, Elastic3, Name]
+                elasticsearch_ip_node1: !FindInMap [Node2NameAndIP, Elastic1, IP]
+                elasticsearch_ip_node2: !FindInMap [Node2NameAndIP, Elastic2, IP]
+                elasticsearch_ip_node3: !FindInMap [Node2NameAndIP, Elastic3, IP]
+                wazuh_master_name: !FindInMap [Node2NameAndIP, MasterNode, Name]
+                wazuh_worker_name: !FindInMap [Node2NameAndIP, WorkerNode, Name]
+                kibana_ip: !FindInMap [Node2NameAndIP, Elastic3, IP]
+                wazuh_master_server_IP: !FindInMap [Node2NameAndIP, MasterNode, IP]
+        InstallELK:
+          commands: 
+            install-elk:
+              command: "bash ~/elastic-stack-installation.sh -e -k -c -n $NodeName"
+              env:
+                NodeName: !FindInMap [Node2NameAndIP, Elastic1, Name]
+              cwd: "~"
+              test: "test ! -e ~/certs.tar"
+    Properties:
+      ImageId:
+        Fn::FindInMap:
+        - AWSRegionArch2AMI
+        - Ref: AWS::Region
+        - Fn::FindInMap:
+          - AWSInstanceType2Arch
+          - Ref: InstanceType
+          - Arch
+      InstanceType:
+        Ref: InstanceType
+      KeyName:
+        Ref: KeyName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: "ElasticSecurityGroup"
+          SubnetId:
+            Ref: "SubnetElasticsearch"
+          PrivateIpAddress: !FindInMap [Node2NameAndIP, Elastic1, IP]
+      Tags:
+        - Key: Name
+          Value: ElasticInitialNode
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} \ 
+                                --resource Amazon \
+                                --configsets Elastic1InstallationSet 
+                                --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? 
+                                  --stack ${AWS::StackName} \
+                                  --resource Amazon \
+                                  --region ${AWS::Region}
+    DependsOn: GatewayToInternet
