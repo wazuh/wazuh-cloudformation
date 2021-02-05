@@ -3,62 +3,12 @@ Description: Provides an unattended all-in-one Wazuh installation
 Parameters:
   InstanceType:
     AllowedValues:
-    - t1.micro
-    - t2.nano
-    - t2.micro
     - t2.small
     - t2.medium
     - t2.large
-    - m1.small
-    - m1.medium
-    - m1.large
-    - m1.xlarge
-    - m2.xlarge
-    - m2.2xlarge
-    - m2.4xlarge
-    - m3.medium
-    - m3.large
-    - m3.xlarge
-    - m3.2xlarge
-    - m4.large
-    - m4.xlarge
-    - m4.2xlarge
-    - m4.4xlarge
-    - m4.10xlarge
-    - c1.medium
-    - c1.xlarge
-    - c3.large
-    - c3.xlarge
-    - c3.2xlarge
-    - c3.4xlarge
-    - c3.8xlarge
-    - c4.large
-    - c4.xlarge
-    - c4.2xlarge
-    - c4.4xlarge
-    - c4.8xlarge
-    - g2.2xlarge
-    - g2.8xlarge
-    - r3.large
-    - r3.xlarge
-    - r3.2xlarge
-    - r3.4xlarge
-    - r3.8xlarge
-    - i2.xlarge
-    - i2.2xlarge
-    - i2.4xlarge
-    - i2.8xlarge
-    - d2.xlarge
-    - d2.2xlarge
-    - d2.4xlarge
-    - d2.8xlarge
-    - hi1.4xlarge
-    - hs1.8xlarge
-    - cr1.8xlarge
-    - cc2.8xlarge
-    - cg1.4xlarge
+    - t2.xlarge
     ConstraintDescription: must be a valid EC2 instance type.
-    Default: t2.small
+    Default: t2.large
     Description: EC2 instance type
     Type: String
   KeyName:
@@ -75,111 +25,14 @@ Parameters:
     Type: String
 
 Mappings:
-Mappings:
   AWSInstanceType2Arch:
-    c1.medium:
-      Arch: HVM64
-    c1.xlarge:
-      Arch: HVM64
-    c3.2xlarge:
-      Arch: HVM64
-    c3.4xlarge:
-      Arch: HVM64
-    c3.8xlarge:
-      Arch: HVM64
-    c3.large:
-      Arch: HVM64
-    c3.xlarge:
-      Arch: HVM64
-    c4.2xlarge:
-      Arch: HVM64
-    c4.4xlarge:
-      Arch: HVM64
-    c4.8xlarge:
-      Arch: HVM64
-    c4.large:
-      Arch: HVM64
-    c4.xlarge:
-      Arch: HVM64
-    cc2.8xlarge:
-      Arch: HVM64
-    cr1.8xlarge:
-      Arch: HVM64
-    d2.2xlarge:
-      Arch: HVM64
-    d2.4xlarge:
-      Arch: HVM64
-    d2.8xlarge:
-      Arch: HVM64
-    d2.xlarge:
-      Arch: HVM64
-    g2.2xlarge:
-      Arch: HVMG2
-    g2.8xlarge:
-      Arch: HVMG2
-    hi1.4xlarge:
-      Arch: HVM64
-    hs1.8xlarge:
-      Arch: HVM64
-    i2.2xlarge:
-      Arch: HVM64
-    i2.4xlarge:
-      Arch: HVM64
-    i2.8xlarge:
-      Arch: HVM64
-    i2.xlarge:
-      Arch: HVM64
-    m1.large:
-      Arch: HVM64
-    m1.medium:
-      Arch: HVM64
-    m1.small:
-      Arch: HVM64
-    m1.xlarge:
-      Arch: HVM64
-    m2.2xlarge:
-      Arch: HVM64
-    m2.4xlarge:
-      Arch: HVM64
-    m2.xlarge:
-      Arch: HVM64
-    m3.2xlarge:
-      Arch: HVM64
-    m3.large:
-      Arch: HVM64
-    m3.medium:
-      Arch: HVM64
-    m3.xlarge:
-      Arch: HVM64
-    m4.10xlarge:
-      Arch: HVM64
-    m4.2xlarge:
-      Arch: HVM64
-    m4.4xlarge:
-      Arch: HVM64
-    m4.large:
-      Arch: HVM64
-    m4.xlarge:
-      Arch: HVM64
-    r3.2xlarge:
-      Arch: HVM64
-    r3.4xlarge:
-      Arch: HVM64
-    r3.8xlarge:
-      Arch: HVM64
-    r3.large:
-      Arch: HVM64
-    r3.xlarge:
-      Arch: HVM64
-    t1.micro:
-      Arch: HVM64
     t2.large:
       Arch: HVM64
     t2.medium:
       Arch: HVM64
     t2.micro:
       Arch: HVM64
-    t2.nano:
+    t2.xlarge:
       Arch: HVM64
     t2.small:
       Arch: HVM64
@@ -213,76 +66,6 @@ Mappings:
       HVMREDHAT7: ami-28e07e50
       HVMDEBIAN: ami-05a3ef6744aa96514
       HVMWINDOWS: ami-04ad37d2932b886c0
-    ca-central-1:
-      HVM64: ami-08a9b721ecc5b0a53
-      HVMUBUNTU64: ami-0380eb76ff3ad603f
-      HVMCENTOS7: ami-033e6106180a626d0
-      HVMREDHAT7: ami-49f0762d
-      HVMDEBIAN: ami-04413a263a7d94982
-      HVMWINDOWS: ami-020e569ea1f3a4e1c
-    eu-west-1:
-      HVM64: ami-030dbca661d402413
-      HVMUBUNTU64: ami-0b2a4d260c54e8d3d
-      HVMCENTOS7: ami-0ff760d16d9497662
-      HVMREDHAT7: ami-7c491f05
-      HVMDEBIAN: ami-0968f6a31fc6cffc0
-      HVMWINDOWS: ami-03838ccd5cfb84782
-    eu-west-2:
-      HVM64: ami-0009a33f033d8b7b6
-      HVMUBUNTU64: ami-09dd110e91f421069
-      HVMCENTOS7: ami-0eab3a90fc693af19
-      HVMREDHAT7: ami-7c1bfd1b
-      HVMDEBIAN: ami-0faa9c9b5399088fd
-      HVMWINDOWS: ami-0ebf422d2a92724ec
-    eu-west-3:
-      HVM64: ami-0ebb3a801d5fb8b9b
-      HVMUBUNTU64: ami-00e557eb4a269bf1c
-      HVMCENTOS7: ami-0e1ab783dc9489f34
-      HVMREDHAT7: ami-5026902d
-      HVMDEBIAN: ami-0cd23820af84edc85
-      HVMWINDOWS: ami-022cfeccb4b72d6b8
-    ap-northeast-1:
-      HVM64: ami-00d101850e971728d
-      HVMUBUNTU64: ami-0b5a5c971fc30e5d1
-      HVMCENTOS7: ami-045f38c93733dd48d
-      HVMREDHAT7: ami-6b0d5f0d
-      HVMDEBIAN: ami-09fbcd30452841cb9
-      HVMWINDOWS: ami-02192102f14f0a10a
-    ap-northeast-2:
-      HVM64: ami-08ab3f7e72215fe91
-      HVMUBUNTU64: ami-06af4ace0697354bf
-      HVMCENTOS7: ami-06cf2a72dadf92410
-      HVMREDHAT7: ami-3eee4150
-      HVMDEBIAN: ami-08363ccce96df1fff
-      HVMWINDOWS: ami-0708a3b845edea89c
-    ap-southeast-1:
-      HVM64: ami-0b5a47f8865280111
-      HVMUBUNTU64: ami-0355471dc9f264631
-      HVMCENTOS7: ami-0b4dd9d65556cac22
-      HVMREDHAT7: ami-76144b0a
-      HVMDEBIAN: ami-0555b1a5444087dd4
-      HVMWINDOWS: ami-0afce41e503676765
-    ap-southeast-2:
-      HVM64: ami-0fb7513bcdc525c3b
-      HVMUBUNTU64: ami-0065540df76a93885
-      HVMCENTOS7: ami-08bd00d7713a39e7d
-      HVMREDHAT7: ami-67589505
-      HVMDEBIAN: ami-029c54f988446691a
-      HVMWINDOWS: ami-0628ef1f10e34307d
-    ap-south-1:
-      HVM64: ami-00e782930f1c3dbc7
-      HVMUBUNTU64: ami-076b389b9989430c2
-      HVMCENTOS7: ami-02e60be79e78fef21
-      HVMREDHAT7: ami-5b673c34
-      HVMDEBIAN: ami-0dc98cbb0d0e49162
-      HVMWINDOWS: ami-0e719217acb64308e
-    sa-east-1:
-      HVM64: ami-058141e091292ecf0
-      HVMUBUNTU64: ami-009e4c831385f8901
-      HVMCENTOS7: ami-0b8d86d4bf91850af
-      HVMREDHAT7: ami-b0b7e3dc
-      HVMDEBIAN: ami-030580e61468e54bd
-      HVMWINDOWS: ami-07df12f3c5005cd1f
 
   Subnet2CIDR:
     WazuhVpc:
