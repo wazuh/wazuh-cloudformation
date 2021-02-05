@@ -21,9 +21,10 @@ clients:
   - name: admin
     dn: CN=admin,OU=Docu,O=Wazuh,L=California,C=US
     admin: true
-  - name: filebeat
-    dn: CN=filebeat,OU=Docu,O=Wazuh,L=California,C=US
-
+  - name: {{wazuh_master_name}}
+    dn: CN={{wazuh_master_name}},OU=Docu,O=Wazuh,L=California,C=US
+  - name: {{wazuh_worker_name}}
+    dn: CN={{wazuh_worker_name}},OU=Docu,O=Wazuh,L=California,C=US
 
 # Kibana-instance
 - {{kibana_ip}}
