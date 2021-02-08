@@ -27,7 +27,17 @@ Parameters:
     MaxLength: '18'
     MinLength: '9'
     Type: String
-  
+  Ec2User:
+    AllowedValues:
+      - ec2-user
+    Default: ec2-user
+    Description: Username in EC2 instance
+    Type: String
+  SshPubKey:
+    Description: Elastic1 ssh pub key
+    Type: String
+    NoEcho: 'True'
+    
   ## Version
   WazuhVersion:
     AllowedValues:
@@ -210,10 +220,7 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: !FindInMap
-            - Subnet2CIDR
-            - WazuhVpc
-            - CIDR
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-WazuhSecurityGroup'
@@ -227,17 +234,11 @@ Resources:
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
-          CidrIp: !FindInMap
-            - Subnet2CIDR
-            - WazuhVpc
-            - CIDR
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
-          FromPort: 5601
-          ToPort: 5601
-          CidrIp: !FindInMap
-            - Subnet2CIDR
-            - WazuhVpc
-            - CIDR
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-ElasticSecurityGroup'
@@ -248,10 +249,22 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Init':
         configSets:
+          SSHConfigSet:
+            - SshKeys
           Elastic1InstallationSet:
             - DownloadFile
             - ConfigFile
             - InstallELK
+        SshKeys:
+          commands:
+            create-keys:
+              command: "sudo -u $Ec2User ssh-keygen -q -t rsa -N '' -f /home/$Ec2User/.ssh/id_rsa <<<y"
+              cwd: "/home/$Ec2User"
+              test: 
+                "test ! -e /home/$Ec2User/.ssh/id_rsa.key && \
+                 test ! -e /home/$Ec2User/.ssh/id_rsa.pub"
+              env:
+                Ec2User: !Ref Ec2User
         DownloadFile:
           commands:
             download-elk-installation-script:
@@ -262,7 +275,7 @@ Resources:
               test: "test ! -e ~/elastic-stack-installation.sh"
         ConfigFile:
           files:
-            ~/config.yml:
+            /root/config.yml:
               source: !Sub >-
                 https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/config_cluster.yml
               mode: '000700'
@@ -278,16 +291,21 @@ Resources:
                 elasticsearch_ip_node3: !FindInMap [Node2NameAndIP, Elastic3, IP]
                 wazuh_master_name: !FindInMap [Node2NameAndIP, MasterNode, Name]
                 wazuh_worker_name: !FindInMap [Node2NameAndIP, WorkerNode, Name]
-                kibana_ip: !FindInMap [Node2NameAndIP, Elastic3, IP]
+                kibana_ip: !FindInMap [Node2NameAndIP, Elastic1, IP]
                 wazuh_master_server_IP: !FindInMap [Node2NameAndIP, MasterNode, IP]
         InstallELK:
           commands: 
-            install-elk:
-              command: "bash ~/elastic-stack-installation.sh -e -k -c -n $NodeName"
+            install-elastic:
+              command: "bash ~/elastic-stack-installation.sh -e -c -n $NodeName"
               env:
                 NodeName: !FindInMap [Node2NameAndIP, Elastic1, Name]
               cwd: "~"
               test: "test ! -e ~/certs.tar"
+            install-kibana:
+              command: "bash ~/elastic-stack-installation.sh -k -c -n $NodeName"
+              env:
+                NodeName: !FindInMap [Node2NameAndIP, Elastic1, Name]
+              cwd: "~"
     Properties:
       ImageId:
         Fn::FindInMap:
@@ -311,16 +329,56 @@ Resources:
           PrivateIpAddress: !FindInMap [Node2NameAndIP, Elastic1, IP]
       Tags:
         - Key: Name
-          Value: ElasticInitialNode
+          Value: Elastic1
       UserData:
         Fn::Base64: !Sub |
-          #!/bin/bash
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} \ 
-                                --resource Amazon \
-                                --configsets Elastic1InstallationSet 
-                                --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? 
-                                  --stack ${AWS::StackName} \
-                                  --resource Amazon \
-                                  --region ${AWS::Region}
+          #!/bin/bash -xe
+          scp -i ${AWS:}
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic1 --configsets SSHConfigSet,Elastic1InstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Elastic1 --region ${AWS::Region}
+    DependsOn: GatewayToInternet
+  
+  Elastic2:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          SSHConfigSet:
+            - SshKey
+        SshKey:
+          commands:
+            paste-ssh-pub-key:
+              command: "cat $PubKey >> /home/$Ec2User/.ssh/authorized_keys"
+            env:
+              PubKey: !Ref SshPubKey
+              Ec2User: !Ref Ec2User
+    Properties:
+      ImageId:
+        Fn::FindInMap:
+        - AWSRegionArch2AMI
+        - Ref: AWS::Region
+        - Fn::FindInMap:
+          - AWSInstanceType2Arch
+          - Ref: InstanceType
+          - Arch
+      InstanceType:
+        Ref: InstanceType
+      KeyName:
+        Ref: KeyName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: "ElasticSecurityGroup"
+          SubnetId:
+            Ref: "SubnetElasticsearch"
+          PrivateIpAddress: !FindInMap [Node2NameAndIP, Elastic2, IP]
+      Tags:
+        - Key: Name
+          Value: Elastic2
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -xe
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic2 --configsets SSHConfigSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Elastic2 --region ${AWS::Region}
     DependsOn: GatewayToInternet
