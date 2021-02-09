@@ -33,11 +33,17 @@ Parameters:
     Default: ec2-user
     Description: Username in EC2 instance
     Type: String
-  SshPubKey:
-    Description: Elastic1 ssh pub key
+  SshKey:
+    Description: AWS Cloudformation Stack SSH Private Key
     Type: String
     NoEcho: 'True'
-    
+  
+  # Log
+  LogFile:
+    Description: Log file path to keep track of actions
+    Type: String  
+    Default: /var/log/wazuh-cloudformation.log
+
   ## Version
   WazuhVersion:
     AllowedValues:
@@ -249,27 +255,40 @@ Resources:
     Metadata:
       'AWS::CloudFormation::Init':
         configSets:
-          SSHConfigSet:
-            - SshKeys
           Elastic1InstallationSet:
+            - SshConfig
             - DownloadFile
             - ConfigFile
+            - ScpFiles
             - InstallELK
-        SshKeys:
+        SshConfig:
+          files:
+            /tmp/ssh.key:
+              content: !Sub |
+                -----BEGIN RSA PRIVATE KEY-----
+                ${SshKey}
+                -----END RSA PRIVATE KEY-----
+              mode: '000600'
+              owner: root
+              group: root
           commands:
-            create-keys:
-              command: "sudo -u $Ec2User ssh-keygen -q -t rsa -N '' -f /home/$Ec2User/.ssh/id_rsa <<<y"
-              cwd: "/home/$Ec2User"
-              test: 
-                "test ! -e /home/$Ec2User/.ssh/id_rsa.key && \
-                 test ! -e /home/$Ec2User/.ssh/id_rsa.pub"
+            move-ssh-key:
+              command: 
+                "mv /tmp/ssh.key ~/.ssh"
+              test: "test ! -e ~/.ssh/ssh.key"
+            write-logs:
+              command: "logger -s \"Created ssh.key in /root/.ssh... \" 2>> $LogFile"
               env:
-                Ec2User: !Ref Ec2User
+                LogFile: !Ref LogFile
+              test: "test -e ~/.ssh/ssh.key"
         DownloadFile:
           commands:
             download-elk-installation-script:
-              command: "curl -so ~/elastic-stack-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/v$WazuhVersion/resources/open-distro/unattended-installation/distributed/elastic-stack-installation.sh"
+              command: 
+                "logger -s \"Downloading elastic-stack-installation.sh... \" 2>> $LogFile && \ 
+                curl -so ~/elastic-stack-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/v$WazuhVersion/resources/open-distro/unattended-installation/distributed/elastic-stack-installation.sh"
               env:
+                LogFile: !Ref LogFile
                 WazuhVersion: !Ref WazuhVersion
               cwd: "~"
               test: "test ! -e ~/elastic-stack-installation.sh"
@@ -293,19 +312,45 @@ Resources:
                 wazuh_worker_name: !FindInMap [Node2NameAndIP, WorkerNode, Name]
                 kibana_ip: !FindInMap [Node2NameAndIP, Elastic1, IP]
                 wazuh_master_server_IP: !FindInMap [Node2NameAndIP, MasterNode, IP]
+          commands:
+            write-log:
+              command: "logger -s \"Creating custom config.yml... \" 2>> $LogFile"
+              env:
+                LogFile: !Ref LogFile
+              test: "test -e ~/config.yml"
+        ScpFiles:
+          commands:
+            scp-elastic-2:
+              command: 
+                "logger -s \"Copying files to $IP (Elastic2)...\" 2>> $LogFile && \
+                 scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/elastic-stack-installation.sh $Ec2User@$IP:~/elastic-stack-installation.sh && \
+                 scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/config.yml $Ec2User@$IP:~/config.yml"
+              env:
+                Ec2User: !Ref Ec2User
+                IP: !FindInMap [Node2NameAndIP, Elastic2, IP]
+                LogFile: !Ref LogFile
         InstallELK:
           commands: 
             install-elastic:
-              command: "bash ~/elastic-stack-installation.sh -e -c -n $NodeName"
+              command: 
+                "logger -s \"Installing elastic... \" 2>> $LogFile && \
+                bash ~/elastic-stack-installation.sh -e -c -n $NodeName"
               env:
+                LogFile: !Ref LogFile
                 NodeName: !FindInMap [Node2NameAndIP, Elastic1, Name]
               cwd: "~"
-              test: "test ! -e ~/certs.tar"
+              test: 
+                "test ! -e ~/certs.tar && \
+                 test ! -e /etc/elasticsearch.yml"
             install-kibana:
-              command: "bash ~/elastic-stack-installation.sh -k -c -n $NodeName"
+              command: 
+                "logger -s \"Installing kibana... \" 2>> $LogFile && \
+                bash ~/elastic-stack-installation.sh -k -n $NodeName"
               env:
+                LogFile: !Ref LogFile
                 NodeName: !FindInMap [Node2NameAndIP, Elastic1, Name]
               cwd: "~"
+              test: "test ! -e /etc/kibana/kibana.yml"
     Properties:
       ImageId:
         Fn::FindInMap:
@@ -333,25 +378,12 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
-          scp -i ${AWS:}
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic1 --configsets SSHConfigSet,Elastic1InstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic1 --configsets Elastic1InstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Elastic1 --region ${AWS::Region}
     DependsOn: GatewayToInternet
   
   Elastic2:
     Type: AWS::EC2::Instance
-    Metadata:
-      'AWS::CloudFormation::Init':
-        configSets:
-          SSHConfigSet:
-            - SshKey
-        SshKey:
-          commands:
-            paste-ssh-pub-key:
-              command: "cat $PubKey >> /home/$Ec2User/.ssh/authorized_keys"
-            env:
-              PubKey: !Ref SshPubKey
-              Ec2User: !Ref Ec2User
     Properties:
       ImageId:
         Fn::FindInMap:
@@ -376,9 +408,4 @@ Resources:
       Tags:
         - Key: Name
           Value: Elastic2
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic2 --configsets SSHConfigSet --region ${AWS::Region}
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Elastic2 --region ${AWS::Region}
     DependsOn: GatewayToInternet
