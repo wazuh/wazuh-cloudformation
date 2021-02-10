@@ -37,6 +37,7 @@ Parameters:
     Description: AWS Cloudformation Stack SSH Private Key
     Type: String
     NoEcho: 'True'
+    ConstraintDescription: Do not copy "BEGIN RSA PRIVATE KEY" and "END RSA PRIVATE KEY" lines
   
   # Log
   LogFile:
@@ -259,8 +260,10 @@ Resources:
             - SshConfig
             - DownloadFile
             - ConfigFile
-            - ScpFiles
-            - InstallELK
+            - InstallElastic
+            - InstallKibana
+          DeployFiles:
+            -  ScpFiles
         SshConfig:
           files:
             /tmp/ssh.key:
@@ -272,27 +275,30 @@ Resources:
               owner: root
               group: root
           commands:
+            write-logs:
+              command: "logger -s \"Creating ssh.key in ~/.ssh... \" 2>> $LogFile"
+              env:
+                LogFile: !Ref LogFile
             move-ssh-key:
               command: 
                 "mv /tmp/ssh.key ~/.ssh"
-              test: "test ! -e ~/.ssh/ssh.key"
-            write-logs:
-              command: "logger -s \"Created ssh.key in /root/.ssh... \" 2>> $LogFile"
-              env:
-                LogFile: !Ref LogFile
-              test: "test -e ~/.ssh/ssh.key"
         DownloadFile:
           commands:
-            download-elk-installation-script:
-              command: 
-                "logger -s \"Downloading elastic-stack-installation.sh... \" 2>> $LogFile && \ 
-                curl -so ~/elastic-stack-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/v$WazuhVersion/resources/open-distro/unattended-installation/distributed/elastic-stack-installation.sh"
+            write-log: 
+              command: "logger -s \"Downloading elastic-stack-installation.sh... \" 2>> $LogFile"
               env:
-                LogFile: !Ref LogFile
+                LogFile: !Ref LogFile 
+            download-elk-installation-script:
+              command: "curl -so ~/elastic-stack-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/v$WazuhVersion/resources/open-distro/unattended-installation/distributed/elastic-stack-installation.sh"
+              env:
                 WazuhVersion: !Ref WazuhVersion
               cwd: "~"
-              test: "test ! -e ~/elastic-stack-installation.sh"
         ConfigFile:
+          commands:
+            write-log:
+              command: "logger -s \"Creating custom config.yml... \" 2>> $LogFile"
+              env:
+                LogFile: !Ref LogFile
           files:
             /root/config.yml:
               source: !Sub >-
@@ -312,45 +318,44 @@ Resources:
                 wazuh_worker_name: !FindInMap [Node2NameAndIP, WorkerNode, Name]
                 kibana_ip: !FindInMap [Node2NameAndIP, Elastic1, IP]
                 wazuh_master_server_IP: !FindInMap [Node2NameAndIP, MasterNode, IP]
-          commands:
+        InstallElastic:
+          commands: 
             write-log:
-              command: "logger -s \"Creating custom config.yml... \" 2>> $LogFile"
+              command: "logger -s \"Installing elastic... \" 2>> $LogFile"
               env:
                 LogFile: !Ref LogFile
-              test: "test -e ~/config.yml"
+            install-elastic:
+              command: "bash ~/elastic-stack-installation.sh -e -c -n $NodeName"
+              env:
+                NodeName: !FindInMap [Node2NameAndIP, Elastic1, Name]
+              cwd: "~"
+              ignoreErrors: "true"
+        InstallKibana:
+          commands:
+            write-log:
+              command: "logger -s \"Installing kibana... \" 2>> $LogFile"
+              env:
+                LogFile: !Ref LogFile
+            install-kibana:
+              command: "bash ~/elastic-stack-installation.sh -k -n $NodeName"
+              env:
+                NodeName: !FindInMap [Node2NameAndIP, Elastic1, Name]
+              cwd: "~"
+              ignoreErrors: "true"
         ScpFiles:
           commands:
+            write-log:
+              command: "logger -s \"Copying files to $IP (Elastic2)...\" 2>> $LogFile"
+              env:
+                LogFile: !Ref LogFile
+                IP: !FindInMap [Node2NameAndIP, Elastic2, IP] 
             scp-elastic-2:
-              command: 
-                "logger -s \"Copying files to $IP (Elastic2)...\" 2>> $LogFile && \
-                 scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/elastic-stack-installation.sh $Ec2User@$IP:~/elastic-stack-installation.sh && \
-                 scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/config.yml $Ec2User@$IP:~/config.yml"
+              command:
+                "scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/elastic-stack-installation.sh $Ec2User@$IP:~/elastic-stack-installation.sh && \
+                 scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/certs.tar $Ec2User@$IP:~/certs.tar"
               env:
                 Ec2User: !Ref Ec2User
                 IP: !FindInMap [Node2NameAndIP, Elastic2, IP]
-                LogFile: !Ref LogFile
-        InstallELK:
-          commands: 
-            install-elastic:
-              command: 
-                "logger -s \"Installing elastic... \" 2>> $LogFile && \
-                bash ~/elastic-stack-installation.sh -e -c -n $NodeName"
-              env:
-                LogFile: !Ref LogFile
-                NodeName: !FindInMap [Node2NameAndIP, Elastic1, Name]
-              cwd: "~"
-              test: 
-                "test ! -e ~/certs.tar && \
-                 test ! -e /etc/elasticsearch.yml"
-            install-kibana:
-              command: 
-                "logger -s \"Installing kibana... \" 2>> $LogFile && \
-                bash ~/elastic-stack-installation.sh -k -n $NodeName"
-              env:
-                LogFile: !Ref LogFile
-                NodeName: !FindInMap [Node2NameAndIP, Elastic1, Name]
-              cwd: "~"
-              test: "test ! -e /etc/kibana/kibana.yml"
     Properties:
       ImageId:
         Fn::FindInMap:
@@ -378,12 +383,45 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic1 --configsets Elastic1InstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic1 --configsets Elastic1InstallationSet,DeployFiles --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Elastic1 --region ${AWS::Region}
     DependsOn: GatewayToInternet
   
   Elastic2:
     Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          Elastic2InstallationSet:
+            - TestFiles
+            - InstallElastic
+        TestFiles:
+          files:
+            /root/test_files.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/test_files.sh
+              mode: '000700'
+              owner: root
+              group: root 
+              context:
+                src: !Sub /home/${Ec2User}
+                dst: /root
+                log_file: !Ref LogFile
+          commands:
+            move_files:
+              command: "bash ~/test_files.sh"
+        InstallElastic:
+          commands: 
+            write-log:
+              command: "logger -s \"Installing elastic... \" 2>> $LogFile"
+              env:
+                LogFile: !Ref LogFile
+            install-elastic:
+              command: "bash ~/elastic-stack-installation.sh -e -n $NodeName"
+              env:
+                NodeName: !FindInMap [Node2NameAndIP, Elastic2, Name]
+              cwd: "~"
+              ignoreErrors: "true"
     Properties:
       ImageId:
         Fn::FindInMap:
@@ -408,4 +446,73 @@ Resources:
       Tags:
         - Key: Name
           Value: Elastic2
-    DependsOn: GatewayToInternet
+      UserData:
+        Fn::Base64: !Sub |
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic2 --configsets Elastic2InstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Elastic2 --region ${AWS::Region}
+    DependsOn: Elastic1
+  
+  Elastic3:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          Elastic3InstallationSet:
+            - TestFiles
+            - InstallElastic
+        TestFiles:
+          files:
+            /root/test_files.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/test_files.sh
+              mode: '000700'
+              owner: root
+              group: root 
+              context:
+                src: !Sub /home/${Ec2User}
+                dst: /root
+                log_file: !Ref LogFile
+          commands:
+            move_files:
+              command: "bash ~/test_files.sh"
+        InstallElastic:
+          commands: 
+            write-log:
+              command: "logger -s \"Installing elastic... \" 2>> $LogFile"
+              env:
+                LogFile: !Ref LogFile
+            install-elastic:
+              command: "bash ~/elastic-stack-installation.sh -e -n $NodeName"
+              env:
+                NodeName: !FindInMap [Node2NameAndIP, Elastic3, Name]
+              cwd: "~"
+              ignoreErrors: "true"
+    Properties:
+      ImageId:
+        Fn::FindInMap:
+        - AWSRegionArch2AMI
+        - Ref: AWS::Region
+        - Fn::FindInMap:
+          - AWSInstanceType2Arch
+          - Ref: InstanceType
+          - Arch
+      InstanceType:
+        Ref: InstanceType
+      KeyName:
+        Ref: KeyName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: "ElasticSecurityGroup"
+          SubnetId:
+            Ref: "SubnetElasticsearch"
+          PrivateIpAddress: !FindInMap [Node2NameAndIP, Elastic3, IP]
+      Tags:
+        - Key: Name
+          Value: Elastic3
+      UserData:
+        Fn::Base64: !Sub |
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic3 --configsets Elastic3InstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Elastic3 --region ${AWS::Region}
+    DependsOn: Elastic1
