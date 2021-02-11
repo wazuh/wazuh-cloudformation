@@ -7,10 +7,10 @@ do
     if [[ -f "$CERTS_FILE" ]]
     then
         find=1
-        logger -s "Cert files found. Moving them to {{dst}}..." 2>> {{log_file}}
+        echo "Cert files found. Moving them to {{dst}}..." 
         mv $CERTS_FILE {{dst}}/certs.tar
     else
-        logger -s "Cert files not found. Sleeping 10 seconds..." 2>> {{log_file}}
+        echo "Cert files not found. Sleeping 10 seconds..."
         sleep 10
     fi
 done
