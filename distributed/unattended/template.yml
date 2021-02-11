@@ -275,7 +275,7 @@ Resources:
               owner: root
               group: root
           commands:
-            write-logs:
+            write-log:
               command: "logger -s \"Creating ssh.key in ~/.ssh... \" 2>> $LogFile"
               env:
                 LogFile: !Ref LogFile
@@ -320,42 +320,42 @@ Resources:
                 wazuh_master_server_IP: !FindInMap [Node2NameAndIP, MasterNode, IP]
         InstallElastic:
           commands: 
-            write-log:
-              command: "logger -s \"Installing elastic... \" 2>> $LogFile"
-              env:
-                LogFile: !Ref LogFile
             install-elastic:
-              command: "bash ~/elastic-stack-installation.sh -e -c -n $NodeName"
+              command: "bash ~/elastic-stack-installation.sh -d -e -c -n $NodeName | logger -s 2>> $LogFile"
               env:
                 NodeName: !FindInMap [Node2NameAndIP, Elastic1, Name]
+                LogFile: !Ref LogFile
               cwd: "~"
               ignoreErrors: "true"
         InstallKibana:
           commands:
-            write-log:
-              command: "logger -s \"Installing kibana... \" 2>> $LogFile"
-              env:
-                LogFile: !Ref LogFile
             install-kibana:
-              command: "bash ~/elastic-stack-installation.sh -k -n $NodeName"
+              command: 
+                "bash ~/elastic-stack-installation.sh -d -k -n $NodeName >> | logger -s 2>> $LogFile"
               env:
                 NodeName: !FindInMap [Node2NameAndIP, Elastic1, Name]
+                LogFile: !Ref LogFile
               cwd: "~"
               ignoreErrors: "true"
         ScpFiles:
           commands:
             write-log:
-              command: "logger -s \"Copying files to $IP (Elastic2)...\" 2>> $LogFile"
+              command: "logger -s \"Copying files to all nodes...\" 2>> $LogFile"
               env:
                 LogFile: !Ref LogFile
                 IP: !FindInMap [Node2NameAndIP, Elastic2, IP] 
-            scp-elastic-2:
+            scp-certs:
               command:
-                "scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/elastic-stack-installation.sh $Ec2User@$IP:~/elastic-stack-installation.sh && \
-                 scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/certs.tar $Ec2User@$IP:~/certs.tar"
+                "scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/certs.tar $Ec2User@$Elastic2IP:~/certs.tar && \
+                 scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/certs.tar $Ec2User@$Elastic3IP:~/certs.tar && \
+                 scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/certs.tar $Ec2User@$WazuhMasterIP:~/certs.tar && \
+                 scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/certs.tar $Ec2User@$WazuhWorkerIP:~/certs.tar"
               env:
                 Ec2User: !Ref Ec2User
-                IP: !FindInMap [Node2NameAndIP, Elastic2, IP]
+                Elastic2IP: !FindInMap [Node2NameAndIP, Elastic2, IP]
+                Elastic3IP: !FindInMap [Node2NameAndIP, Elastic3, IP]
+                WazuhMasterIP: !FindInMap [Node2NameAndIP, MasterNode, IP]
+                WazuhWorkerIP: !FindInMap [Node2NameAndIP, WorkerNode, IP]
     Properties:
       ImageId:
         Fn::FindInMap:
@@ -382,9 +382,29 @@ Resources:
           Value: Elastic1
       UserData:
         Fn::Base64: !Sub |
+          Content-Type: multipart/mixed; boundary="//"
+          MIME-Version: 1.0
+
+          --//
+          Content-Type: text/cloud-config; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="cloud-config.txt"
+
+          #cloud-config
+          cloud_final_modules:
+          - [scripts-user, always]
+
+          --//
+          Content-Type: text/x-shellscript; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="userdata.txt"
+
           #!/bin/bash -xe
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic1 --configsets Elastic1InstallationSet,DeployFiles --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Elastic1 --region ${AWS::Region}
+          --//
     DependsOn: GatewayToInternet
   
   Elastic2:
@@ -393,13 +413,25 @@ Resources:
       'AWS::CloudFormation::Init':
         configSets:
           Elastic2InstallationSet:
-            - TestFiles
+            - DownloadFile
+            - CheckCerts
             - InstallElastic
-        TestFiles:
+        DownloadFile:
+          commands:
+            write-log: 
+              command: "logger -s \"Downloading elastic-stack-installation.sh... \" 2>> $LogFile"
+              env:
+                LogFile: !Ref LogFile 
+            download-elk-installation-script:
+              command: "curl -so ~/elastic-stack-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/v$WazuhVersion/resources/open-distro/unattended-installation/distributed/elastic-stack-installation.sh"
+              env:
+                WazuhVersion: !Ref WazuhVersion
+              cwd: "~"
+        CheckCerts:
           files:
-            /root/test_files.sh:
+            /root/check_certs.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/test_files.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/check_certs.sh
               mode: '000700'
               owner: root
               group: root 
@@ -409,17 +441,15 @@ Resources:
                 log_file: !Ref LogFile
           commands:
             move_files:
-              command: "bash ~/test_files.sh"
+              command: "bash ~/check_certs.sh | logger -s 2>> $LogFile" 
+              test: "test ! -e ~/certs.tar"
         InstallElastic:
           commands: 
-            write-log:
-              command: "logger -s \"Installing elastic... \" 2>> $LogFile"
-              env:
-                LogFile: !Ref LogFile
             install-elastic:
-              command: "bash ~/elastic-stack-installation.sh -e -n $NodeName"
+              command: "bash ~/elastic-stack-installation.sh -e -n $NodeName | logger -s 2>> $LogFile"
               env:
                 NodeName: !FindInMap [Node2NameAndIP, Elastic2, Name]
+                LogFile: !Ref LogFile
               cwd: "~"
               ignoreErrors: "true"
     Properties:
@@ -448,9 +478,30 @@ Resources:
           Value: Elastic2
       UserData:
         Fn::Base64: !Sub |
+          Content-Type: multipart/mixed; boundary="//"
+          MIME-Version: 1.0
+
+          --//
+          Content-Type: text/cloud-config; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="cloud-config.txt"
+
+          #cloud-config
+          cloud_final_modules:
+          - [scripts-user, always]
+
+          --//
+          Content-Type: text/x-shellscript; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="userdata.txt"
+          
+          #!/bin/bash -xe
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic2 --configsets Elastic2InstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Elastic2 --region ${AWS::Region}
-    DependsOn: Elastic1
+          --//
+    DependsOn: GatewayToInternet
   
   Elastic3:
     Type: AWS::EC2::Instance
@@ -458,33 +509,44 @@ Resources:
       'AWS::CloudFormation::Init':
         configSets:
           Elastic3InstallationSet:
-            - TestFiles
+            - DownloadFile
+            - CheckCerts
             - InstallElastic
-        TestFiles:
+        DownloadFile:
+          commands:
+            write-log: 
+              command: "logger -s \"Downloading elastic-stack-installation.sh... \" 2>> $LogFile"
+              env:
+                LogFile: !Ref LogFile 
+            download-elk-installation-script:
+              command: "curl -so ~/elastic-stack-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/v$WazuhVersion/resources/open-distro/unattended-installation/distributed/elastic-stack-installation.sh"
+              env:
+                WazuhVersion: !Ref WazuhVersion
+              cwd: "~"
+        CheckCerts:
           files:
-            /root/test_files.sh:
+            /root/check_certs.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/test_files.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/check_certs.sh
               mode: '000700'
               owner: root
               group: root 
               context:
                 src: !Sub /home/${Ec2User}
                 dst: /root
-                log_file: !Ref LogFile
           commands:
             move_files:
-              command: "bash ~/test_files.sh"
-        InstallElastic:
-          commands: 
-            write-log:
-              command: "logger -s \"Installing elastic... \" 2>> $LogFile"
+              command: "bash ~/check_certs.sh | logger -s 2>> $LogFile"
               env:
                 LogFile: !Ref LogFile
+              test: "test ! -e ~/certs.tar"
+        InstallElastic:
+          commands: 
             install-elastic:
-              command: "bash ~/elastic-stack-installation.sh -e -n $NodeName"
+              command: "bash ~/elastic-stack-installation.sh -e -n $NodeName | logger -s 2>> $LogFile"
               env:
                 NodeName: !FindInMap [Node2NameAndIP, Elastic3, Name]
+                LogFile: !Ref LogFile
               cwd: "~"
               ignoreErrors: "true"
     Properties:
@@ -513,6 +575,223 @@ Resources:
           Value: Elastic3
       UserData:
         Fn::Base64: !Sub |
+          Content-Type: multipart/mixed; boundary="//"
+          MIME-Version: 1.0
+
+          --//
+          Content-Type: text/cloud-config; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="cloud-config.txt"
+
+          #cloud-config
+          cloud_final_modules:
+          - [scripts-user, always]
+
+          --//
+          Content-Type: text/x-shellscript; charset="us-ascii"
+          MIME-Version: 1.0
+          Content-Transfer-Encoding: 7bit
+          Content-Disposition: attachment; filename="userdata.txt"
+          
+          #!/bin/bash -xe
           /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic3 --configsets Elastic3InstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Elastic3 --region ${AWS::Region}
-    DependsOn: Elastic1
+          --//
+    DependsOn: GatewayToInternet
+  
+  WazuhMaster:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          WazuhMasterInstallationSet:
+            - DownloadFile
+            - CheckCerts
+            - InstallWazuh
+        DownloadFile:
+          commands:
+            write-log: 
+              command: "logger -s \"Downloading wazuh-server-installation.sh... \" 2>> $LogFile"
+              env:
+                LogFile: !Ref LogFile 
+            download-elk-installation-script:
+              command: "curl -so ~/wazuh-server-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/v$WazuhVersion/resources/open-distro/unattended-installation/distributed/wazuh-server-installation.sh"
+              env:
+                WazuhVersion: !Ref WazuhVersion
+              cwd: "~"
+        CheckCerts:
+          files:
+            /root/check_certs.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/check_certs.sh
+              mode: '000700'
+              owner: root
+              group: root 
+              context:
+                src: !Sub /home/${Ec2User}
+                dst: /root
+          commands:
+            move_files:
+              command: "bash ~/check_certs.sh | logger -s 2>> $LogFile"
+              env:
+                LogFile:  !Ref LogFile
+              test: "test ! -e ~/certs.tar"
+        InstallWazuh:
+          commands: 
+            install-wazuh:
+              command: "bash ~/wazuh-server-installation.sh -n $NodeName >> $LogFile"
+              env:
+                NodeName: !FindInMap [Node2NameAndIP, MasterNode, Name]
+                LogFile: !Ref LogFile
+              cwd: "~"
+              ignoreErrors: "true"
+    Properties:
+      ImageId:
+        Fn::FindInMap:
+        - AWSRegionArch2AMI
+        - Ref: AWS::Region
+        - Fn::FindInMap:
+          - AWSInstanceType2Arch
+          - Ref: InstanceType
+          - Arch
+      InstanceType:
+        Ref: InstanceType
+      KeyName:
+        Ref: KeyName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: "WazuhSecurityGroup"
+          SubnetId:
+            Ref: "SubnetWazuh"
+          PrivateIpAddress: !FindInMap [Node2NameAndIP, MasterNode, IP]
+      Tags:
+        - Key: Name
+          Value: WazuhMaster
+      UserData:
+          Fn::Base64: !Sub |
+            Content-Type: multipart/mixed; boundary="//"
+            MIME-Version: 1.0
+
+            --//
+            Content-Type: text/cloud-config; charset="us-ascii"
+            MIME-Version: 1.0
+            Content-Transfer-Encoding: 7bit
+            Content-Disposition: attachment; filename="cloud-config.txt"
+
+            #cloud-config
+            cloud_final_modules:
+            - [scripts-user, always]
+
+            --//
+            Content-Type: text/x-shellscript; charset="us-ascii"
+            MIME-Version: 1.0
+            Content-Transfer-Encoding: 7bit
+            Content-Disposition: attachment; filename="userdata.txt"
+            
+            #!/bin/bash -xe
+            /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource WazuhMaster --configsets WazuhMasterInstallationSet --region ${AWS::Region}
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WazuhMaster --region ${AWS::Region}
+            --// 
+    DependsOn: GatewayToInternet
+        
+  WazuhWorker:
+    Type: AWS::EC2::Instance
+    Metadata:
+      'AWS::CloudFormation::Init':
+        configSets:
+          WazuhWorkerInstallationSet:
+            - DownloadFile
+            - CheckCerts
+            - InstallWazuh
+        DownloadFile:
+          commands:
+            write-log: 
+              command: "logger -s \"Downloading wazuh-server-installation.sh... \" 2>> $LogFile"
+              env:
+                LogFile: !Ref LogFile 
+            download-elk-installation-script:
+              command: "curl -so ~/wazuh-server-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/v$WazuhVersion/resources/open-distro/unattended-installation/distributed/wazuh-server-installation.sh"
+              env:
+                WazuhVersion: !Ref WazuhVersion
+              cwd: "~"
+        CheckCerts:
+          files:
+            /root/check_certs.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/check_certs.sh
+              mode: '000700'
+              owner: root
+              group: root 
+              context:
+                src: !Sub /home/${Ec2User}
+                dst: /root
+                log_file: !Ref LogFile
+          commands:
+            move_files:
+              command: "bash ~/check_certs.sh | logger -s 2>> $LogFile"
+              env:
+                LogFile: !Ref LogFile
+              test: "test ! -e ~/certs.tar"
+        InstallWazuh:
+          commands: 
+            install-wazuh:
+              command: "bash ~/wazuh-server-installation.sh -n $NodeName | logger -s 2>> $LogFile"
+              env:
+                NodeName: !FindInMap [Node2NameAndIP, WorkerNode, Name]
+                LogFile: !Ref LogFile
+              cwd: "~"
+              ignoreErrors: "true"
+    Properties:
+      ImageId:
+        Fn::FindInMap:
+        - AWSRegionArch2AMI
+        - Ref: AWS::Region
+        - Fn::FindInMap:
+          - AWSInstanceType2Arch
+          - Ref: InstanceType
+          - Arch
+      InstanceType:
+        Ref: InstanceType
+      KeyName:
+        Ref: KeyName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: "true"
+          DeviceIndex: "0"
+          GroupSet:
+            - Ref: "WazuhSecurityGroup"
+          SubnetId:
+            Ref: "SubnetWazuh"
+          PrivateIpAddress: !FindInMap [Node2NameAndIP, WorkerNode, IP]
+      Tags:
+        - Key: Name
+          Value: WazuhWorker
+      UserData:
+          Fn::Base64: !Sub |
+            Content-Type: multipart/mixed; boundary="//"
+            MIME-Version: 1.0
+
+            --//
+            Content-Type: text/cloud-config; charset="us-ascii"
+            MIME-Version: 1.0
+            Content-Transfer-Encoding: 7bit
+            Content-Disposition: attachment; filename="cloud-config.txt"
+
+            #cloud-config
+            cloud_final_modules:
+            - [scripts-user, always]
+
+            --//
+            Content-Type: text/x-shellscript; charset="us-ascii"
+            MIME-Version: 1.0
+            Content-Transfer-Encoding: 7bit
+            Content-Disposition: attachment; filename="userdata.txt"
+            
+            #!/bin/bash -xe
+            /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource WazuhWorker --configsets WazuhWorkerInstallationSet --region ${AWS::Region}
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WazuhWorker --region ${AWS::Region}
+            --// 
+    DependsOn: GatewayToInternet
+      
