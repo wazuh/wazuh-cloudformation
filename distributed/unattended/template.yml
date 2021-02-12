@@ -55,6 +55,13 @@ Parameters:
     Description: Wazuh version
     Default: "4.0.4"
     Type: String
+  
+  # WazuhCluster
+  WazuhClusterKey:
+    Description: Key that will be used to encrypt communication between Wazuh cluster nodes
+    Type: String
+    NoEcho: 'True'
+    ConstraintDescription: Run "openssl rand -hex 16"
 
 Mappings:
   Node2NameAndIP:
@@ -228,6 +235,24 @@ Resources:
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 1514
+          ToPort: 1516
+          CidrIp: !FindInMap
+            - Subnet2CIDR
+            - WazuhVpc
+            - CIDR
+        - IpProtocol: tcp
+          FromPort: 55000
+          ToPort: 55000
+          CidrIp: !FindInMap
+            - Subnet2CIDR
+            - WazuhVpc
+            - CIDR
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-WazuhSecurityGroup'
@@ -242,10 +267,28 @@ Resources:
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
+        - IpProtocol: icmp
+          FromPort: -1
+          ToPort: -1
+          CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
           CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 9200
+          ToPort: 9400
+          CidrIp: !FindInMap
+            - Subnet2CIDR
+            - WazuhVpc
+            - CIDR
+        - IpProtocol: tcp
+          FromPort: 5000
+          ToPort: 5000
+          CidrIp: !FindInMap
+            - Subnet2CIDR
+            - WazuhVpc
+            - CIDR
       Tags:
         - Key: Name
           Value: !Sub '${AWS::StackName}-ElasticSecurityGroup'
@@ -262,8 +305,10 @@ Resources:
             - ConfigFile
             - InstallElastic
             - InstallKibana
-          DeployFiles:
-            -  ScpFiles
+          DeployAndCheck:
+            - ScpAndNetstat
+          Cluster:
+            - SecurityAdmin
         SshConfig:
           files:
             /tmp/ssh.key:
@@ -330,32 +375,54 @@ Resources:
         InstallKibana:
           commands:
             install-kibana:
-              command: 
-                "bash ~/elastic-stack-installation.sh -d -k -n $NodeName >> | logger -s 2>> $LogFile"
+              command: "bash ~/elastic-stack-installation.sh -d -k -n $NodeName >> | logger -s 2>> $LogFile"
               env:
                 NodeName: !FindInMap [Node2NameAndIP, Elastic1, Name]
                 LogFile: !Ref LogFile
               cwd: "~"
               ignoreErrors: "true"
-        ScpFiles:
+        ScpAndNetstat:
+          files: 
+            /root/check_ports.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/check_ports.sh
+              mode: '000700'
+              owner: root
+              group: root 
           commands:
-            write-log:
-              command: "logger -s \"Copying files to all nodes...\" 2>> $LogFile"
-              env:
-                LogFile: !Ref LogFile
-                IP: !FindInMap [Node2NameAndIP, Elastic2, IP] 
-            scp-certs:
+            run-commands:
               command:
-                "scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/certs.tar $Ec2User@$Elastic2IP:~/certs.tar && \
+                "logger -s \"Copying files to all nodes...\" 2>> $LogFile && \
+                 scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/certs.tar $Ec2User@$Elastic2IP:~/certs.tar && \
                  scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/certs.tar $Ec2User@$Elastic3IP:~/certs.tar && \
                  scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/certs.tar $Ec2User@$WazuhMasterIP:~/certs.tar && \
-                 scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/certs.tar $Ec2User@$WazuhWorkerIP:~/certs.tar"
+                 scp -i ~/.ssh/ssh.key -o StrictHostKeyChecking=no ~/certs.tar $Ec2User@$WazuhWorkerIP:~/certs.tar && \
+                 bash ~/check_ports.sh $Ec2User $Elastic2IP 9200 | logger -s 2>> $LogFile && \
+                 bash ~/check_ports.sh $Ec2User $Elastic3IP 9200 | logger -s 2>> $LogFile && \
+                 bash ~/check_ports.sh $Ec2User $WazuhMasterIP 1514 | logger -s 2>> $LogFile && \
+                 bash ~/check_ports.sh $Ec2User $WazuhWorkerIP 1514 | logger -s 2>> $LogFile 1514"
               env:
+                LogFile: !Ref LogFile
                 Ec2User: !Ref Ec2User
                 Elastic2IP: !FindInMap [Node2NameAndIP, Elastic2, IP]
                 Elastic3IP: !FindInMap [Node2NameAndIP, Elastic3, IP]
                 WazuhMasterIP: !FindInMap [Node2NameAndIP, MasterNode, IP]
                 WazuhWorkerIP: !FindInMap [Node2NameAndIP, WorkerNode, IP]
+        SecurityAdmin:
+          commands:
+            run-script:
+              command: 
+                "/usr/share/elasticsearch/plugins/opendistro_security/tools/securityadmin.sh \
+                -cd /usr/share/elasticsearch/plugins/opendistro_security/securityconfig/ \
+                -icl \
+                -nhnv \
+                -cacert /etc/elasticsearch/certs/root-ca.pem \
+                -cert /etc/elasticsearch/certs/admin.pem \
+                -key /etc/elasticsearch/certs/admin.key \
+                -h $ElasticIP"
+              env:
+                ElasticIP: !FindInMap [Node2NameAndIP, Elastic1, IP]
+            
     Properties:
       ImageId:
         Fn::FindInMap:
@@ -402,7 +469,7 @@ Resources:
           Content-Disposition: attachment; filename="userdata.txt"
 
           #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic1 --configsets Elastic1InstallationSet,DeployFiles --region ${AWS::Region}
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic1 --configsets Elastic1InstallationSet,DeployAndCheck --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Elastic1 --region ${AWS::Region}
           --//
     DependsOn: GatewayToInternet
@@ -441,8 +508,9 @@ Resources:
                 log_file: !Ref LogFile
           commands:
             move_files:
-              command: "bash ~/check_certs.sh | logger -s 2>> $LogFile" 
-              test: "test ! -e ~/certs.tar"
+              command: "bash ~/check_certs.sh | logger -s 2>> $LogFile"
+              env:
+                LogFile: !Ref LogFile 
         InstallElastic:
           commands: 
             install-elastic:
@@ -539,7 +607,6 @@ Resources:
               command: "bash ~/check_certs.sh | logger -s 2>> $LogFile"
               env:
                 LogFile: !Ref LogFile
-              test: "test ! -e ~/certs.tar"
         InstallElastic:
           commands: 
             install-elastic:
@@ -609,6 +676,7 @@ Resources:
             - DownloadFile
             - CheckCerts
             - InstallWazuh
+            - ConfigureMaster
         DownloadFile:
           commands:
             write-log: 
@@ -636,7 +704,6 @@ Resources:
               command: "bash ~/check_certs.sh | logger -s 2>> $LogFile"
               env:
                 LogFile:  !Ref LogFile
-              test: "test ! -e ~/certs.tar"
         InstallWazuh:
           commands: 
             install-wazuh:
@@ -646,6 +713,44 @@ Resources:
                 LogFile: !Ref LogFile
               cwd: "~"
               ignoreErrors: "true"
+        ConfigureMaster:
+          commands:
+            edit-ossec-conf:
+              command:
+              "xmllint --shell $OssecConf <<EOF 
+              cd /ossec_config/cluster/name 
+              set $ClusterName
+              cd /ossec_config/cluster/node_name 
+              set $NodeName
+              cd /ossec_config/cluster/node_type 
+              set $NodeType
+              cd /ossec_config/cluster/key 
+              set $Key
+              cd /ossec_config/cluster/port 
+              set $Port
+              cd /ossec_config/cluster/bind_addr 
+              set $BindAddr
+              cd /ossec_config/cluster/nodes/node 
+              set $WazuhMasterIP
+              cd /ossec_config/cluster/hidden 
+              set $Hidden
+              cd /ossec_config/cluster/disabled 
+              set $Disabled
+              save 
+              EOF"
+              env:
+                OssecConf: '/var/ossec/etc/ossec.conf'
+                ClusterName: 'wazuh_cluster'
+                NodeName: !FindInMap [Node2NameAndIP, MasterNode, Name]
+                NodeType: 'master'
+                Key: !Ref WazuhClusterKey
+                Port: '1516'
+                BindAddr: '0.0.0.0'
+                WazuhMasterIP: !FindInMap [Node2NameAndIP, MasterNode, IP]
+                Hidden: 'no'
+                Disabled: 'no'
+            restart-manager:
+              command: "systemctl restart wazuh-manager"
     Properties:
       ImageId:
         Fn::FindInMap:
@@ -734,7 +839,6 @@ Resources:
               command: "bash ~/check_certs.sh | logger -s 2>> $LogFile"
               env:
                 LogFile: !Ref LogFile
-              test: "test ! -e ~/certs.tar"
         InstallWazuh:
           commands: 
             install-wazuh:
