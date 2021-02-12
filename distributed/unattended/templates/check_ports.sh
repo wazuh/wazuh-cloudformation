@@ -7,7 +7,7 @@ PORT=$3
 open=0
 while [ $open -eq 0 ]
 do
-    ssh -i ~/.ssh/ssh.key $USER@$IP "netstat -tulnp" | grep $PORT
+    ssh -i ~/.ssh/ssh.key $USER@$IP "sudo netstat -tulnp" | grep $PORT &> /dev/null
     if [[ $? -eq 0 ]] # Open
     then
         open=1
@@ -17,4 +17,5 @@ do
         sleep 10
     fi
 done
+
 
