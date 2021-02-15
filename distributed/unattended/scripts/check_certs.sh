@@ -14,7 +14,7 @@ do
         echo "Cert files found. Moving them to {{dst}}..." 
         mv $CERTS_FILE {{dst}}
     else
-        echo "Cert files not found. Sleeping 10 seconds..."
-        sleep 10
+        echo "Cert files not found. Sleeping 60 seconds..."
+        sleep 60
     fi
 done
