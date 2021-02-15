@@ -34,10 +34,9 @@ Parameters:
     Description: Username in EC2 instance
     Type: String
   SshKey:
-    Description: AWS Cloudformation Stack SSH Private Key
+    Description: AWS Cloudformation Stack SSH Private Key. Do not copy "BEGIN RSA PRIVATE KEY" and "END RSA PRIVATE KEY" lines
     Type: String
-    NoEcho: 'True'
-    ConstraintDescription: Do not copy "BEGIN RSA PRIVATE KEY" and "END RSA PRIVATE KEY" lines
+    NoEcho: 'True' 
   
   # Log
   LogFile:
@@ -58,10 +57,11 @@ Parameters:
   
   # WazuhCluster
   WazuhClusterKey:
-    Description: Key that will be used to encrypt communication between Wazuh cluster nodes
+    Description: Key that will be used to encrypt communication between Wazuh cluster nodes. Run "openssl rand -hex 16"
     Type: String
     NoEcho: 'True'
-    ConstraintDescription: Run "openssl rand -hex 16"
+    MinLength: '32'
+    MaxLength: '32'
 
 Mappings:
   Node2NameAndIP:
@@ -304,11 +304,12 @@ Resources:
             - DownloadFile
             - ConfigFile
             - InstallElastic
-            - InstallKibana
           DeployAndCheck:
             - ScpAndNetstat
           Cluster:
             - SecurityAdmin
+          KibanaInstallationSet:
+            - InstallKibana
         SshConfig:
           files:
             /tmp/ssh.key:
@@ -366,16 +367,8 @@ Resources:
         InstallElastic:
           commands: 
             install-elastic:
-              command: "bash ~/elastic-stack-installation.sh -d -e -c -n $NodeName | logger -s 2>> $LogFile"
-              env:
-                NodeName: !FindInMap [Node2NameAndIP, Elastic1, Name]
-                LogFile: !Ref LogFile
-              cwd: "~"
-              ignoreErrors: "true"
-        InstallKibana:
-          commands:
-            install-kibana:
-              command: "bash ~/elastic-stack-installation.sh -d -k -n $NodeName >> | logger -s 2>> $LogFile"
+              command: 
+                "bash ~/elastic-stack-installation.sh -d -e -c -n $NodeName | logger -s 2>> $LogFile"
               env:
                 NodeName: !FindInMap [Node2NameAndIP, Elastic1, Name]
                 LogFile: !Ref LogFile
@@ -385,7 +378,7 @@ Resources:
           files: 
             /root/check_ports.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/check_ports.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/scripts/check_ports.sh
               mode: '000700'
               owner: root
               group: root 
@@ -400,7 +393,7 @@ Resources:
                  bash ~/check_ports.sh $Ec2User $Elastic2IP 9200 | logger -s 2>> $LogFile && \
                  bash ~/check_ports.sh $Ec2User $Elastic3IP 9200 | logger -s 2>> $LogFile && \
                  bash ~/check_ports.sh $Ec2User $WazuhMasterIP 1514 | logger -s 2>> $LogFile && \
-                 bash ~/check_ports.sh $Ec2User $WazuhWorkerIP 1514 | logger -s 2>> $LogFile 1514"
+                 bash ~/check_ports.sh $Ec2User $WazuhWorkerIP 1514 | logger -s 2>> $LogFile"
               env:
                 LogFile: !Ref LogFile
                 Ec2User: !Ref Ec2User
@@ -419,10 +412,20 @@ Resources:
                 -cacert /etc/elasticsearch/certs/root-ca.pem \
                 -cert /etc/elasticsearch/certs/admin.pem \
                 -key /etc/elasticsearch/certs/admin.key \
-                -h $ElasticIP"
+                -h $ElasticIP | logger -s 2>> $LogFile"
               env:
                 ElasticIP: !FindInMap [Node2NameAndIP, Elastic1, IP]
-            
+                LogFile: !Ref LogFile
+        InstallKibana:
+          commands: 
+            install-kibana:
+              command: 
+                "bash ~/elastic-stack-installation.sh -d -k -n $NodeName | logger -s 2>> $LogFile"
+              env:
+                NodeName: !FindInMap [Node2NameAndIP, Elastic1, Name]
+                LogFile: !Ref LogFile
+              cwd: "~"
+              ignoreErrors: "true"
     Properties:
       ImageId:
         Fn::FindInMap:
@@ -469,7 +472,7 @@ Resources:
           Content-Disposition: attachment; filename="userdata.txt"
 
           #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic1 --configsets Elastic1InstallationSet,DeployAndCheck --region ${AWS::Region}
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic1 --configsets Elastic1InstallationSet,DeployAndCheck,Cluster,KibanaInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Elastic1 --region ${AWS::Region}
           --//
     DependsOn: GatewayToInternet
@@ -498,7 +501,7 @@ Resources:
           files:
             /root/check_certs.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/check_certs.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/scripts/check_certs.sh
               mode: '000700'
               owner: root
               group: root 
@@ -595,7 +598,7 @@ Resources:
           files:
             /root/check_certs.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/check_certs.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/scripts/check_certs.sh
               mode: '000700'
               owner: root
               group: root 
@@ -692,7 +695,7 @@ Resources:
           files:
             /root/check_certs.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/check_certs.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/scripts/check_certs.sh
               mode: '000700'
               owner: root
               group: root 
@@ -714,43 +717,42 @@ Resources:
               cwd: "~"
               ignoreErrors: "true"
         ConfigureMaster:
+          files:
+              /root/cluster.conf:
+                source: !Sub >-
+                  https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/cluster.conf
+                mode: '000700'
+                owner: root
+                group: root 
+                context:
+                  cluster_name: 'wazuh_cluster'
+                  node_name: !FindInMap [Node2NameAndIP, MasterNode, Name]
+                  node_type: 'master'
+                  key: !Ref WazuhClusterKey
+                  port: '1516'
+                  bind_addr: '0.0.0.0'
+                  ip: !FindInMap [Node2NameAndIP, MasterNode, IP]
+                  hidden: 'no'
+                  disabled: 'no'
+              /root/update_ossec_conf.sh:
+                source: !Sub >-
+                  https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/scripts/update_ossec_conf.sh
+                mode: '000700'
+                owner: root
+                group: root 
+                context:
+                  ossec_conf: '/var/ossec/etc/ossec.conf'
+                  log_file: !Ref LogFile
           commands:
             edit-ossec-conf:
               command:
-              "xmllint --shell $OssecConf <<EOF 
-              cd /ossec_config/cluster/name 
-              set $ClusterName
-              cd /ossec_config/cluster/node_name 
-              set $NodeName
-              cd /ossec_config/cluster/node_type 
-              set $NodeType
-              cd /ossec_config/cluster/key 
-              set $Key
-              cd /ossec_config/cluster/port 
-              set $Port
-              cd /ossec_config/cluster/bind_addr 
-              set $BindAddr
-              cd /ossec_config/cluster/nodes/node 
-              set $WazuhMasterIP
-              cd /ossec_config/cluster/hidden 
-              set $Hidden
-              cd /ossec_config/cluster/disabled 
-              set $Disabled
-              save 
-              EOF"
-              env:
-                OssecConf: '/var/ossec/etc/ossec.conf'
-                ClusterName: 'wazuh_cluster'
-                NodeName: !FindInMap [Node2NameAndIP, MasterNode, Name]
-                NodeType: 'master'
-                Key: !Ref WazuhClusterKey
-                Port: '1516'
-                BindAddr: '0.0.0.0'
-                WazuhMasterIP: !FindInMap [Node2NameAndIP, MasterNode, IP]
-                Hidden: 'no'
-                Disabled: 'no'
+                "bash ~/update_ossec_conf.sh"
             restart-manager:
-              command: "systemctl restart wazuh-manager"
+              command: 
+                "logger -s \"Restarting manager...\" 2>> $LogFile && \
+                 systemctl restart wazuh-manager"
+              env:
+                LogFile: !Ref LogFile
     Properties:
       ImageId:
         Fn::FindInMap:
@@ -799,6 +801,7 @@ Resources:
             #!/bin/bash -xe
             /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource WazuhMaster --configsets WazuhMasterInstallationSet --region ${AWS::Region}
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource WazuhMaster --region ${AWS::Region}
+            
             --// 
     DependsOn: GatewayToInternet
         
@@ -811,6 +814,7 @@ Resources:
             - DownloadFile
             - CheckCerts
             - InstallWazuh
+            - ConfigureWorker
         DownloadFile:
           commands:
             write-log: 
@@ -826,7 +830,7 @@ Resources:
           files:
             /root/check_certs.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/check_certs.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/scripts/check_certs.sh
               mode: '000700'
               owner: root
               group: root 
@@ -848,6 +852,43 @@ Resources:
                 LogFile: !Ref LogFile
               cwd: "~"
               ignoreErrors: "true"
+        ConfigureWorker:
+          files:
+            /root/cluster.conf:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/templates/cluster.conf
+              mode: '000700'
+              owner: root
+              group: root 
+              context:
+                cluster_name: 'wazuh_cluster'
+                node_name: !FindInMap [Node2NameAndIP, WorkerNode, Name]
+                node_type: 'worker'
+                key: !Ref WazuhClusterKey
+                port: '1516'
+                bind_addr: '0.0.0.0'
+                ip: !FindInMap [Node2NameAndIP, MasterNode, IP]
+                hidden: 'no'
+                disabled: 'no'
+            /root/update_ossec_conf.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/scripts/update_ossec_conf.sh
+              mode: '000700'
+              owner: root
+              group: root 
+              context:
+                ossec_conf: '/var/ossec/etc/ossec.conf'
+                log_file: !Ref LogFile
+          commands:
+            edit-ossec-conf:
+              command:
+                "bash ~/update_ossec_conf.sh"
+            restart-manager:
+              command: 
+                "logger -s \"Restarting manager...\" 2>> $LogFile && \
+                 systemctl restart wazuh-manager"
+              env:
+                LogFile: !Ref LogFile
     Properties:
       ImageId:
         Fn::FindInMap:
