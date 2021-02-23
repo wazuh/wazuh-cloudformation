@@ -23,7 +23,17 @@ Parameters:
     MaxLength: '18'
     MinLength: '9'
     Type: String
-
+  WazuhVersion:
+    AllowedValues:
+    - 4.0
+    - 4.1
+    Default: 4.1
+    Description: Wazuh version
+    Type: String
+  LogFile:
+    Description: Log file path to keep track of actions
+    Type: String  
+    Default: /var/log/wazuh-cloudformation.log
 Mappings:
   AWSInstanceType2Arch:
     t2.large:
@@ -67,18 +77,8 @@ Mappings:
       HVMDEBIAN: ami-05a3ef6744aa96514
       HVMWINDOWS: ami-04ad37d2932b886c0
 
-  Subnet2CIDR:
-    WazuhVpc:
-      CIDR: 10.0.0.0/16
-    SubnetWazuh:
-      CIDR: 10.0.0.0/24
-    SubnetAgents:
-      CIDR: 10.0.1.0/24
-    SubnetElasticsearch:
-      CIDR: 10.0.2.0/24
-
 Resources:
-  ServerInstance:
+  WazuhAIO:
     Properties:
       ImageId:
         Fn::FindInMap:
@@ -97,10 +97,10 @@ Resources:
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
-          echo "Downloading script..." 
-          curl -so ~/all-in-one-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/4.0/resources/open-distro/unattended-installation/all-in-one-installation.sh 
-          echo "Installing script..."
-          bash ~/all-in-one-installation.sh
+          echo "Downloading script..." > ${LogFile} 
+          curl -so ~/all-in-one-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/${WazuhVersion}/resources/open-distro/unattended-installation/all-in-one-installation.sh 
+          echo "Installing script..." > ${LogFile}
+          bash ~/all-in-one-installation.sh > ${LogFile}
     Type: AWS::EC2::Instance
   
   SecurityGroup:
