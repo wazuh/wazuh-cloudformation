@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Provides an unattended all-in-one Wazuh installation 
+Description: Provides an unattended distributed Wazuh installation 
 Parameters:
   ## AWS
   AvailabilityZone:
@@ -47,12 +47,14 @@ Parameters:
   ## Version
   WazuhVersion:
     AllowedValues:
-      - "4.0.1"
-      - "4.0.2"
-      - "4.0.3"
-      - "4.0.4"
+      - "v4.0.1"
+      - "v4.0.2"
+      - "v4.0.3"
+      - "v4.0.4"
+      - "v4.1.0"
+      - "4.1"
     Description: Wazuh version
-    Default: "4.0.4"
+    Default: "4.1"
     Type: String
   
   # WazuhCluster
@@ -335,7 +337,7 @@ Resources:
               env:
                 LogFile: !Ref LogFile 
             download-elk-installation-script:
-              command: "curl -so ~/elastic-stack-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/v$WazuhVersion/resources/open-distro/unattended-installation/distributed/elastic-stack-installation.sh"
+              command: "curl -so ~/elastic-stack-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/$WazuhVersion/resources/open-distro/unattended-installation/distributed/elastic-stack-installation.sh"
               env:
                 WazuhVersion: !Ref WazuhVersion
               cwd: "~"
@@ -419,12 +421,10 @@ Resources:
         InstallKibana:
           commands: 
             install-kibana:
-              command: 
-                "bash ~/elastic-stack-installation.sh -d -k -n $NodeName | logger -s 2>> $LogFile"
+              command: "bash ~/elastic-stack-installation.sh -d -k -n $NodeName | logger -s 2>> $LogFile"
               env:
                 NodeName: !FindInMap [Node2NameAndIP, Elastic1, Name]
                 LogFile: !Ref LogFile
-              cwd: "~"
               ignoreErrors: "true"
     Properties:
       ImageId:
@@ -472,7 +472,7 @@ Resources:
           Content-Disposition: attachment; filename="userdata.txt"
 
           #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic1 --configsets Elastic1InstallationSet,DeployAndCheck,Cluster,KibanaInstallationSet --region ${AWS::Region}
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic1 --configsets Elastic1InstallationSet,DeployAndCheck,Cluster,InstallKibana --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Elastic1 --region ${AWS::Region}
           --//
     DependsOn: GatewayToInternet
@@ -493,7 +493,7 @@ Resources:
               env:
                 LogFile: !Ref LogFile 
             download-elk-installation-script:
-              command: "curl -so ~/elastic-stack-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/v$WazuhVersion/resources/open-distro/unattended-installation/distributed/elastic-stack-installation.sh"
+              command: "curl -so ~/elastic-stack-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/$WazuhVersion/resources/open-distro/unattended-installation/distributed/elastic-stack-installation.sh"
               env:
                 WazuhVersion: !Ref WazuhVersion
               cwd: "~"
@@ -590,7 +590,7 @@ Resources:
               env:
                 LogFile: !Ref LogFile 
             download-elk-installation-script:
-              command: "curl -so ~/elastic-stack-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/v$WazuhVersion/resources/open-distro/unattended-installation/distributed/elastic-stack-installation.sh"
+              command: "curl -so ~/elastic-stack-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/$WazuhVersion/resources/open-distro/unattended-installation/distributed/elastic-stack-installation.sh"
               env:
                 WazuhVersion: !Ref WazuhVersion
               cwd: "~"
@@ -687,7 +687,7 @@ Resources:
               env:
                 LogFile: !Ref LogFile 
             download-elk-installation-script:
-              command: "curl -so ~/wazuh-server-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/v$WazuhVersion/resources/open-distro/unattended-installation/distributed/wazuh-server-installation.sh"
+              command: "curl -so ~/wazuh-server-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/$WazuhVersion/resources/open-distro/unattended-installation/distributed/wazuh-server-installation.sh"
               env:
                 WazuhVersion: !Ref WazuhVersion
               cwd: "~"
@@ -822,7 +822,7 @@ Resources:
               env:
                 LogFile: !Ref LogFile 
             download-elk-installation-script:
-              command: "curl -so ~/wazuh-server-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/v$WazuhVersion/resources/open-distro/unattended-installation/distributed/wazuh-server-installation.sh"
+              command: "curl -so ~/wazuh-server-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/$WazuhVersion/resources/open-distro/unattended-installation/distributed/wazuh-server-installation.sh"
               env:
                 WazuhVersion: !Ref WazuhVersion
               cwd: "~"
