@@ -52,9 +52,8 @@ Parameters:
       - "v4.0.3"
       - "v4.0.4"
       - "v4.1.0"
-      - "4.1"
     Description: Wazuh version
-    Default: "4.1"
+    Default: "v4.1.0"
     Type: String
   
   # WazuhCluster
@@ -472,7 +471,7 @@ Resources:
           Content-Disposition: attachment; filename="userdata.txt"
 
           #!/bin/bash -xe
-          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic1 --configsets Elastic1InstallationSet,DeployAndCheck,Cluster,InstallKibana --region ${AWS::Region}
+          /opt/aws/bin/cfn-init --stack ${AWS::StackName} --resource Elastic1 --configsets Elastic1InstallationSet,DeployAndCheck,Cluster,KibanaInstallationSet --region ${AWS::Region}
           /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource Elastic1 --region ${AWS::Region}
           --//
     DependsOn: GatewayToInternet
