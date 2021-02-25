@@ -453,7 +453,7 @@ installKibana() {
             echo "Error: Wazuh Kibana plugin could not be installed."
             exit 1;
         fi
-        eval "setcap cap_net_bind_service=+ep /usr/share/kibana/node/bin/node"
+        setcap 'cap_net_bind_service=+ep' /usr/share/kibana/node/bin/node
         if [ "$?" != 0 ]; then
 		    echo "Error: setcap 443 port"
 	    else
@@ -520,7 +520,7 @@ copyKibanacerts() {
 }
 
 initializeKibana() {
-
+    
     # Start Kibana
     startService "kibana"
     logger "Initializing Kibana (this may take a while)"
