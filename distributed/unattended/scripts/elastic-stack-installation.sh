@@ -431,7 +431,7 @@ installKibana() {
 
     if [[ -f /etc/kibana/kibana.yml ]]; then
         echo "Kibana is already installed in this node."
-        exit 1;
+        #exit 1;
     fi
 
     logger "Installing Kibana..."
@@ -442,7 +442,7 @@ installKibana() {
     fi
     if [  "$?" != 0  ]; then
         echo "Error: Kibana installation failed"
-        exit 1;
+        #exit 1;
     else
         eval "curl -so /etc/kibana/kibana.yml https://raw.githubusercontent.com/wazuh/wazuh-documentation/4.1/resources/open-distro/unattended-installation/distributed/templates/kibana_unattended.yml --max-time 300 ${debug}"
         eval "mkdir /usr/share/kibana/data ${debug}"
@@ -453,7 +453,7 @@ installKibana() {
             echo "Error: Wazuh Kibana plugin could not be installed."
             exit 1;
         fi
-        eval "setcap 'cap_net_bind_service=+ep' /usr/share/kibana/node/bin/node ${debug}"
+        eval "setcap 'cap_net_bind_service=+ep' /usr/share/kibana/node/bin/node | logger -s 2>> /var/log/wazuh-cloudformation.log"
         if [ "$?" != 0 ]; then
 		    echo "Error: setcap 443 port"
 	    else
