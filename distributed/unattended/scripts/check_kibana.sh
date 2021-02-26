@@ -10,8 +10,13 @@ while [[ $active -eq 0 ]]; do
     else
         echo "Kibana service enable. Linking 443 port to kibana socket..." | logger -s 2>> {{log_file}}
         setcap 'cap_net_bind_service=+ep' /usr/share/kibana/node/bin/node
-        echo "Restarting kibana service..." | logger -s 2>> {{log_file}}
-        systemctl restart kibana.service
-        active=1
+        if [ "$?" != 0 ]; then
+            echo "Setcap success"| logger -s 2>> {{log_file}}
+            echo "Restarting kibana service..." | logger -s 2>> {{log_file}}
+            systemctl restart kibana.service
+            active=1
+        else
+            echo "Error setcap. Trying again..." | logger -s 2>> {{log_file}}
+        fi
     fi
 done
