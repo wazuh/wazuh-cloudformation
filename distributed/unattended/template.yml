@@ -418,7 +418,22 @@ Resources:
                 ElasticIP: !FindInMap [Node2NameAndIP, Elastic1, IP]
                 LogFile: !Ref LogFile
         InstallKibana:
+          files:
+            /root/check_kibana.sh:
+              source: !Sub >-
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/feature-unattended-installation/distributed/unattended/scripts/check_kibana.sh
+              mode: '000700'
+              owner: root
+              group: root 
+              context:
+                log_file: !Ref LogFile
           commands: 
+            run-kibana-script:
+              command: 
+                "echo \"Running check_kibana.sh script...\" | logger -s 2>> $LogFile && \
+                bash ~/check_kibana.sh &"
+              env:
+                LogFile: !Ref LogFile
             install-kibana:
               command: "bash ~/elastic-stack-installation.sh -d -k -n $NodeName | logger -s 2>> $LogFile"
               env:
