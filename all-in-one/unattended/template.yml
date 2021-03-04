@@ -25,10 +25,14 @@ Parameters:
     Type: String
   WazuhVersion:
     AllowedValues:
-    - 4.0
-    - 4.1
-    Default: 4.1
+      - "v4.0.1"
+      - "v4.0.2"
+      - "v4.0.3"
+      - "v4.0.4"
+      - "v4.1.0"
+      - "v4.1.1"
     Description: Wazuh version
+    Default: "v4.1.1"
     Type: String
   LogFile:
     Description: Log file path to keep track of actions
