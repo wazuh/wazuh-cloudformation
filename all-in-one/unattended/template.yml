@@ -1,0 +1,123 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Provides an unattended all-in-one Wazuh installation 
+Parameters:
+  InstanceType:
+    AllowedValues:
+    - t2.small
+    - t2.medium
+    - t2.large
+    - t2.xlarge
+    ConstraintDescription: must be a valid EC2 instance type.
+    Default: t2.large
+    Description: EC2 instance type
+    Type: String
+  KeyName:
+    ConstraintDescription: Can contain only ASCII characters.
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+    Type: AWS::EC2::KeyPair::KeyName
+  SSHLocation:
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x
+    Default: 0.0.0.0/0
+    Description: The IP address range that can be used to SSH to the EC2 instances
+    MaxLength: '18'
+    MinLength: '9'
+    Type: String
+  WazuhVersion:
+    AllowedValues:
+      - "v4.0.1"
+      - "v4.0.2"
+      - "v4.0.3"
+      - "v4.0.4"
+      - "v4.1.0"
+      - "v4.1.1"
+    Description: Wazuh version
+    Default: "v4.1.1"
+    Type: String
+  LogFile:
+    Description: Log file path to keep track of actions
+    Type: String  
+    Default: /var/log/wazuh-cloudformation.log
+Mappings:
+  AWSInstanceType2Arch:
+    t2.large:
+      Arch: HVM64
+    t2.medium:
+      Arch: HVM64
+    t2.micro:
+      Arch: HVM64
+    t2.xlarge:
+      Arch: HVM64
+    t2.small:
+      Arch: HVM64
+
+  AWSRegionArch2AMI:
+    us-east-1:
+      HVM64: ami-0c6b1d09930fac512
+      HVMCENTOS7: ami-02eac2c0129f6376b
+      HVMUBUNTU64: ami-024a64a6685d05041
+      HVMREDHAT7: ami-6871a115
+      HVMDEBIAN: ami-0357081a1383dc76b
+      HVMWINDOWS: ami-0a9ca0496f746e6e0
+    us-east-2:
+      HVM64: ami-0ebbf2179e615c338
+      HVMCENTOS7: ami-0f2b4fc905b0bd1f1
+      HVMUBUNTU64: ami-097ebb39620d8d54b
+      HVMREDHAT7: ami-03291866
+      HVMDEBIAN: ami-09c10a66337c79669
+      HVMWINDOWS: ami-0087a83ed4a60d1e9
+    us-west-1:
+      HVM64: ami-015954d5e5548d13b
+      HVMUBUNTU64: ami-040dfc3ebf1bfc4f6
+      HVMCENTOS7: ami-074e2d6769f445be5
+      HVMREDHAT7: ami-18726478
+      HVMDEBIAN: ami-0adbaf2e0ce044437
+      HVMWINDOWS: ami-05bf35c67c02cd868
+    us-west-2:
+      HVM64: ami-0cb72367e98845d43
+      HVMUBUNTU64: ami-0196ce5c34425a906
+      HVMCENTOS7: ami-01ed306a12b7d1c96
+      HVMREDHAT7: ami-28e07e50
+      HVMDEBIAN: ami-05a3ef6744aa96514
+      HVMWINDOWS: ami-04ad37d2932b886c0
+
+Resources:
+  WazuhAIO:
+    Properties:
+      ImageId:
+        Fn::FindInMap:
+        - AWSRegionArch2AMI
+        - Ref: AWS::Region
+        - Fn::FindInMap:
+          - AWSInstanceType2Arch
+          - Ref: InstanceType
+          - Arch
+      InstanceType:
+        Ref: InstanceType
+      KeyName:
+        Ref: KeyName
+      SecurityGroups:
+      - Ref: SecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          echo "Downloading script..." > ${LogFile} 
+          curl -so ~/all-in-one-installation.sh https://raw.githubusercontent.com/wazuh/wazuh-documentation/${WazuhVersion}/resources/open-distro/unattended-installation/all-in-one-installation.sh 
+          echo "Installing script..." > ${LogFile}
+          bash ~/all-in-one-installation.sh > ${LogFile}
+    Type: AWS::EC2::Instance
+  
+  SecurityGroup:
+    Properties:
+      GroupDescription: Enable HTTPS access via port 443
+      SecurityGroupIngress:
+      - CidrIp: 0.0.0.0/0
+        FromPort: '443'
+        IpProtocol: tcp
+        ToPort: '443'
+      - CidrIp:
+          Ref: SSHLocation
+        FromPort: '22'
+        IpProtocol: tcp
+        ToPort: '22'
+    Type: AWS::EC2::SecurityGroup
