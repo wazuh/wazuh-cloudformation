@@ -193,10 +193,10 @@ systemctl restart wazuh-api
 TOKEN=$(curl -u wazuh:wazuh -k -X GET "https://localhost:55000/security/user/authenticate?raw=true")
 
 # Change default password
-curl -k -X PUT "https://localhost:55000/security/users/1" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"password":$ssh_password}'
+curl -k -X PUT "https://localhost:55000/security/users/1" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"password":$wazuh_api_password}'
 
 # get new token
-TOKEN=$(curl -u wazuh:$ssh_password -k -X GET "https://localhost:55000/security/user/authenticate?raw=true")
+TOKEN=$(curl -u wazuh:$wazuh_api_password -k -X GET "https://localhost:55000/security/user/authenticate?raw=true")
 
 # Installing Filebeat
 yum -y install filebeat-${elastic_version}

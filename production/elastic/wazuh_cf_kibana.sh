@@ -263,7 +263,8 @@ get_plugin_url(){
 install_plugin(){
   echo "Installing app" >> /tmp/deploy.log
   if [[ ${InstallType} != 'sources' ]] || [[ ${BRANCH} == "" ]]
-  then
+  then    
+    chown -R kibana:kibana /usr/share/kibana
     cd /usr/share/kibana
     sudo -u kibana /usr/share/kibana/bin/kibana-plugin install ${plugin_url}
   else
@@ -290,7 +291,7 @@ hosts:
   - default:
       url: https://${wazuh_master_ip}
       port: ${wazuh_api_port}
-      user: ${wazuh_api_user}
+      username: ${wazuh_api_user}
       password: ${wazuh_api_password}
 EOF
 echo "Configured API" >> /tmp/deploy.log
@@ -309,6 +310,7 @@ enable_kibana(){
 start_kibana(){
   # Starting Kibana
   systemctl restart kibana
+  systemctl restart elasticsearch
   await_kibana_ssl
 
 }
@@ -328,7 +330,6 @@ cat > ${default_index} << EOF
 }
 EOF
 
-await_kibana_ssl
 # Configuring Kibana TimePicker
 curl -XPOST "https://$eth0_ip:5601/api/kibana/settings" -k -u elastic:${ssh_password} -H "Content-Type: application/json" -H "kbn-xsrf: true" -d \
 '{"changes":{"timepicker:timeDefaults":"{\n  \"from\": \"now-24h\",\n  \"to\": \"now\",\n  \"mode\": \"quick\"}"}}' >> /tmp/deploy.log
@@ -400,12 +401,12 @@ main(){
   install_plugin
   enable_kibana
   optimize_kibana
+  add_nginx
   start_kibana
   sleep 200
   add_api
   kibana_optional_configs
   start_kibana
-  add_nginx
   echo "Deploy finished" >> /tmp/deploy.log
 }
 
