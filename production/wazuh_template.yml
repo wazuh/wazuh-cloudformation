@@ -997,7 +997,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_kibana.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/master/production/elastic/wazuh_cf_kibana.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/4.1.5-fg/production/elastic/wazuh_cf_kibana.sh
               mode: '000700'
               owner: root
               group: root
