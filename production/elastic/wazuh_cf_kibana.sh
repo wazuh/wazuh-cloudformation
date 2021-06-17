@@ -22,6 +22,11 @@ elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
 elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
 elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
 
+
+#Set FQDN. Setting the TLS ServerName to an IP address is not permitted by RFC 6066.
+echo "$eth0_ip elastic.local" >> /etc/hosts
+eth0_ip="elastic.local"
+
 extract_certs(){
   amazon-linux-extras install epel -y
   yum install -y sshpass
