@@ -1,31 +1,31 @@
 
 [{
     "ParameterKey": "ElasticWazuhVersion",
-    "ParameterValue": "<ElasticWazuhVersion>"
+    "ParameterValue": "7.11.2_4.1.5"
 },
 {
     "ParameterKey": "SSHAccessCidr",
-    "ParameterValue": "<SSHAccessCidr>"
+    "ParameterValue": "0.0.0.0/0"
 },
 {
     "ParameterKey": "WazuhInstanceType",
-    "ParameterValue": "t2.medium"
+    "ParameterValue": "m5.xlarge"
 },
 {
     "ParameterKey": "ElasticInstanceType",
-    "ParameterValue": "t2.large"
+    "ParameterValue": "i3.large"
 },
 {
     "ParameterKey": "KibanaInstanceType",
-    "ParameterValue": "t2.large"
+    "ParameterValue": "t3.large"
 },
 {
     "ParameterKey": "SshUsername",
-    "ParameterValue": "<SshUsername>"
+    "ParameterValue": "wazuh"
 },
 {
     "ParameterKey": "SshPassword",
-    "ParameterValue": "<SshPassword>"
+    "ParameterValue": "TSEporDiAlTAURigNATonAr"
 },
 {
     "ParameterKey": "WazuhServerPort",
@@ -37,7 +37,7 @@
 },
 {
     "ParameterKey": "WazuhRegistrationPassword",
-    "ParameterValue": "<WazuhRegistrationPassword>"
+    "ParameterValue": "TSEporDiAlTAURigNATonAr"
 },
 {
     "ParameterKey": "WazuhApiPort",
@@ -45,23 +45,23 @@
 },
 {
     "ParameterKey": "WazuhApiAdminUsername",
-    "ParameterValue": "<WazuhApiAdminUsername>"
+    "ParameterValue": "wazuhapi"
 },
 {
     "ParameterKey": "WazuhApiAdminPassword",
-    "ParameterValue": "<WazuhApiAdminPassword>"
+    "ParameterValue": "TSEporDiAlTAURigNATonAr"
 },
 {
     "ParameterKey": "KeyPairName",
-    "ParameterValue": "<KeyPairName>"
+    "ParameterValue": "cloudformation-test-fg"
 },
 {
     "ParameterKey": "AvailabilityZone",
-    "ParameterValue": "<AvailabilityZone>"
+    "ParameterValue": "us-west-1b"
 },
 {
     "ParameterKey": "SSLCertificateARN",
-    "ParameterValue": "<SSLCertificateARN>"
+    "ParameterValue": "arn:aws:acm:us-west-1:567970947422:certificate/b18e1dfe-d0b8-4c15-b5ae-492fe2e9da37"
 },
 {
     "ParameterKey": "EnableDNSRecord",
