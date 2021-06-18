@@ -133,7 +133,7 @@ Parameters:
     Type: String
     MinLength: '8'
     MaxLength: '64'
-    AllowedPattern: '[a-zA-Z0-9*-?$.]'
+    AllowedPattern: '.+'
     ConstraintDescription: Minimum length 8. Maximum length 64.
 
   # Version and instance types

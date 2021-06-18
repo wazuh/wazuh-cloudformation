@@ -149,7 +149,7 @@ cat > ${user_config} << EOF
 }
 EOF
   # Create wazuh user
-  curl -XPOST "https://$eth0_ip:9200/_security/user/wazuh" -k -u elastic:${ssh_password} -d@${user_config} -H 'Content-Type: application/json'
+  curl -i -XPOST "https://$eth0_ip:9200/_security/user/wazuh" -k -u elastic:${ssh_password} -d@${user_config} -H 'Content-Type: application/json' 2>&1 | tee /tmp/deploy.log
 
 }
 
@@ -252,16 +252,27 @@ disable_elk_repos(){
 }
 
 main(){
+    echo "check_root" >> /tmp/deploy.log
     check_root
+    echo "create_ssh_user" >> /tmp/deploy.log
     create_ssh_user
+    echo "import_elk_repo" >> /tmp/deploy.log
     import_elk_repo
+    echo "install_elasticsearch" >> /tmp/deploy.log
     install_elasticsearch
+    echo "configuring_elasticsearch" >> /tmp/deploy.log
     configuring_elasticsearch
+    echo "create_bootstrap_user" >> /tmp/deploy.log
     create_bootstrap_user
+    echo "set_security" >> /tmp/deploy.log
     set_security
+    echo "start_elasticsearch" >> /tmp/deploy.log
     start_elasticsearch
+    #echo "load_template" >> /tmp/deploy.log
     #load_template
+    echo "add_wazuh_user" >> /tmp/deploy.log
     add_wazuh_user
+    echo "disable_elk_repos" >> /tmp/deploy.log
     disable_elk_repos
 }
 
