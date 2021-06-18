@@ -184,17 +184,11 @@ systemctl restart wazuh-manager
 systemctl enable wazuh-manager
 echo "Restarted Wazuh manager." >> /tmp/deploy.log
 
-# API configuration
-# ensure the API is running
-systemctl restart wazuh-api
-
 # get token
-
 TOKEN=$(curl -u wazuh:wazuh -k -X GET "https://localhost:55000/security/user/authenticate?raw=true")
 
 # Change default password
-curl -k -X PUT "https://localhost:55000/security/users/1" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"password":$ssh_password}'
-
+curl -k -X PUT "https://localhost:55000/security/users/1" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"password":"'"$ssh_password"'"}'
 # get new token
 TOKEN=$(curl -u wazuh:$ssh_password -k -X GET "https://localhost:55000/security/user/authenticate?raw=true")
 
