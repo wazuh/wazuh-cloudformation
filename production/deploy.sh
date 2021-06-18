@@ -9,13 +9,13 @@ PARAMS_FILE='./parameters.json'
 TEMPLATE_FILE='./wazuh_template.yml'
 
 # Stack name
-STACK_NAME='cf-test-w4-15'
+STACK_NAME='cf-test-w4-16'
 
 # Bucket name
-BUCKET_NAME='cloudformation-stack-test-w4-1-5-us-west-1'
+BUCKET_NAME='cloudformation-stack-test-w4-1-5-us-east-1'
 
 # Region
-REGION='us-west-1'
+REGION='us-east-1'
 
 # If any file doesn't exist, then break the execution
 if ! [ -f "$PARAMS_FILE" ] || ! [ -f "$TEMPLATE_FILE" ]; then
@@ -32,7 +32,14 @@ fi
 # Uploading template to S3
 aws s3 cp $TEMPLATE_FILE s3://$BUCKET_NAME
 # Getting the template URL
-URL="https://$BUCKET_NAME.s3-$REGION.amazonaws.com/wazuh_template.yml"
+if [ $REGION == 'us-east-1' ]; then
+  URL="https://$BUCKET_NAME.s3.amazonaws.com/wazuh_template.yml"
+else
+  URL="https://$BUCKET_NAME.s3-$REGION.amazonaws.com/wazuh_template.yml"
+fi
+
+
+
 echo "Template URL: $URL"
 
 # Set default REGION
