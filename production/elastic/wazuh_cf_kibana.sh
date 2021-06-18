@@ -267,6 +267,9 @@ get_plugin_url(){
 
 install_plugin(){
   echo "Installing app" >> /tmp/deploy.log
+  mkdir /usr/share/kibana/data
+  chown -R kibana:kibana /usr/share/kibana/data
+  chown -R kibana:kibana /usr/share/kibana/plugins/
   if [[ ${InstallType} != 'sources' ]] || [[ ${BRANCH} == "" ]]
   then
     cd /usr/share/kibana
