@@ -12,10 +12,10 @@ TEMPLATE_FILE='./wazuh_template.yml'
 STACK_NAME='cf-test-w4-16'
 
 # Bucket name
-BUCKET_NAME='cloudformation-stack-test-w4-1-5-us-east-1'
+BUCKET_NAME='cloudformation-stack-test-w4-1-5'
 
 # Region
-REGION='us-east-1'
+REGION='us-east-2'
 
 # If any file doesn't exist, then break the execution
 if ! [ -f "$PARAMS_FILE" ] || ! [ -f "$TEMPLATE_FILE" ]; then

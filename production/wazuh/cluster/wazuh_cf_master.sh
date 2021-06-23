@@ -171,7 +171,7 @@ EOF
 
 # Disabling agent components and cleaning configuration file
 sed -i '/<wodle name="cis-cat">/,/<\/wodle>/d' ${manager_config}
-sed -i '/<ruleset>/,/<\/ruleset>/d' ${manager_config}
+#sed -i '/<ruleset>/,/<\/ruleset>/d' ${manager_config}
 sed -i '/<wodle name="syscollector">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<wodle name="vulnerability-detector">/,/<\/wodle>/d' ${manager_config}
 sed -i '/<localfile>/,/<\/localfile>/d' ${manager_config}

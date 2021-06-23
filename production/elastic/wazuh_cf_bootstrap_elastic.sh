@@ -149,8 +149,14 @@ cat > ${user_config} << EOF
 }
 EOF
   # Create wazuh user
-  curl -i -XPOST "https://$eth0_ip:9200/_security/user/wazuh" -k -u elastic:${ssh_password} -d@${user_config} -H 'Content-Type: application/json' 2>&1 | tee /tmp/deploy.log
-
+  while true;
+  do
+    CODE=`curl -w '%{response_code}' -s -o /dev/null -i -XPOST "https://$eth0_ip:9200/_security/user/wazuh" -k -u elastic:${ssh_password} -d@${user_config} -H 'Content-Type: application/json'`
+    if [ $CODE == '200' ]; then
+      echo "User wazuh created" >> /tmp/deploy.log
+      break
+    fi
+  done
 }
 
 enable_elasticsearch(){

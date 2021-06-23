@@ -25,7 +25,7 @@
 },
 {
     "ParameterKey": "SshPassword",
-    "ParameterValue": "TSEporDiAlTAURigNATonAr"
+    "ParameterValue": "TSEporDiAlTAURigN$123ATonAr"
 },
 {
     "ParameterKey": "WazuhServerPort",
@@ -57,11 +57,11 @@
 },
 {
     "ParameterKey": "AvailabilityZone",
-    "ParameterValue": "us-west-1b"
+    "ParameterValue": "us-east-2c"
 },
 {
     "ParameterKey": "SSLCertificateARN",
-    "ParameterValue": "arn:aws:acm:us-west-1:567970947422:certificate/b18e1dfe-d0b8-4c15-b5ae-492fe2e9da37"
+    "ParameterValue": "arn:aws:acm:us-east-2:567970947422:certificate/6019af27-2dea-4d87-b98e-ea6132a2addb"
 },
 {
     "ParameterKey": "EnableDNSRecord",
