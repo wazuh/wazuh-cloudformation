@@ -14,6 +14,12 @@ STACK_NAME='<cloudformation-stack-name>'
 # Bucket name
 BUCKET_NAME='<S3-bucket-name>'
 
+# AWS Region
+REGION='<region>'
+
+# Set default REGION
+export AWS_DEFAULT_REGION=$REGION
+
 # If any file doesn't exist, then break the execution
 if ! [ -f "$PARAMS_FILE" ] || ! [ -f "$TEMPLATE_FILE" ]; then
     echo "Missing template path or parameters file."
@@ -29,7 +35,11 @@ fi
 # Uploading template to S3
 aws s3 cp $TEMPLATE_FILE s3://$BUCKET_NAME
 # Getting the template URL
-URL="https://$BUCKET_NAME.s3-us-west-1.amazonaws.com/wazuh_template.yml"
+if [ $REGION == 'us-east-1' ]; then
+  URL="https://$BUCKET_NAME.s3.amazonaws.com/wazuh_template.yml"
+else
+  URL="https://$BUCKET_NAME.s3-$REGION.amazonaws.com/wazuh_template.yml"
+fi
 echo "Template URL: $URL"
 
 aws cloudformation create-stack --stack-name ${STACK_NAME} --template-url $URL --parameters file://$PARAMS_FILE --capabilities CAPABILITY_IAM --tags Key=service_name,Value=demo_info

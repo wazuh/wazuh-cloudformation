@@ -18,6 +18,10 @@ node_name=$(cat /tmp/wazuh_cf_settings | grep '^NodeName:' | cut -d' ' -f2)
 echo "Added env vars." >> /tmp/deploy.log
 echo "eth0_ip: $eth0_ip" >> /tmp/deploy.log
 
+#Set FQDN. Setting the TLS ServerName to an IP address is not permitted by RFC 6066.
+echo "$eth0_ip elastic.local" >> /etc/hosts
+eth0_ip="elastic.local"
+
 check_root(){
     # Check if running as root
     if [[ $EUID -ne 0 ]]; then
