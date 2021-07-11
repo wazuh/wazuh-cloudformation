@@ -149,8 +149,14 @@ cat > ${user_config} << EOF
 }
 EOF
   # Create wazuh user
-  curl -XPOST "https://$eth0_ip:9200/_security/user/wazuh" -k -u elastic:${ssh_password} -d@${user_config} -H 'Content-Type: application/json'
-
+  while true;
+  do
+    CODE=`curl -w '%{response_code}' -s -o /dev/null -i -XPOST "https://$eth0_ip:9200/_security/user/wazuh" -k -u elastic:${ssh_password} -d@${user_config} -H 'Content-Type: application/json'`
+    if [ $CODE == '200' ]; then
+      echo "User wazuh created" >> /tmp/deploy.log
+      break
+    fi
+  done
 }
 
 enable_elasticsearch(){
@@ -191,21 +197,33 @@ instances:
     - name: "wazuh-manager"
       ip:
         - "$master_ip"
+      dns:
+        - "elastic.local"
     - name: "wazuh-worker"
       ip:
         - "$worker_ip"
+      dns:
+        - "elastic.local"
     - name: "kibana"
       ip:
         - "$kibana_ip"
+      dns:
+        - "elastic.local"
     - name: "elastic-node2"
       ip:
         - "10.0.2.125"
+      dns:
+        - "elastic.local"
     - name: "elastic-node1"
       ip:
         - "10.0.2.123"
+      dns:
+        - "elastic.local"
     - name: "elasticsearch"
       ip:
         - "$eth0_ip"
+      dns:
+        - "elastic.local"
 EOF
 /usr/share/elasticsearch/bin/elasticsearch-certutil cert ca --pem --in /usr/share/elasticsearch/instances.yml --out /usr/share/elasticsearch/certs.zip
 echo "Generated certs" >> /tmp/deploy.log
