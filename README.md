@@ -13,8 +13,8 @@ This repository contains CloudFormation templates and provision scripts to deplo
 * Wazuh managers cluster with two nodes, a master and a worker
 * An Elasticsearch cluster with a minimum of 3 data nodes, auto-scalable to a maximum of 6 nodes
 * A Kibana node that includes a local elasticsearch client node, and an Nginx for HTTP basic authentication
-* Wazuh servers seat behind an internet-facing load balancer for agents to communicate with the cluster
-* Kibana server seats behind an internet facing load balancer, that optionally loads an SSL Certificate for HTTPS
+* Wazuh servers sit behind an internet-facing load balancer for agents to communicate with the cluster
+* Kibana server sit behind an internet facing load balancer, that optionally loads an SSL Certificate for HTTPS
 * Route53 DNS records for the loadbalancer, Wazuh and Elastic Stack nodes (optional).
 
 ## Demo environment:
@@ -23,14 +23,14 @@ This repository contains CloudFormation templates and provision scripts to deplo
 * Wazuh managers cluster with two nodes, a master and a worker
 * An Elasticsearch cluster with a minimum of 3 data nodes, auto-scalable to a maximum of 6 nodes
 * A Kibana node that includes a local elasticsearch client node, and an Nginx for HTTP basic authentication
-* Wazuh servers seat behind an internet-facing load balancer for agents to communicate with the cluster
-* Kibana server seats behind an internet facing load balancer, that optionally loads an SSL Certificate for HTTPS
+* Wazuh servers sit behind an internet-facing load balancer for agents to communicate with the cluster
+* Kibana server sit behind an internet facing load balancer, that optionally loads an SSL Certificate for HTTPS
 * A Splunk Indexer instance with a Splunk app for Wazuh installed on it.
 * Six Wazuh agents installed on different operating systems: Red Hat 7, CentOS 7, Ubuntu, Debian, Amazon Linux and Windows.
 
 ## Unattendend all-in-one
 
-* Install scipt following [Wazuh unattended all-in-one installation](https://documentation.wazuh.com/current/installation-guide/open-distro/all-in-one-deployment/unattended-installation.html)
+* Use install script, following [Wazuh unattended all-in-one installation](https://documentation.wazuh.com/current/installation-guide/open-distro/all-in-one-deployment/unattended-installation.html)
 * Resources:
     - WazuhAIO: EC2 instance
     - SecurityGroup: EC2 Security Group. It enables the following ports:
@@ -38,7 +38,8 @@ This repository contains CloudFormation templates and provision scripts to deplo
         - 22 (SSH) -> 0.0.0.0
 
 ## Unattended distributed 
-* Install scipt following [Wazuh unattended distributed installation](https://documentation.wazuh.com/current/installation-guide/open-distro/distributed-deployment/unattended/index.html)
+
+* Use install script, following [Wazuh unattended distributed installation](https://documentation.wazuh.com/current/installation-guide/open-distro/distributed-deployment/unattended/index.html)
 * Reosurces:
     - WazuhVPC: EC2 VPC
     - SubnetWazuh: EC2 Subnet over WazuhVPC
@@ -65,4 +66,3 @@ This repository contains CloudFormation templates and provision scripts to deplo
     - Elastic3: EC2 Instance Elasticsearch node
     - WazuhMaster: EC2 Instance Wazuh master node
     - WazuhWorker: EC2 Instance Wazuh worker node
-
