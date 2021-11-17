@@ -130,9 +130,9 @@ cat >> ${manager_config} << EOF
     <port>${wazuh_registration_port}</port>
     <use_source_ip>no</use_source_ip>
     <force>
-      <enabled>yes|no</enabled>
-      <key_mismatch>yes|no</key_mismatch>  
-      <disconnected_time enabled="yes"|"no">1h</disconnected_time>  
+      <enabled>yes</enabled>
+      <key_mismatch>yes</key_mismatch>  
+      <disconnected_time enabled="yes">1h</disconnected_time>  
       <after_registration_time>1h</after_registration_time>  
     </force>
     <purge>yes</purge>
