@@ -129,8 +129,6 @@ cat >> ${manager_config} << EOF
     <disabled>no</disabled>
     <port>${wazuh_registration_port}</port>
     <use_source_ip>no</use_source_ip>
-    <force_insert>yes</force_insert>
-    <force_time>0</force_time>
     <force>
       <enabled>yes|no</enabled>
       <key_mismatch>yes|no</key_mismatch>  
