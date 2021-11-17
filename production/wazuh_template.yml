@@ -133,8 +133,8 @@ Parameters:
     Type: String
     MinLength: '8'
     MaxLength: '64'
-    AllowedPattern: '[a-zA-Z0-9]*'
-    ConstraintDescription: Only alphanumeric characters. Minimum length 8. Maximum length 64.
+    AllowedPattern: '.+'
+    ConstraintDescription: Minimum length 8. Maximum length 64.
 
   # Version and instance types
   ElasticWazuhVersion:
@@ -172,6 +172,8 @@ Parameters:
       - 7.9.1_3.13.2
       - 7.9.2_3.13.2
       - 7.9.2_4.0.0
+      - 7.10.2_4.1.5
+      - 7.11.2_4.1.5
 
     ConstraintDescription: Format is ElasticVersion_WazuhVersion
     Default: 7.9.2_4.0.0
@@ -535,7 +537,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_bootstrap_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/master/production/elastic/wazuh_cf_bootstrap_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/upgrade-4.1.5/production/elastic/wazuh_cf_bootstrap_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -614,7 +616,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/master/production/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/upgrade-4.1.5/production/elastic/wazuh_cf_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -693,7 +695,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_elastic.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/master/production/elastic/wazuh_cf_elastic.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/upgrade-4.1.5/production/elastic/wazuh_cf_elastic.sh
               mode: '000700'
               owner: root
               group: root
@@ -994,7 +996,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_kibana.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/master/production/elastic/wazuh_cf_kibana.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/upgrade-4.1.5/production/elastic/wazuh_cf_kibana.sh
               mode: '000700'
               owner: root
               group: root
@@ -1077,7 +1079,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_master.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/master/production/wazuh/cluster/wazuh_cf_master.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/upgrade-4.1.5/production/wazuh/cluster/wazuh_cf_master.sh
               mode: '000700'
               owner: root
               group: root
@@ -1160,7 +1162,7 @@ Resources:
               group: root
             /tmp/wazuh_cf_worker.sh:
               source: !Sub >-
-                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/master/production/wazuh/cluster/wazuh_cf_worker.sh
+                https://raw.githubusercontent.com/wazuh/wazuh-cloudformation/upgrade-4.1.5/production/wazuh/cluster/wazuh_cf_worker.sh
               mode: '000700'
               owner: root
               group: root

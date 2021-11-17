@@ -11,8 +11,6 @@ wazuh_version=$(cat /tmp/wazuh_cf_settings | grep '^Elastic_Wazuh:' | cut -d' ' 
 kibana_port=$(cat /tmp/wazuh_cf_settings | grep '^KibanaPort:' | cut -d' ' -f2)
 eth0_ip=$(/sbin/ifconfig eth0 | grep 'inet' | head -1 | sed -e 's/^[[:space:]]*//' | cut -d' ' -f2)
 wazuh_master_ip=$(cat /tmp/wazuh_cf_settings | grep '^WazuhMasterIP:' | cut -d' ' -f2)
-wazuh_api_user=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminUsername:' | cut -d' ' -f2)
-wazuh_api_password=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiAdminPassword:' | cut -d' ' -f2)
 wazuh_api_port=$(cat /tmp/wazuh_cf_settings | grep '^WazuhApiPort:' | cut -d' ' -f2)
 InstallType=$(cat /tmp/wazuh_cf_settings | grep '^InstallType:' | cut -d' ' -f2)
 wazuh_major=`echo $wazuh_version | cut -d'.' -f1`
@@ -21,6 +19,10 @@ wazuh_patch=`echo $wazuh_version | cut -d'.' -f3`
 elastic_major_version=$(echo ${elastic_version} | cut -d'.' -f1)
 elastic_minor_version=$(echo ${elastic_version} | cut -d'.' -f2)
 elastic_patch_version=$(echo ${elastic_version} | cut -d'.' -f3)
+
+#Set FQDN. Setting the TLS ServerName to an IP address is not permitted by RFC 6066.
+echo "$eth0_ip elastic.local" >> /etc/hosts
+eth0_ip="elastic.local"
 
 extract_certs(){
   amazon-linux-extras install epel -y
@@ -262,6 +264,9 @@ get_plugin_url(){
 
 install_plugin(){
   echo "Installing app" >> /tmp/deploy.log
+  mkdir /usr/share/kibana/data
+  chown -R kibana:kibana /usr/share/kibana/data
+  chown -R kibana:kibana /usr/share/kibana/plugins/
   if [[ ${InstallType} != 'sources' ]] || [[ ${BRANCH} == "" ]]
   then
     cd /usr/share/kibana
@@ -272,26 +277,16 @@ install_plugin(){
   fi
 }
 
-optimize_kibana(){
-  systemctl stop kibana
-  echo "Optimizing app" >> /tmp/deploy.log
-  cd /usr/share/kibana
-  sudo -u kibana /usr/share/kibana/node/bin/node --no-warnings --max-old-space-size=2048 --max-http-header-size=65536 /usr/share/kibana/src/cli --optimize
-  cd /tmp
-  echo "App installed!" >> /tmp/deploy.log
-  systemctl start kibana
-}
-
 add_api(){
 echo "Adding Wazuh API" >> /tmp/deploy.log
-sed -ie '/- default:/,+4d' /usr/share/kibana/optimize/wazuh/config/wazuh.yml
-cat > /usr/share/kibana/optimize/wazuh/config/wazuh.yml << EOF
+sed -ie '/- default:/,+4d' /usr/share/kibana/data/wazuh/config/wazuh.yml
+cat > /usr/share/kibana/data/wazuh/config/wazuh.yml << EOF
 hosts:
   - default:
       url: https://${wazuh_master_ip}
       port: ${wazuh_api_port}
-      user: ${wazuh_api_user}
-      password: ${wazuh_api_password}
+      username: wazuh
+      password: ${ssh_password}
 EOF
 echo "Configured API" >> /tmp/deploy.log
 }
@@ -346,9 +341,6 @@ echo  "Do not ask user to help providing usage statistics to Elastic" >> /tmp/de
 sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/elastic.repo
 echo "Configured Kibana" >> /tmp/deploy.log
 
-# Remove Montserrat font
-sed -i 's/@import\surl.*Montserrat.*/# Removed montserrat font/g' /usr/share/kibana/optimize/bundles/login.style.css
-
 }
 
 add_nginx(){
@@ -399,7 +391,6 @@ main(){
   get_plugin_url
   install_plugin
   enable_kibana
-  optimize_kibana
   start_kibana
   sleep 200
   add_api
