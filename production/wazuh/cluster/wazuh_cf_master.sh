@@ -131,6 +131,12 @@ cat >> ${manager_config} << EOF
     <use_source_ip>no</use_source_ip>
     <force_insert>yes</force_insert>
     <force_time>0</force_time>
+    <force>
+      <enabled>yes|no</enabled>
+      <key_mismatch>yes|no</key_mismatch>  
+      <disconnected_time enabled="yes"|"no">1h</disconnected_time>  
+      <after_registration_time>1h</after_registration_time>  
+    </force>
     <purge>yes</purge>
     <use_password>yes</use_password>
     <limit_maxagents>yes</limit_maxagents>
