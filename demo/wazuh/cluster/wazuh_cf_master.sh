@@ -174,8 +174,12 @@ cat >> ${manager_config} << EOF
     <disabled>no</disabled>
     <port>${wazuh_registration_port}</port>
     <use_source_ip>no</use_source_ip>
-    <force_insert>yes</force_insert>
-    <force_time>0</force_time>
+    <force>
+      <enabled>yes</enabled>
+      <key_mismatch>yes</key_mismatch>  
+      <disconnected_time enabled="yes">1h</disconnected_time>  
+      <after_registration_time>1h</after_registration_time>  
+    </force>
     <purge>yes</purge>
     <use_password>yes</use_password>
     <limit_maxagents>yes</limit_maxagents>
