@@ -53,8 +53,9 @@ Parameters:
       - "v4.0.4"
       - "v4.1.0"
       - "v4.1.1"
+      - "v4.2.5"
     Description: Wazuh version
-    Default: "v4.1.1"
+    Default: "v4.2.5"
     Type: String
   
   # WazuhCluster
