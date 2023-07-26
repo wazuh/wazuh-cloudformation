@@ -1,3 +1,7 @@
+# Note
+
+This repository has been archived and is no longer maintained.
+
 # Wazuh for Amazon AWS Cloudformation
 
 [![Slack](https://img.shields.io/badge/slack-join-blue.svg)](https://goo.gl/forms/M2AoZC4b2R9A9Zy12)
